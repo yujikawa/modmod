@@ -42,3 +42,11 @@ The system SHALL handle missing sample data gracefully within the detail panel.
 #### Scenario: Viewing Sample Data tab with no data
 - **WHEN** the "Sample Data" tab is active but no data is in the YAML
 - **THEN** it displays "No sample data available for this table."
+## MODIFIED Requirements
+
+### Requirement: Tabbed Detail Panel
+The system SHALL display a panel containing tabs for Conceptual, Logical, Physical, and Sample Data.
+
+#### Scenario: Opening the panel
+- **WHEN** a table is selected in the diagram
+- **THEN** the panel is rendered at the bottom of the right section, below the diagram, with a fixed height and scrollable tabs
