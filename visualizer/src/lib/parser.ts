@@ -10,10 +10,11 @@ export function parseYAML(input: string): Schema {
       throw new Error('Invalid YAML: Root must be an object')
     }
 
-    // Normalization: Ensure tables and relationships are always arrays
+    // Normalization: Ensure tables, relationships and domains are always arrays
     const schema: Schema = {
       tables: Array.isArray(data.tables) ? data.tables : [],
       relationships: Array.isArray(data.relationships) ? data.relationships : [],
+      domains: Array.isArray(data.domains) ? data.domains : [],
       layout: data.layout || {}
     }
 

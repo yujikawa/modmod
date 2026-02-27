@@ -1,7 +1,16 @@
 export interface Schema {
   tables: Table[];
   relationships: Relationship[];
-  layout?: Record<string, { x: number; y: number }>;
+  domains?: Domain[]; // Optional
+  layout?: Record<string, { x: number; y: number; width?: number; height?: number }>;
+}
+
+export interface Domain {
+  id: string;
+  name: string;
+  description?: string;
+  tables: string[]; // List of table IDs
+  color?: string;
 }
 
 export interface Table {

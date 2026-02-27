@@ -2,7 +2,9 @@
 
 ModMod is a YAML-driven data modeling visualizer. It helps data engineers and architects bridge the gap between conceptual, logical, and physical data models while maintaining sample data "stories".
 
-![ModMod Visualizer Screenshot](./docs/assets/modmod.png) 
+![ModMod Visualizer Screenshot](./readme_assets/modmod.png) 
+
+[sample page](https://yujikawa.github.io/modmod/)
 
 ## Features
 

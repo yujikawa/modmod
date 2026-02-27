@@ -1,61 +1,75 @@
 tables:
+  - id: conceptual_prospect
+    name: PROSPECT
+    conceptual:
+      description: Potential customers who haven't registered yet.
+      tags:
+        - CONCEPTUAL
+        - FUTURE
   - id: hub_customer
     name: HUB_CUSTOMER
     conceptual:
-      description: Business keys for unique customers across all source systems.
+      description: Business keys for unique customers.
       tags:
         - HUB
         - PARTY
+    columns:
+      - id: hk_customer
+        logical:
+          name: HK_CUSTOMER
+          type: Binary
+          isPrimaryKey: true
+      - id: customer_id
+        logical:
+          name: CUSTOMER_ID
+          type: String
   - id: sat_customer_crm
     name: SAT_CUSTOMER_CRM
     conceptual:
-      description: Descriptive attributes for customers originating from the CRM system.
+      description: Customer attributes from CRM.
       tags:
         - SAT
-        - DESCRIPTIVE
+        - CRM
     columns:
       - id: hk_customer
         logical:
           name: HK_CUSTOMER
           type: Binary
           isForeignKey: true
+        physical:
+          name: HK_CUST
+          type: BINARY(16)
+          constraints:
+            - NOT NULL
       - id: load_date
         logical:
           name: LOAD_DATE
           type: Timestamp
           isPrimaryKey: true
+        physical:
+          name: L_DT
+          type: TIMESTAMPTZ
+          constraints:
+            - DEFAULT NOW()
       - id: email
         logical:
-          name: EMAIL_ADDRESS
+          name: EMAIL
           type: String
-      - id: full_name
-        logical:
-          name: FULL_NAME
-          type: String
-      - id: hash_diff
-        logical:
-          name: HASH_DIFF
-          type: Binary
-          description: Used for change detection
+        physical:
+          name: EMAIL_ADDR
+          type: VARCHAR(255)
     sampleData:
       columns:
         - hk_customer
         - load_date
         - email
-        - full_name
       rows:
         - - 0x1A2B...
           - '2026-01-01 00:00:00'
           - alice@example.com
-          - Alice Smith
-        - - 0x1A2B...
-          - '2026-02-15 10:30:00'
-          - alice.new@example.com
-          - Alice Johnson
         - - 0x3C4D...
           - '2026-01-05 09:00:00'
           - bob@dev.null
-          - Bob Brown
   - id: hub_order
     name: HUB_ORDER
     conceptual:
@@ -73,21 +87,16 @@ tables:
         logical:
           name: ORDER_NUMBER
           type: String
-      - id: load_date
-        logical:
-          name: LOAD_DATE
-          type: Timestamp
   - id: link_customer_order
     name: LINK_CUSTOMER_ORDER
     conceptual:
-      description: Relationship between a Customer and an Order.
+      description: Links Customers to Orders.
       tags:
         - LINK
-        - RELATIONSHIP
     columns:
-      - id: hk_link_customer_order
+      - id: hk_link
         logical:
-          name: HK_LINK_CUST_ORD
+          name: HK_LINK
           type: Binary
           isPrimaryKey: true
       - id: hk_customer
@@ -100,36 +109,26 @@ tables:
           name: HK_ORDER
           type: Binary
           isForeignKey: true
-      - id: load_date
-        logical:
-          name: LOAD_DATE
-          type: Timestamp
-  - id: sat_order_details
-    name: SAT_ORDER_DETAILS
-    conceptual:
-      description: Details of an order such as amount and status.
-      tags:
-        - SAT
-    columns:
-      - id: hk_order
-        logical:
-          name: HK_ORDER
-          type: Binary
-          isForeignKey: true
-      - id: load_date
-        logical:
-          name: LOAD_DATE
-          type: Timestamp
-          isPrimaryKey: true
-      - id: amount
-        logical:
-          name: TOTAL_AMOUNT
-          type: Decimal
-      - id: status
-        logical:
-          name: STATUS
-          type: String
+domains:
+  - id: customer_domain
+    name: Customer Domain
+    tables:
+      - hub_customer
+      - sat_customer_crm
+      - conceptual_prospect
+    color: rgba(59, 130, 246, 0.05)
+  - id: sales_domain
+    name: Sales Domain
+    tables:
+      - hub_order
+      - link_customer_order
+    color: rgba(16, 185, 129, 0.05)
 relationships:
+  - from:
+      table: conceptual_prospect
+    to:
+      table: hub_customer
+    type: one-to-one
   - from:
       table: hub_customer
       column: hk_customer
@@ -151,23 +150,29 @@ relationships:
       table: link_customer_order
       column: hk_order
     type: one-to-many
-  - from:
-      table: hub_order
-      column: hk_order
-    to:
-      table: sat_order_details
-      column: hk_order
-    type: one-to-many
 layout:
+  customer_domain:
+    x: 50
+    'y': 50
+    width: 850
+    height: 500
+  sales_domain:
+    x: 950
+    'y': 50
+    width: 600
+    height: 500
+  conceptual_prospect:
+    x: 30
+    'y': 50
+  hub_customer:
+    x: 218
+    'y': 255
   sat_customer_crm:
-    x: 86
-    'y': 505
+    x: 533
+    'y': 41
   hub_order:
-    x: 1038
-    'y': -731
+    x: 50
+    'y': 50
   link_customer_order:
-    x: 530
-    'y': -192
-  sat_order_details:
-    x: 1442
-    'y': -120
+    x: 208
+    'y': 281
