@@ -13,6 +13,8 @@ interface AppState {
   setSelectedTableId: (id: string | null) => void;
   setHoveredColumnId: (id: string | null) => void;
   parseAndSetSchema: (yaml: string) => void;
+  updateNodePosition: (id: string, x: number, y: number) => void;
+  saveLayout: () => Promise<void>;
   
   // Computed (helpers)
   getSelectedTable: () => Table | null;
@@ -36,6 +38,33 @@ export const useStore = create<AppState>((set, get) => ({
       set({ schema, error: null })
     } catch (e: any) {
       set({ error: e.message })
+    }
+  },
+
+  updateNodePosition: (id, x, y) => {
+    const schema = get().schema;
+    if (!schema) return;
+
+    const newLayout = {
+      ...(schema.layout || {}),
+      [id]: { x: Math.round(x), y: Math.round(y) }
+    };
+
+    set({ schema: { ...schema, layout: newLayout } });
+  },
+
+  saveLayout: async () => {
+    const schema = get().schema;
+    if (!schema || !schema.layout) return;
+
+    try {
+      await fetch('/api/layout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(schema.layout)
+      });
+    } catch (e) {
+      console.error('Failed to save layout:', e);
     }
   },
 

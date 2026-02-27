@@ -1,43 +1,209 @@
 tables:
-  - id: customers
-    name: Customers
+  - id: hub_customer
+    name: HUB_CUSTOMER
     conceptual:
-      description: "People who have purchased products or registered an account."
-      tags: ["WHO", "PARTY", "CORE-DATA"]
+      description: Business keys for unique customers across all source systems.
+      tags:
+        - HUB
+        - PARTY
     columns:
-      - id: cust_id
-        logical: { name: "Customer ID", type: "Integer", isPrimaryKey: true, description: "Unique identifier for a customer" }
-        physical: { name: "id", type: "SERIAL", constraints: ["PRIMARY KEY"] }
+      - id: hk_customer
+        logical:
+          name: HK_CUSTOMER
+          type: Binary
+          isPrimaryKey: true
+          description: Hash key of the business key
+        physical:
+          name: HK_CUSTOMER
+          type: BINARY(16)
+          constraints:
+            - NOT NULL
+      - id: customer_id
+        logical:
+          name: CUSTOMER_ID
+          type: String
+          description: Business key from CRM system
+        physical:
+          name: CUSTOMER_ID
+          type: VARCHAR(50)
+          constraints:
+            - NOT NULL
+      - id: load_date
+        logical:
+          name: LOAD_DATE
+          type: Timestamp
+        physical:
+          name: LOAD_DATE
+          type: TIMESTAMPTZ
+      - id: record_source
+        logical:
+          name: RECORD_SOURCE
+          type: String
+        physical:
+          name: RECORD_SOURCE
+          type: VARCHAR(100)
+  - id: sat_customer_crm
+    name: SAT_CUSTOMER_CRM
+    conceptual:
+      description: Descriptive attributes for customers originating from the CRM system.
+      tags:
+        - SAT
+        - DESCRIPTIVE
+    columns:
+      - id: hk_customer
+        logical:
+          name: HK_CUSTOMER
+          type: Binary
+          isForeignKey: true
+      - id: load_date
+        logical:
+          name: LOAD_DATE
+          type: Timestamp
+          isPrimaryKey: true
       - id: email
-        logical: { name: "Email Address", type: "String", description: "Primary contact email" }
-        physical: { name: "email_addr", type: "VARCHAR(255)", constraints: ["UNIQUE", "NOT NULL"] }
-      - id: created_at
-        logical: { name: "Created At", type: "Timestamp" }
-        physical: { name: "created_at", type: "TIMESTAMPTZ", constraints: ["DEFAULT NOW()"] }
+        logical:
+          name: EMAIL_ADDRESS
+          type: String
+      - id: full_name
+        logical:
+          name: FULL_NAME
+          type: String
+      - id: hash_diff
+        logical:
+          name: HASH_DIFF
+          type: Binary
+          description: Used for change detection
     sampleData:
-      columns: ["cust_id", "email", "created_at"]
+      columns:
+        - hk_customer
+        - load_date
+        - email
+        - full_name
       rows:
-        - [1, "alice@example.com", "2024-01-01 10:00:00"]
-        - [2, "bob@example.com", "2024-01-02 11:30:00"]
-        - [3, "charlie@dev.null", "2024-01-03 09:15:00"]
-
-  - id: orders
-    name: Orders
+        - - 0x1A2B...
+          - '2026-01-01 00:00:00'
+          - alice@example.com
+          - Alice Smith
+        - - 0x1A2B...
+          - '2026-02-15 10:30:00'
+          - alice.new@example.com
+          - Alice Johnson
+        - - 0x3C4D...
+          - '2026-01-05 09:00:00'
+          - bob@dev.null
+          - Bob Brown
+  - id: hub_order
+    name: HUB_ORDER
     conceptual:
-      description: "Sales transactions processed by the system."
-      tags: ["WHAT", "EVENT", "TRANSACTION"]
+      description: Business keys for sales orders.
+      tags:
+        - HUB
+        - EVENT
     columns:
-      - id: order_id
-        logical: { name: "Order ID", type: "Integer", isPrimaryKey: true }
-        physical: { name: "id", type: "SERIAL" }
-      - id: cust_id
-        logical: { name: "Customer ID", type: "Integer", isForeignKey: true }
-        physical: { name: "customer_id", type: "INTEGER" }
+      - id: hk_order
+        logical:
+          name: HK_ORDER
+          type: Binary
+          isPrimaryKey: true
+      - id: order_number
+        logical:
+          name: ORDER_NUMBER
+          type: String
+      - id: load_date
+        logical:
+          name: LOAD_DATE
+          type: Timestamp
+  - id: link_customer_order
+    name: LINK_CUSTOMER_ORDER
+    conceptual:
+      description: Relationship between a Customer and an Order.
+      tags:
+        - LINK
+        - RELATIONSHIP
+    columns:
+      - id: hk_link_customer_order
+        logical:
+          name: HK_LINK_CUST_ORD
+          type: Binary
+          isPrimaryKey: true
+      - id: hk_customer
+        logical:
+          name: HK_CUSTOMER
+          type: Binary
+          isForeignKey: true
+      - id: hk_order
+        logical:
+          name: HK_ORDER
+          type: Binary
+          isForeignKey: true
+      - id: load_date
+        logical:
+          name: LOAD_DATE
+          type: Timestamp
+  - id: sat_order_details
+    name: SAT_ORDER_DETAILS
+    conceptual:
+      description: Details of an order such as amount and status.
+      tags:
+        - SAT
+    columns:
+      - id: hk_order
+        logical:
+          name: HK_ORDER
+          type: Binary
+          isForeignKey: true
+      - id: load_date
+        logical:
+          name: LOAD_DATE
+          type: Timestamp
+          isPrimaryKey: true
       - id: amount
-        logical: { name: "Total Amount", type: "Decimal" }
-        physical: { name: "total_amount", type: "NUMERIC(12,2)" }
-
+        logical:
+          name: TOTAL_AMOUNT
+          type: Decimal
+      - id: status
+        logical:
+          name: STATUS
+          type: String
 relationships:
-  - from: { table: customers, column: cust_id }
-    to: { table: orders, column: cust_id }
-    type: "one-to-many"
+  - from:
+      table: hub_customer
+      column: hk_customer
+    to:
+      table: sat_customer_crm
+      column: hk_customer
+    type: one-to-many
+  - from:
+      table: hub_customer
+      column: hk_customer
+    to:
+      table: link_customer_order
+      column: hk_customer
+    type: one-to-many
+  - from:
+      table: hub_order
+      column: hk_order
+    to:
+      table: link_customer_order
+      column: hk_order
+    type: one-to-many
+  - from:
+      table: hub_order
+      column: hk_order
+    to:
+      table: sat_order_details
+      column: hk_order
+    type: one-to-many
+layout:
+  sat_customer_crm:
+    x: 86
+    'y': 505
+  hub_order:
+    x: 1038
+    'y': -731
+  link_customer_order:
+    x: 530
+    'y': -192
+  sat_order_details:
+    x: 1442
+    'y': -120

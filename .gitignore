@@ -1,0 +1,7 @@
+node_modules
+dist
+test-build
+*.log
+.DS_Store
+visualizer/dist
+visualizer/node_modules

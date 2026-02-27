@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>visualizer</title>
+    <script type="module" crossorigin src="./assets/index-CtqFPWGf.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-D4cXX8eb.css">
+  <script>window.__MODMOD_DATA__ = {"tables":[{"id":"customers","name":"Customers","conceptual":{"description":"People who have purchased products or registered an account.","tags":["WHOssss","PARTY","CORE-DATA"]},"columns":[{"id":"cust_id","logical":{"name":"Customer ID","type":"Integer","isPrimaryKey":true,"description":"Unique identifier for a customer"},"physical":{"name":"id","type":"SERIAL","constraints":["PRIMARY KEY"]}},{"id":"email","logical":{"name":"Email Address","type":"String","description":"Primary contact email"},"physical":{"name":"email_addr","type":"VARCHAR(255)","constraints":["UNIQUE","NOT NULL"]}},{"id":"created_at","logical":{"name":"Created At","type":"Timestamp"},"physical":{"name":"created_at","type":"TIMESTAMPTZ","constraints":["DEFAULT NOW()"]}}],"sampleData":{"columns":["cust_id","email","created_at"],"rows":[[1,"alice@example.com","2024-01-01 10:00:00"],[2,"bob@example.com","2024-01-02 11:30:00"],[3,"charlie@dev.null","2024-01-03 09:15:00"]]}},{"id":"orders","name":"Orders","conceptual":{"description":"Sales transactions processed by the system.","tags":["WHAT","EVENT","TRANSACTION"]},"columns":[{"id":"order_id","logical":{"name":"Order ID","type":"Integer","isPrimaryKey":true},"physical":{"name":"id","type":"SERIAL"}},{"id":"cust_id","logical":{"name":"Customer ID","type":"Integer","isForeignKey":true},"physical":{"name":"customer_id","type":"INTEGER"}},{"id":"amount","logical":{"name":"Total Amount","type":"Decimal"},"physical":{"name":"total_amount","type":"NUMERIC(12,2)"}}]}],"relationships":[{"from":{"table":"customers","column":"cust_id"},"to":{"table":"orders","column":"cust_id"},"type":"one-to-many"}],"layout":{"customers":{"x":-10,"y":-21},"orders":{"x":300,"y":100}}};</script></head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

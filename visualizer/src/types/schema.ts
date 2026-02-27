@@ -1,6 +1,7 @@
 export interface Schema {
   tables: Table[];
   relationships: Relationship[];
+  layout?: Record<string, { x: number; y: number }>;
 }
 
 export interface Table {
