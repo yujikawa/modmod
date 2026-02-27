@@ -66,3 +66,11 @@ The system SHALL render an interactive ER-style diagram on a canvas showing tabl
 #### Scenario: Visualizing Selection
 - **WHEN** a user selects a table node
 - **THEN** the diagram updates the visual style of connected edges to reflect the current focus
+## MODIFIED Requirements
+
+### Requirement: Diagram Container Structure
+The system SHALL wrap the diagram canvas in a container that allows for sibling elements in a vertical flow.
+
+#### Scenario: Selection Cleared
+- **WHEN** no node is selected
+- **THEN** the diagram container expands to occupy the full available height of the right section

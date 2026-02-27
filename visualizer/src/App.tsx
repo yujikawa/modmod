@@ -221,23 +221,28 @@ function App() {
         )}
       </div>
 
-      {/* Main Area */}
-      <div className="relative flex-1" style={{ flex: 1, position: 'relative' }}>
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onNodeDragStop={onNodeDragStop}
-          onConnect={onConnect}
-          nodeTypes={nodeTypes}
-          onNodeClick={(_, node) => setSelectedTableId(node.id)}
-          onPaneClick={() => setSelectedTableId(null)}
-          fitView
-        >
-          <Background color="#334155" gap={20} />
-          <Controls />
-        </ReactFlow>
+      {/* Main Area (Right Section) */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden" style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+        {/* Top: Diagram */}
+        <div className="flex-1 relative" style={{ flex: 1, position: 'relative' }}>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onNodeDragStop={onNodeDragStop}
+            onConnect={onConnect}
+            nodeTypes={nodeTypes}
+            onNodeClick={(_, node) => setSelectedTableId(node.id)}
+            onPaneClick={() => setSelectedTableId(null)}
+            fitView
+          >
+            <Background color="#334155" gap={20} />
+            <Controls />
+          </ReactFlow>
+        </div>
+
+        {/* Bottom: Detail Panel (L-Shape Integration) */}
         <DetailPanel />
       </div>
     </div>

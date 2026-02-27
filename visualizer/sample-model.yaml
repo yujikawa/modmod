@@ -152,18 +152,18 @@ relationships:
     type: one-to-many
 layout:
   customer_domain:
-    x: 50
-    'y': 50
+    x: 74
+    'y': -56
     width: 850
     height: 500
   sales_domain:
-    x: 950
-    'y': 50
+    x: 1205
+    'y': 17
     width: 600
     height: 500
   conceptual_prospect:
     x: 30
-    'y': 50
+    'y': 51
   hub_customer:
     x: 218
     'y': 255
@@ -171,8 +171,8 @@ layout:
     x: 533
     'y': 41
   hub_order:
-    x: 50
-    'y': 50
+    x: 51
+    'y': 0
   link_customer_order:
     x: 208
-    'y': 281
+    'y': 280
