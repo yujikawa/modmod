@@ -1,4 +1,4 @@
-import { checkbox, confirm } from '@inquirer/prompts';
+import { confirm } from '@inquirer/prompts';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -28,23 +28,38 @@ async function safeWriteFile(filePath, content) {
   console.log(`  Created ${filePath}`);
 }
 
-export async function initProject() {
+export async function initProject(options = {}) {
   console.log('\n  🛠️  ModMod Project Initialization\n');
 
   try {
-    const agents = await checkbox({
-      message: 'Which AI agents do you use? (Select all that apply)',
-      choices: [
-        { name: 'Gemini CLI', value: 'gemini' },
-        { name: 'Codex', value: 'codex' },
-        { name: 'Claude Code', value: 'claude' },
-      ],
-    });
+    const agents = [];
+
+    // If options are provided via CLI flags, use them
+    if (options.all) {
+      agents.push('gemini', 'codex', 'claude');
+    } else if (options.gemini || options.codex || options.claude) {
+      if (options.gemini) agents.push('gemini');
+      if (options.codex) agents.push('codex');
+      if (options.claude) agents.push('claude');
+    } else {
+      // Otherwise, ask one by one (more robust than checkbox in some terminals)
+      console.log('  Please confirm which AI agents you want to scaffold for:\n');
+      
+      if (await confirm({ message: 'Scaffold for Gemini CLI?', default: false })) {
+        agents.push('gemini');
+      }
+      if (await confirm({ message: 'Scaffold for Codex?', default: false })) {
+        agents.push('codex');
+      }
+      if (await confirm({ message: 'Scaffold for Claude Code?', default: false })) {
+        agents.push('claude');
+      }
+    }
 
     if (agents.length === 0) {
-      console.log('  No agents selected. Scaffolding rules only...');
+      console.log('\n  ⚠️  No agents selected. Only ".modmod/rules.md" will be created.');
     } else {
-      console.log(`  Selected agents: ${agents.join(', ')}`);
+      console.log(`\n  Selected agents: ${agents.join(', ')}`);
     }
 
     console.log('\n  Scaffolding modeling rules and commands...');
@@ -54,7 +69,7 @@ export async function initProject() {
     const rulesTemplate = fs.readFileSync(rulesTemplatePath, 'utf8');
     await safeWriteFile('.modmod/rules.md', rulesTemplate);
 
-    // 2. Create agent-specific files with correct paths and formats
+    // 2. Create agent-specific files
     if (agents.includes('gemini')) {
       const skillTemplate = fs.readFileSync(path.join(__dirname, 'templates/gemini/SKILL.md'), 'utf8');
       await safeWriteFile('.gemini/skills/modmod/SKILL.md', skillTemplate);
@@ -82,8 +97,6 @@ export async function initProject() {
       console.log('\n  Initialization cancelled by user.');
     } else {
       console.error('\n  An error occurred during initialization:', error.message);
-      // Optional: Log more details for debugging
-      // console.error(error);
     }
   }
 }

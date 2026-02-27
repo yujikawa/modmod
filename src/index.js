@@ -19,8 +19,12 @@ program
 program
   .command('init')
   .description('Initialize project with AI modeling rules')
-  .action(() => {
-    initProject();
+  .option('-g, --gemini', 'Scaffold for Gemini CLI')
+  .option('-x, --codex', 'Scaffold for Codex')
+  .option('-c, --claude', 'Scaffold for Claude Code')
+  .option('-a, --all', 'Scaffold for all agents')
+  .action((options) => {
+    initProject(options);
   });
 
 program
