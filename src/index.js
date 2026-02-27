@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { startDevServer } from './dev.js';
 import { build } from './build.js';
+import { initProject } from './init.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const VISUALIZER_PATH = path.resolve(__dirname, '../visualizer');
@@ -14,6 +15,13 @@ program
   .name('modmod')
   .description('A YAML-driven data modeling visualizer CLI')
   .version('1.0.0');
+
+program
+  .command('init')
+  .description('Initialize project with AI modeling rules')
+  .action(() => {
+    initProject();
+  });
 
 program
   .command('dev')
