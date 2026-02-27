@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import ReactFlow, { 
   Background, 
   Controls, 
@@ -20,6 +20,9 @@ const nodeTypes = {
   domain: DomainNode,
 }
 
+const HIGHLIGHT_STYLE = { stroke: '#4ade80', strokeWidth: 3 };
+const NORMAL_STYLE = { stroke: '#334155', strokeWidth: 1 };
+
 function App() {
   const [yamlInput, setYamlInput] = useState('')
   const { 
@@ -27,6 +30,7 @@ function App() {
     error, 
     parseAndSetSchema, 
     setSelectedTableId, 
+    selectedTableId,
     setSchema,
     updateNodePosition,
     saveLayout
@@ -67,7 +71,7 @@ function App() {
     }
   }, [isCliMode, hasInjectedData, setSchema]);
 
-  // Sync Schema to React Flow
+  // Sync Nodes
   useEffect(() => {
     if (!schema) return
 
@@ -102,18 +106,31 @@ function App() {
       });
     });
 
-    // 3. Generate Edges
-    const newEdges = (schema.relationships || []).map((rel, index) => ({
-      id: `e-${index}`,
-      source: rel.from.table,
-      target: rel.to.table,
-      label: rel.type,
-      animated: true,
-    })) as Edge[]
-
     setNodes(newNodes)
-    setEdges(newEdges)
-  }, [schema, setNodes, setEdges])
+  }, [schema, setNodes])
+
+  // Sync Edges with dynamic highlighting
+  const currentEdges = useMemo(() => {
+    if (!schema || !schema.relationships) return []
+    
+    return schema.relationships.map((rel, index) => {
+      const isHighlighted = selectedTableId === rel.from.table || selectedTableId === rel.to.table;
+      
+      return {
+        id: `e-${index}`,
+        source: rel.from.table,
+        target: rel.to.table,
+        label: isHighlighted ? rel.type : undefined,
+        animated: isHighlighted,
+        style: isHighlighted ? HIGHLIGHT_STYLE : NORMAL_STYLE,
+        zIndex: isHighlighted ? 10 : 1,
+      }
+    }) as Edge[]
+  }, [schema, selectedTableId])
+
+  useEffect(() => {
+    setEdges(currentEdges)
+  }, [currentEdges, setEdges])
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
