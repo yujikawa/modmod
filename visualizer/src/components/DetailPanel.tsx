@@ -1,150 +1,170 @@
+import { useState } from 'react'
 import { useStore } from '../store/useStore'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
-import { ScrollArea } from './ui/scroll-area'
 import { X } from 'lucide-react'
 import SampleDataGrid from './SampleDataGrid'
 
 const DetailPanel = () => {
   const { selectedTableId, getSelectedTable, setSelectedTableId } = useStore()
   const table = getSelectedTable()
+  const [activeTab, setActiveTab] = useState('conceptual')
 
   if (!selectedTableId || !table) return null
 
+  const tabs = [
+    { id: 'conceptual', label: 'Conceptual' },
+    { id: 'logical', label: 'Logical' },
+    { id: 'physical', label: 'Physical' },
+    { id: 'sample', label: 'Sample Data' }
+  ]
+
   return (
-    <div className="absolute bottom-0 left-1/3 right-0 h-1/2 bg-slate-900 border-t border-slate-800 shadow-2xl z-50 flex flex-col transition-transform animate-in slide-in-from-bottom duration-300 text-slate-100">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-slate-800 bg-slate-950">
+    <div 
+      style={{ 
+        position: 'absolute', 
+        bottom: 0, 
+        left: '33.33%', 
+        right: 0, 
+        height: '50%', 
+        backgroundColor: '#0f172a', 
+        borderTop: '1px solid #1e293b', 
+        zIndex: 1000, 
+        display: 'flex', 
+        flexDirection: 'column',
+        color: '#f1f5f9',
+        boxShadow: '0 -10px 25px -5px rgba(0, 0, 0, 0.3)',
+        fontFamily: 'sans-serif'
+      }}
+    >
+      {/* Panel Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderBottom: '1px solid #1e293b', backgroundColor: '#020617' }}>
         <div>
-          <h2 className="text-lg font-bold text-white">{table.name}</h2>
-          <p className="text-xs text-slate-400 uppercase tracking-wider">{table.id}</p>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#ffffff', margin: 0 }}>{table.name}</h2>
+          <p style={{ fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase', margin: 0 }}>{table.id}</p>
         </div>
         <button 
-          onClick={() => setSelectedTableId(null)}
-          className="p-1 hover:bg-slate-800 rounded-full transition-colors"
+          onClick={(e) => {
+            e.stopPropagation();
+            setSelectedTableId(null);
+          }}
+          style={{ padding: '8px', backgroundColor: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', borderRadius: '50%' }}
         >
-          <X className="w-5 h-5 text-slate-400" />
+          <X size={20} />
         </button>
       </div>
       
-      <Tabs defaultValue="conceptual" className="flex-1 flex flex-col overflow-hidden">
-        <div className="px-4 border-b border-slate-800 bg-slate-900">
-          <TabsList className="bg-transparent h-auto p-0 gap-6">
-            <TabsTrigger 
-              value="conceptual" 
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:text-blue-400 px-0 py-2 text-slate-400 hover:text-slate-200 transition-colors"
-            >
-              Conceptual
-            </TabsTrigger>
-            <TabsTrigger 
-              value="logical"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:text-blue-400 px-0 py-2 text-slate-400 hover:text-slate-200 transition-colors"
-            >
-              Logical
-            </TabsTrigger>
-            <TabsTrigger 
-              value="physical"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:text-blue-400 px-0 py-2 text-slate-400 hover:text-slate-200 transition-colors"
-            >
-              Physical
-            </TabsTrigger>
-            <TabsTrigger 
-              value="sample"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:text-blue-400 px-0 py-2 text-slate-400 hover:text-slate-200 transition-colors"
-            >
-              Sample Data
-            </TabsTrigger>
-          </TabsList>
-        </div>
+      {/* Custom Tabs List */}
+      <div style={{ display: 'flex', gap: '24px', padding: '0 20px', borderBottom: '1px solid #1e293b', backgroundColor: '#0f172a' }}>
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            style={{ 
+              padding: '12px 0', 
+              backgroundColor: 'transparent', 
+              border: 'none', 
+              borderBottom: activeTab === tab.id ? '2px solid #3b82f6' : '2px solid transparent', 
+              color: activeTab === tab.id ? '#60a5fa' : '#94a3b8',
+              fontSize: '14px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      
+      {/* Tab Content Area */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+        {activeTab === 'conceptual' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <section>
+              <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#e2e8f0', marginBottom: '8px' }}>Description</h3>
+              <p style={{ fontSize: '14px', color: '#94a3b8', lineHeight: 1.6 }}>
+                {table.conceptual?.description || "No description provided."}
+              </p>
+            </section>
+            {table.conceptual?.tags && (
+              <section>
+                <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#e2e8f0', marginBottom: '8px' }}>Tags</h3>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {table.conceptual.tags.map(tag => (
+                    <span key={tag} style={{ padding: '2px 10px', backgroundColor: 'rgba(30, 58, 138, 0.3)', color: '#93c5fd', fontSize: '11px', borderRadius: '4px', border: '1px solid rgba(30, 58, 138, 0.5)', textTransform: 'uppercase' }}>
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+        )}
         
-        <div className="flex-1 overflow-hidden">
-          <ScrollArea className="h-full bg-slate-900">
-            <TabsContent value="conceptual" className="p-4 m-0">
-              <div className="space-y-4">
-                <section>
-                  <h3 className="text-sm font-semibold text-slate-200 mb-2">Description</h3>
-                  <p className="text-sm text-slate-400 leading-relaxed">
-                    {table.conceptual?.description || "No description provided."}
-                  </p>
-                </section>
-                {table.conceptual?.tags && (
-                  <section>
-                    <h3 className="text-sm font-semibold text-slate-200 mb-2">Tags</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {table.conceptual.tags.map(tag => (
-                        <span key={tag} className="px-2 py-0.5 bg-blue-900/30 text-blue-300 text-xs font-medium rounded border border-blue-800/50 uppercase tracking-tight">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </section>
-                )}
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="logical" className="p-4 m-0">
-              <div className="border border-slate-800 rounded-lg overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-slate-950 border-b border-slate-800 text-left">
-                    <tr>
-                      <th className="px-4 py-2 font-semibold text-slate-200">Name</th>
-                      <th className="px-4 py-2 font-semibold text-slate-200">Type</th>
-                      <th className="px-4 py-2 font-semibold text-slate-200">Description</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-slate-900/50">
-                    {table.columns.map(col => (
-                      <tr key={col.id} className="border-b border-slate-800 last:border-0 text-slate-400">
-                        <td className="px-4 py-2 font-medium text-slate-200">
-                          {col.logical.isPrimaryKey && <span className="mr-1 text-yellow-500">🔑</span>}
-                          {col.logical.name}
-                        </td>
-                        <td className="px-4 py-2 text-slate-400 italic font-mono text-xs">{col.logical.type}</td>
-                        <td className="px-4 py-2 text-slate-500 text-xs">{col.logical.description}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="physical" className="p-4 m-0">
-              <div className="border border-slate-800 rounded-lg overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-slate-950 border-b border-slate-800 text-left">
-                    <tr>
-                      <th className="px-4 py-2 font-semibold text-slate-200">Physical Name</th>
-                      <th className="px-4 py-2 font-semibold text-slate-200">DB Type</th>
-                      <th className="px-4 py-2 font-semibold text-slate-200">Constraints</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-slate-900/50">
-                    {table.columns.map(col => (
-                      <tr key={col.id} className="border-b border-slate-800 last:border-0 text-slate-400">
-                        <td className="px-4 py-2 font-mono text-xs text-slate-200">
-                          {col.physical?.name || col.logical.name.toLowerCase().replace(/ /g, '_')}
-                        </td>
-                        <td className="px-4 py-2 text-slate-400 font-mono text-xs uppercase">
-                          {col.physical?.type || col.logical.type}
-                        </td>
-                        <td className="px-4 py-2 text-slate-500 text-xs">
-                          {col.physical?.constraints?.join(', ') || '-'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="sample" className="p-4 m-0">
-              {table.sampleData ? (
-                <SampleDataGrid table={table} sampleData={table.sampleData} />
-              ) : (
-                <div className="text-sm text-slate-400 italic">No sample data available for this table.</div>
-              )}
-            </TabsContent>
-          </ScrollArea>
-        </div>
-      </Tabs>
+        {activeTab === 'logical' && (
+          <div style={{ border: '1px solid #1e293b', borderRadius: '8px', overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+              <thead style={{ backgroundColor: '#020617', borderBottom: '1px solid #1e293b', textAlign: 'left' }}>
+                <tr>
+                  <th style={{ padding: '10px 16px', fontWeight: 600, color: '#e2e8f0' }}>Name</th>
+                  <th style={{ padding: '10px 16px', fontWeight: 600, color: '#e2e8f0' }}>Type</th>
+                  <th style={{ padding: '10px 16px', fontWeight: 600, color: '#e2e8f0' }}>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                {table.columns.map(col => (
+                  <tr key={col.id} style={{ borderBottom: '1px solid #1e293b' }}>
+                    <td style={{ padding: '10px 16px', fontWeight: 500, color: '#e2e8f0' }}>
+                      {col.logical.isPrimaryKey && <span style={{ marginRight: '6px' }}>🔑</span>}
+                      {col.logical.name}
+                    </td>
+                    <td style={{ padding: '10px 16px', color: '#94a3b8', fontStyle: 'italic', fontFamily: 'monospace', fontSize: '12px' }}>{col.logical.type}</td>
+                    <td style={{ padding: '10px 16px', color: '#64748b', fontSize: '12px' }}>{col.logical.description}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        
+        {activeTab === 'physical' && (
+          <div style={{ border: '1px solid #1e293b', borderRadius: '8px', overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+              <thead style={{ backgroundColor: '#020617', borderBottom: '1px solid #1e293b', textAlign: 'left' }}>
+                <tr>
+                  <th style={{ padding: '10px 16px', fontWeight: 600, color: '#e2e8f0' }}>Physical Name</th>
+                  <th style={{ padding: '10px 16px', fontWeight: 600, color: '#e2e8f0' }}>DB Type</th>
+                  <th style={{ padding: '10px 16px', fontWeight: 600, color: '#e2e8f0' }}>Constraints</th>
+                </tr>
+              </thead>
+              <tbody>
+                {table.columns.map(col => (
+                  <tr key={col.id} style={{ borderBottom: '1px solid #1e293b' }}>
+                    <td style={{ padding: '10px 16px', fontFamily: 'monospace', fontSize: '12px', color: '#e2e8f0' }}>
+                      {col.physical?.name || col.logical.name.toLowerCase().replace(/ /g, '_')}
+                    </td>
+                    <td style={{ padding: '10px 16px', color: '#94a3b8', fontFamily: 'monospace', fontSize: '12px', textTransform: 'uppercase' }}>
+                      {col.physical?.type || col.logical.type}
+                    </td>
+                    <td style={{ padding: '10px 16px', color: '#64748b', fontSize: '12px' }}>
+                      {col.physical?.constraints?.join(', ') || '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        
+        {activeTab === 'sample' && (
+          <div>
+            {table.sampleData ? (
+              <SampleDataGrid table={table} sampleData={table.sampleData} />
+            ) : (
+              <div style={{ fontSize: '14px', color: '#64748b', fontStyle: 'italic' }}>No sample data available for this table.</div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
