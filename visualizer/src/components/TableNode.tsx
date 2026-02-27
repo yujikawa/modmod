@@ -7,6 +7,8 @@ const TableNode = ({ data, selected }: NodeProps<{ table: Table }>) => {
   const { table } = data
   const hoveredColumnId = useStore(state => state.hoveredColumnId)
 
+  const hasColumns = table.columns && table.columns.length > 0;
+
   return (
     <div 
       style={{ 
@@ -23,35 +25,37 @@ const TableNode = ({ data, selected }: NodeProps<{ table: Table }>) => {
       <Handle type="target" position={Position.Top} style={{ background: '#94a3b8', width: '8px', height: '8px' }} />
       
       {/* Header */}
-      <div style={{ padding: '12px', backgroundColor: 'rgba(15, 23, 42, 0.8)', borderBottom: '1px solid #334155' }}>
+      <div style={{ padding: '12px', backgroundColor: 'rgba(15, 23, 42, 0.8)', borderBottom: hasColumns ? '1px solid #334155' : 'none' }}>
         <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#ffffff' }}>{table.name}</div>
         <div style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', marginTop: '2px' }}>{table.id}</div>
       </div>
       
-      {/* Columns */}
-      <div style={{ padding: '0' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
-          <tbody>
-            {table.columns.map((col) => (
-              <tr 
-                key={col.id} 
-                style={{ 
-                  borderBottom: '1px solid #334155',
-                  backgroundColor: hoveredColumnId === col.id ? 'rgba(30, 58, 138, 0.6)' : 'transparent'
-                }}
-              >
-                <td style={{ padding: '6px 12px', fontWeight: 500, color: '#e2e8f0' }}>
-                  {col.logical.isPrimaryKey && <span style={{ color: '#eab308', marginRight: '4px' }}>🔑</span>}
-                  {col.logical.name}
-                </td>
-                <td style={{ padding: '6px 12px', textAlign: 'right', fontStyle: 'italic', color: '#94a3b8' }}>
-                  {col.logical.type}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* Columns - Render only if they exist */}
+      {hasColumns && (
+        <div style={{ padding: '0' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+            <tbody>
+              {table.columns!.map((col) => (
+                <tr 
+                  key={col.id} 
+                  style={{ 
+                    borderBottom: '1px solid #334155',
+                    backgroundColor: hoveredColumnId === col.id ? 'rgba(30, 58, 138, 0.6)' : 'transparent'
+                  }}
+                >
+                  <td style={{ padding: '6px 12px', fontWeight: 500, color: '#e2e8f0' }}>
+                    {col.logical?.isPrimaryKey && <span style={{ color: '#eab308', marginRight: '4px' }}>🔑</span>}
+                    {col.logical?.name || col.id}
+                  </td>
+                  <td style={{ padding: '6px 12px', textAlign: 'right', fontStyle: 'italic', color: '#94a3b8' }}>
+                    {col.logical?.type || 'Unknown'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <Handle type="source" position={Position.Bottom} style={{ background: '#94a3b8', width: '8px', height: '8px' }} />
     </div>

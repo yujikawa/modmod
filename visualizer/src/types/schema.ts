@@ -12,20 +12,20 @@ export interface Table {
     tags?: string[]; // BEAM* tags (WHO, WHAT, WHEN, etc.)
     businessDefinitions?: Record<string, string>;
   };
-  columns: Column[];
+  columns?: Column[]; // Optional
   sampleData?: SampleData;
 }
 
 export interface Column {
   id: string; // Logical ID (unique per table)
-  logical: {
+  logical?: { // Optional
     name: string;
     type: string;
     description?: string;
     isPrimaryKey?: boolean;
     isForeignKey?: boolean;
   };
-  physical?: {
+  physical?: { // Optional
     name?: string;
     type?: string;
     constraints?: string[];
@@ -41,11 +41,11 @@ export interface SampleData {
 export interface Relationship {
   from: {
     table: string;
-    column: string;
+    column?: string; // Optional
   };
   to: {
     table: string;
-    column: string;
+    column?: string; // Optional
   };
   type?: 'one-to-one' | 'one-to-many' | 'many-to-many';
 }

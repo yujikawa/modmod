@@ -17,6 +17,8 @@ const DetailPanel = () => {
     { id: 'sample', label: 'Sample Data' }
   ]
 
+  const hasColumns = table.columns && table.columns.length > 0;
+
   return (
     <div 
       style={{ 
@@ -85,7 +87,7 @@ const DetailPanel = () => {
                 {table.conceptual?.description || "No description provided."}
               </p>
             </section>
-            {table.conceptual?.tags && (
+            {table.conceptual?.tags && table.conceptual.tags.length > 0 && (
               <section>
                 <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#e2e8f0', marginBottom: '8px' }}>Tags</h3>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
@@ -101,57 +103,69 @@ const DetailPanel = () => {
         )}
         
         {activeTab === 'logical' && (
-          <div style={{ border: '1px solid #1e293b', borderRadius: '8px', overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
-              <thead style={{ backgroundColor: '#020617', borderBottom: '1px solid #1e293b', textAlign: 'left' }}>
-                <tr>
-                  <th style={{ padding: '10px 16px', fontWeight: 600, color: '#e2e8f0' }}>Name</th>
-                  <th style={{ padding: '10px 16px', fontWeight: 600, color: '#e2e8f0' }}>Type</th>
-                  <th style={{ padding: '10px 16px', fontWeight: 600, color: '#e2e8f0' }}>Description</th>
-                </tr>
-              </thead>
-              <tbody>
-                {table.columns.map(col => (
-                  <tr key={col.id} style={{ borderBottom: '1px solid #1e293b' }}>
-                    <td style={{ padding: '10px 16px', fontWeight: 500, color: '#e2e8f0' }}>
-                      {col.logical.isPrimaryKey && <span style={{ marginRight: '6px' }}>🔑</span>}
-                      {col.logical.name}
-                    </td>
-                    <td style={{ padding: '10px 16px', color: '#94a3b8', fontStyle: 'italic', fontFamily: 'monospace', fontSize: '12px' }}>{col.logical.type}</td>
-                    <td style={{ padding: '10px 16px', color: '#64748b', fontSize: '12px' }}>{col.logical.description}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div>
+            {!hasColumns ? (
+              <div style={{ fontSize: '14px', color: '#64748b', fontStyle: 'italic' }}>No logical columns defined yet.</div>
+            ) : (
+              <div style={{ border: '1px solid #1e293b', borderRadius: '8px', overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+                  <thead style={{ backgroundColor: '#020617', borderBottom: '1px solid #1e293b', textAlign: 'left' }}>
+                    <tr>
+                      <th style={{ padding: '10px 16px', fontWeight: 600, color: '#e2e8f0' }}>Name</th>
+                      <th style={{ padding: '10px 16px', fontWeight: 600, color: '#e2e8f0' }}>Type</th>
+                      <th style={{ padding: '10px 16px', fontWeight: 600, color: '#e2e8f0' }}>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {table.columns!.map(col => (
+                      <tr key={col.id} style={{ borderBottom: '1px solid #1e293b' }}>
+                        <td style={{ padding: '10px 16px', fontWeight: 500, color: '#e2e8f0' }}>
+                          {col.logical?.isPrimaryKey && <span style={{ marginRight: '6px' }}>🔑</span>}
+                          {col.logical?.name || col.id}
+                        </td>
+                        <td style={{ padding: '10px 16px', color: '#94a3b8', fontStyle: 'italic', fontFamily: 'monospace', fontSize: '12px' }}>{col.logical?.type || 'Unknown'}</td>
+                        <td style={{ padding: '10px 16px', color: '#64748b', fontSize: '12px' }}>{col.logical?.description || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
         
         {activeTab === 'physical' && (
-          <div style={{ border: '1px solid #1e293b', borderRadius: '8px', overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
-              <thead style={{ backgroundColor: '#020617', borderBottom: '1px solid #1e293b', textAlign: 'left' }}>
-                <tr>
-                  <th style={{ padding: '10px 16px', fontWeight: 600, color: '#e2e8f0' }}>Physical Name</th>
-                  <th style={{ padding: '10px 16px', fontWeight: 600, color: '#e2e8f0' }}>DB Type</th>
-                  <th style={{ padding: '10px 16px', fontWeight: 600, color: '#e2e8f0' }}>Constraints</th>
-                </tr>
-              </thead>
-              <tbody>
-                {table.columns.map(col => (
-                  <tr key={col.id} style={{ borderBottom: '1px solid #1e293b' }}>
-                    <td style={{ padding: '10px 16px', fontFamily: 'monospace', fontSize: '12px', color: '#e2e8f0' }}>
-                      {col.physical?.name || col.logical.name.toLowerCase().replace(/ /g, '_')}
-                    </td>
-                    <td style={{ padding: '10px 16px', color: '#94a3b8', fontFamily: 'monospace', fontSize: '12px', textTransform: 'uppercase' }}>
-                      {col.physical?.type || col.logical.type}
-                    </td>
-                    <td style={{ padding: '10px 16px', color: '#64748b', fontSize: '12px' }}>
-                      {col.physical?.constraints?.join(', ') || '-'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div>
+            {!hasColumns ? (
+              <div style={{ fontSize: '14px', color: '#64748b', fontStyle: 'italic' }}>No physical columns defined yet.</div>
+            ) : (
+              <div style={{ border: '1px solid #1e293b', borderRadius: '8px', overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+                  <thead style={{ backgroundColor: '#020617', borderBottom: '1px solid #1e293b', textAlign: 'left' }}>
+                    <tr>
+                      <th style={{ padding: '10px 16px', fontWeight: 600, color: '#e2e8f0' }}>Physical Name</th>
+                      <th style={{ padding: '10px 16px', fontWeight: 600, color: '#e2e8f0' }}>DB Type</th>
+                      <th style={{ padding: '10px 16px', fontWeight: 600, color: '#e2e8f0' }}>Constraints</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {table.columns!.map(col => (
+                      <tr key={col.id} style={{ borderBottom: '1px solid #1e293b' }}>
+                        <td style={{ padding: '10px 16px', fontFamily: 'monospace', fontSize: '12px', color: '#e2e8f0' }}>
+                          {col.physical?.name || col.logical?.name.toLowerCase().replace(/ /g, '_') || col.id}
+                        </td>
+                        <td style={{ padding: '10px 16px', color: '#94a3b8', fontFamily: 'monospace', fontSize: '12px', textTransform: 'uppercase' }}>
+                          {col.physical?.type || col.logical?.type || 'Unknown'}
+                        </td>
+                        <td style={{ padding: '10px 16px', color: '#64748b', fontSize: '12px' }}>
+                          {col.physical?.constraints?.join(', ') || '-'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
         
