@@ -12,10 +12,12 @@ import ReactFlow, {
 import 'reactflow/dist/style.css'
 import { useStore } from './store/useStore'
 import TableNode from './components/TableNode'
+import DomainNode from './components/DomainNode'
 import DetailPanel from './components/DetailPanel'
 
 const nodeTypes = {
   table: TableNode,
+  domain: DomainNode,
 }
 
 function App() {
@@ -45,7 +47,6 @@ function App() {
         .then(res => res.json())
         .then(data => {
           setSchema(data);
-          // Also sync to textarea for editing
           import('js-yaml').then(yaml => {
             setYamlInput(yaml.dump(data, { indent: 2 }));
           });
@@ -70,13 +71,38 @@ function App() {
   useEffect(() => {
     if (!schema) return
 
-    const newNodes = schema.tables.map((table, index) => ({
-      id: table.id,
-      type: 'table',
-      position: schema.layout?.[table.id] || { x: index * 300, y: 100 },
-      data: { table },
-    })) as Node[]
+    const newNodes: Node[] = []
 
+    // 1. Generate Domain Nodes (Parents)
+    if (schema.domains) {
+      schema.domains.forEach((domain) => {
+        const layout = schema.layout?.[domain.id] || { x: 0, y: 0, width: 600, height: 400 };
+        newNodes.push({
+          id: domain.id,
+          type: 'domain',
+          position: { x: layout.x, y: layout.y },
+          style: { width: layout.width || 600, height: layout.height || 400 },
+          data: { label: domain.name, color: domain.color },
+        });
+      });
+    }
+
+    // 2. Generate Table Nodes (Children or Top-level)
+    schema.tables.forEach((table, index) => {
+      const domain = schema.domains?.find((d) => d.tables.includes(table.id));
+      const layout = schema.layout?.[table.id] || { x: index * 300, y: 100 };
+      
+      newNodes.push({
+        id: table.id,
+        type: 'table',
+        position: { x: layout.x, y: layout.y },
+        data: { table },
+        parentNode: domain?.id,
+        extent: domain ? 'parent' : undefined,
+      });
+    });
+
+    // 3. Generate Edges
     const newEdges = (schema.relationships || []).map((rel, index) => ({
       id: `e-${index}`,
       source: rel.from.table,
@@ -102,8 +128,6 @@ function App() {
 
   const handleParse = async () => {
     parseAndSetSchema(yamlInput);
-    
-    // If in CLI mode, we also want to save the YAML content back to the file
     if (isCliMode) {
       try {
         await fetch('/api/save-yaml', {

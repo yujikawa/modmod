@@ -14,6 +14,7 @@ interface AppState {
   setHoveredColumnId: (id: string | null) => void;
   parseAndSetSchema: (yaml: string) => void;
   updateNodePosition: (id: string, x: number, y: number) => void;
+  updateNodeDimensions: (id: string, width: number, height: number) => void;
   saveLayout: () => Promise<void>;
   
   // Computed (helpers)
@@ -45,9 +46,23 @@ export const useStore = create<AppState>((set, get) => ({
     const schema = get().schema;
     if (!schema) return;
 
+    const currentLayout = schema.layout?.[id] || { x: 0, y: 0 };
     const newLayout = {
       ...(schema.layout || {}),
-      [id]: { x: Math.round(x), y: Math.round(y) }
+      [id]: { ...currentLayout, x: Math.round(x), y: Math.round(y) }
+    };
+
+    set({ schema: { ...schema, layout: newLayout } });
+  },
+
+  updateNodeDimensions: (id, width, height) => {
+    const schema = get().schema;
+    if (!schema) return;
+
+    const currentLayout = schema.layout?.[id] || { x: 0, y: 0 };
+    const newLayout = {
+      ...(schema.layout || {}),
+      [id]: { ...currentLayout, width: Math.round(width), height: Math.round(height) }
     };
 
     set({ schema: { ...schema, layout: newLayout } });
