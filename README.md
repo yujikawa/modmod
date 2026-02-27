@@ -43,6 +43,16 @@ npm link
 
 ## Usage
 
+### 0. Initialization (AI Agent Setup)
+Scaffold project-specific modeling rules and configure your favorite AI agents (Gemini, Codex, Claude) to follow them.
+
+```bash
+modmod init
+```
+- Creates `.modmod/rules.md` as your project's "Source of Truth" for modeling.
+- Generates agent-specific configurations that point to these rules.
+- **Why?**: This ensures AI agents generate YAML that perfectly matches your organization's standards.
+
 ### 1. Development Mode (Interactive Editor)
 Start a local session to edit your YAML and arrange entities.
 
