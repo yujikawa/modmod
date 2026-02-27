@@ -1,4 +1,4 @@
-import inquirer from 'inquirer';
+import { checkbox, confirm } from '@inquirer/prompts';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -14,14 +14,10 @@ async function safeWriteFile(filePath, content) {
   }
 
   if (fs.existsSync(absolutePath)) {
-    const { overwrite } = await inquirer.prompt([
-      {
-        type: 'confirm',
-        name: 'overwrite',
-        message: `File ${filePath} already exists. Overwrite?`,
-        default: false,
-      },
-    ]);
+    const overwrite = await confirm({
+      message: `File ${filePath} already exists. Overwrite?`,
+      default: false,
+    });
     if (!overwrite) {
       console.log(`  Skipping ${filePath}`);
       return;
@@ -36,38 +32,48 @@ export async function initProject() {
   console.log('\n  🛠️  ModMod Project Initialization\n');
 
   try {
-    const { agents } = await inquirer.prompt([
-      {
-        type: 'checkbox',
-        name: 'agents',
-        message: 'Which AI agents do you use? (Select all that apply)',
-              choices: [
-                { name: 'Gemini CLI', value: 'gemini' },
-                { name: 'Codex', value: 'codex' },
-                { name: 'Claude Code', value: 'claude' },
-              ],      },
-    ]);
+    const agents = await checkbox({
+      message: 'Which AI agents do you use? (Select all that apply)',
+      choices: [
+        { name: 'Gemini CLI', value: 'gemini' },
+        { name: 'Codex', value: 'codex' },
+        { name: 'Claude Code', value: 'claude' },
+      ],
+    });
 
-    console.log('\n  Scaffolding modeling rules...');
+    if (agents.length === 0) {
+      console.log('  No agents selected. Scaffolding rules only...');
+    } else {
+      console.log(`  Selected agents: ${agents.join(', ')}`);
+    }
+
+    console.log('\n  Scaffolding modeling rules and commands...');
 
     // 1. Create .modmod/rules.md
-    const rulesTemplate = fs.readFileSync(path.join(__dirname, 'templates/rules.md.template'), 'utf8');
+    const rulesTemplatePath = path.join(__dirname, 'templates/rules.md');
+    const rulesTemplate = fs.readFileSync(rulesTemplatePath, 'utf8');
     await safeWriteFile('.modmod/rules.md', rulesTemplate);
 
-    // 2. Create agent-specific files
+    // 2. Create agent-specific files with correct paths and formats
     if (agents.includes('gemini')) {
-      const geminiTemplate = fs.readFileSync(path.join(__dirname, 'templates/gemini-skill.md.template'), 'utf8');
-      await safeWriteFile('.gemini/skills/modeler.md', geminiTemplate);
+      const skillTemplate = fs.readFileSync(path.join(__dirname, 'templates/gemini/SKILL.md'), 'utf8');
+      await safeWriteFile('.gemini/skills/modmod/SKILL.md', skillTemplate);
+      
+      const commandTemplate = fs.readFileSync(path.join(__dirname, 'templates/gemini/command.toml'), 'utf8');
+      await safeWriteFile('.gemini/commands/modmod/modeling.toml', commandTemplate);
     }
 
     if (agents.includes('codex')) {
-      const codexTemplate = fs.readFileSync(path.join(__dirname, 'templates/codex-instructions.md.template'), 'utf8');
-      await safeWriteFile('.codex/instructions.md', codexTemplate);
+      const promptTemplate = fs.readFileSync(path.join(__dirname, 'templates/codex/prompt.md'), 'utf8');
+      await safeWriteFile('.codex/prompts/modmod-modeling.md', promptTemplate);
     }
 
     if (agents.includes('claude')) {
-      const claudeTemplate = fs.readFileSync(path.join(__dirname, 'templates/clauderules.template'), 'utf8');
-      await safeWriteFile('.clauderules', claudeTemplate);
+      const clauderules = fs.readFileSync(path.join(__dirname, 'templates/claude/clauderules'), 'utf8');
+      await safeWriteFile('.clauderules', clauderules);
+      
+      const commandTemplate = fs.readFileSync(path.join(__dirname, 'templates/claude/command.md'), 'utf8');
+      await safeWriteFile('.claude/commands/modmod/modeling.md', commandTemplate);
     }
 
     console.log('\n  ✅ Initialization complete! Customize ".modmod/rules.md" to match your project standards.\n');
@@ -76,6 +82,8 @@ export async function initProject() {
       console.log('\n  Initialization cancelled by user.');
     } else {
       console.error('\n  An error occurred during initialization:', error.message);
+      // Optional: Log more details for debugging
+      // console.error(error);
     }
   }
 }
