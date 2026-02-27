@@ -10,13 +10,22 @@ export function parseYAML(input: string): Schema {
       throw new Error('Invalid YAML: Root must be an object')
     }
 
-    if (!Array.isArray(data.tables)) {
-      throw new Error('Invalid YAML: "tables" must be an array')
+    // Normalization: Ensure tables and relationships are always arrays
+    const schema: Schema = {
+      tables: Array.isArray(data.tables) ? data.tables : [],
+      relationships: Array.isArray(data.relationships) ? data.relationships : [],
+      layout: data.layout || {}
     }
 
-    // Return the data cast to Schema
-    // In a real app, we might want more rigorous validation (e.g. Zod)
-    return data as Schema
+    // Further normalization for each table
+    schema.tables = schema.tables.map((table: any) => ({
+      ...table,
+      id: table.id || 'unknown',
+      name: table.name || table.id || 'Unnamed Table',
+      columns: Array.isArray(table.columns) ? table.columns : []
+    }))
+
+    return schema
   } catch (e: any) {
     throw new Error(`YAML Parsing Error: ${e.message}`)
   }

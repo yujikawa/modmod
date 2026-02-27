@@ -11,8 +11,8 @@ const SampleDataGrid = ({ table, sampleData }: SampleDataGridProps) => {
 
   // Map column IDs to logical names for headers
   const getHeaderName = (colId: string) => {
-    const col = table.columns.find(c => c.id === colId)
-    return col ? col.logical.name : colId
+    const col = table.columns?.find(c => c.id === colId)
+    return col?.logical?.name || colId
   }
 
   return (

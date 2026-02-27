@@ -172,7 +172,7 @@ function App() {
             <div className="flex-1 space-y-2 overflow-auto" style={{ flex: 1, overflowY: 'auto' }}>
               {schema.tables.map(t => (
                 <div key={t.id} className="rounded border border-slate-800 bg-slate-800/50 p-2 text-sm shadow-sm" style={{ padding: '0.5rem', border: '1px solid #1e293b', backgroundColor: 'rgba(30, 41, 59, 0.5)', borderRadius: '0.375rem', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
-                  {t.name} <span className="text-[10px] text-slate-500" style={{ fontSize: '10px', color: '#64748b' }}>({t.columns.length} columns)</span>
+                  {t.name} <span className="text-[10px] text-slate-500" style={{ fontSize: '10px', color: '#64748b' }}>({t.columns?.length || 0} columns)</span>
                 </div>
               ))}
             </div>
