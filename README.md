@@ -123,5 +123,15 @@ layout: # Automatically managed by the visualizer or AI Agent
 - **layout**: Stores (x, y) coordinates and dimensions. While the visualizer manages this automatically during drag-and-drop, AI Agents use this to arrange new entities logically.
 
 
+## Credits
+
+Modscape is built upon several incredible open-source projects:
+
+- **[React Flow](https://reactflow.dev/)**: Powering the interactive graph engine.
+- **[Radix UI](https://www.radix-ui.com/)**: Providing accessible, high-quality primitives for the sidebar.
+- **[Lucide](https://lucide.dev/)**: Beautiful, consistent iconography.
+- **[shadcn/ui](https://ui.shadcn.com/)**: Design inspiration and component patterns.
+- **[Express](https://expressjs.com/)**: Serving the development environment.
+
 ## License
 MIT
