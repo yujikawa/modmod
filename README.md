@@ -2,8 +2,6 @@
 
 Modscape is a YAML-driven data modeling visualizer. It helps data engineers and architects bridge the gap between conceptual, logical, and physical data models while maintaining sample data "stories".
 
-![Modscape Visualizer Screenshot](./readme_assets/modscape.png) 
-
 [sample page](https://yujikawa.github.io/modscape/)
 
 ## Features
