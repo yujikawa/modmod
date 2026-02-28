@@ -4,6 +4,7 @@ import EntitiesTab from './EntitiesTab'
 import SidebarToggle from './SidebarToggle'
 import { useStore } from '../../store/useStore'
 import { Edit3, ListTree } from 'lucide-react'
+import logo from '/favicon.svg?url' // Use ?url to get the string path
 
 const Sidebar = () => {
   const { isSidebarOpen, activeTab, setActiveTab, isCliMode } = useStore()
@@ -19,7 +20,7 @@ const Sidebar = () => {
       {/* Header */}
       <div className={`p-4 border-b border-slate-800 flex items-center justify-between ${!isSidebarOpen && 'hidden'}`}>
         <div className="flex items-center gap-2">
-          <img src="/favicon.svg" alt="ModMod Logo" className="w-5 h-5 rounded-md" />
+          <img src={logo} alt="ModMod Logo" className="w-5 h-5 rounded-md" />
           <h1 className="text-base font-bold text-white tracking-tight">ModMod</h1>
         </div>
         {isCliMode && (
