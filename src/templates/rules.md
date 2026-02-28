@@ -23,6 +23,10 @@ Use this structure for `model.yaml`:
 tables:
   - id: table_id # Unique identifier
     name: Table Display Name (Logical)
+    appearance: # Optional: Visual style
+      type: hub # Predefined: hub, link, satellite, fact, dimension
+      icon: "🌐"  # Optional: Emoji override
+      color: "#fbbf24" # Optional: Hex color override
     conceptual:
       description: "Business definition"
       tags: ["WHO", "WHAT", "WHEN", etc.]
@@ -55,16 +59,22 @@ relationships:
     to: { table: other_id, column: column_id }
     type: "one-to-many" # or "one-to-one", "many-to-many"
 
-layout: # Automatically managed by the visualizer
+layout: # Automatically managed by the visualizer OR updated by AI Agent
   table_id: { x: 100, y: 100 }
   domain_id: { x: 50, y: 50, width: 600, height: 400 }
 ```
 
-## 5. The Golden Rules
+## 5. Layout Management
+- **Visualizer Priority**: The GUI handles layout through drag-and-drop, writing to the `layout` section.
+- **AI Agent Responsibility**: When creating new entities or domains, you MUST assign initial coordinates (x, y) to place them logically near related tables. Do NOT leave new entities at (0, 0) or stacked on top of each other.
+- **Preservation**: Do NOT modify existing coordinates unless a "Cleanup" or "Re-layout" is explicitly requested.
+
+## 6. The Golden Rules
 - When updating `model.yaml`, always self-audit against these rules.
+- Set appropriate `appearance.type` (fact, dimension, hub, link, satellite) for new tables.
 - When defining relationships, ensure consistency between `from` and `to` tables.
 - If user instructions are ambiguous, propose the best design based on these rules.
 
-## 6. Strictly Forbidden
+## 7. Strictly Forbidden
 - Do not create custom data types not defined in this document.
-- Do not destroy or overwrite the `layout` section unless explicitly asked.
+- Do not destroy or overwrite the `layout` section without assigning new, logical coordinates.

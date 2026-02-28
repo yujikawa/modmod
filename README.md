@@ -86,6 +86,10 @@ modmod build my-model.yaml -o ./docs-site
 tables:
   - id: hub_customer
     name: HUB_CUSTOMER
+    appearance: # Optional: Visual style (icon and color)
+      type: "hub" # Predefined: hub, link, satellite, fact, dimension
+      icon: "🌐"  # Optional: Emoji override
+      color: "#fbbf24" # Optional: Hex color override
     conceptual:
       description: "Business keys for unique customers."
       tags: ["HUB", "PARTY"]
@@ -104,7 +108,16 @@ relationships:
   - from: { table: hub_customer, column: hk_customer }
     to: { table: sat_customer_crm, column: hk_customer }
     type: "one-to-many"
+
+layout: # Automatically managed by the visualizer or AI Agent
+  hub_customer: { x: 100, y: 100 }
+  customer_domain: { x: 50, y: 50, width: 600, height: 400 }
 ```
+
+### Key Attributes
+- **appearance**: Controls the node's visual identity. `type` sets a default icon and color (e.g., `hub` is Amber 🌐, `fact` is Red 📊). Use `icon` or `color` to override.
+- **layout**: Stores (x, y) coordinates and dimensions. While the visualizer manages this automatically during drag-and-drop, AI Agents use this to arrange new entities logically.
+
 
 ## License
 MIT
