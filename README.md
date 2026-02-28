@@ -9,11 +9,15 @@ ModMod is a YAML-driven data modeling visualizer. It helps data engineers and ar
 ## Features
 
 - **YAML-First**: Define your entire data model in a single, simple YAML file.
-- **Multi-Layered**: Toggle between Conceptual, Logical, and Physical views.
+- **Unified Sidebar**: A feature-rich sidebar accessible in both `dev` and `build` modes.
+  - **Tabs**: Switch between **Editor** (YAML) and **Entities** (Navigation).
+  - **Collapsible**: Collapse the sidebar to maximize your ER diagram viewing area.
 - **Interactive ER Diagram**: Drag-and-drop entities to create the perfect layout.
-- **Layout Persistence**: Your diagram layout is automatically saved back to the YAML file.
+- **Diagram Navigation**: Click entities in the sidebar to smoothly focus and zoom in on them.
+- **Sandbox Mode**: Temporary in-memory editing in static builds. Try "What-if" modeling without affecting the source.
+- **Layout Persistence**: Diagram positions (including **Domains**) are automatically saved to your YAML file in dev mode.
 - **CLI-Driven Workflow**:
-  - `modmod dev`: Interactive editor with hot-reloading.
+  - `modmod dev`: Interactive editor with live updates.
   - `modmod build`: Package your model into a standalone static site.
 
 ## Installation
@@ -52,7 +56,7 @@ Scaffold project-specific modeling rules and configure your favorite AI agents (
 modmod init
 ```
 - Creates `.modmod/rules.md` as your project's "Source of Truth" for modeling.
-- Generates agent-specific configurations that point to these rules.
+- Generates agent-specific configurations (skills, prompts, commands) that point to these rules.
 - **Why?**: This ensures AI agents generate YAML that perfectly matches your organization's standards.
 
 ### 1. Development Mode (Interactive Editor)
@@ -62,8 +66,9 @@ Start a local session to edit your YAML and arrange entities.
 modmod dev my-model.yaml
 ```
 - Opens `http://localhost:5173` automatically.
-- Edit YAML in the sidebar to see live updates.
-- Drag entities to save their positions directly to `my-model.yaml`.
+- **Editor Tab**: Edit YAML with live updates to the diagram.
+- **Entities Tab**: Search and quickly navigate to specific tables or domains.
+- **Persistence**: Drag entities to save positions directly to `my-model.yaml`.
 
 ### 2. Static Site Build
 Generate a standalone documentation site from your YAML model.
@@ -71,31 +76,33 @@ Generate a standalone documentation site from your YAML model.
 ```bash
 modmod build my-model.yaml -o ./docs-site
 ```
-- Generates a `docs-site/` folder with `index.html`.
-- Perfect for hosting on **GitHub Pages**, S3, or Netlify.
+- Generates a `docs-site/` folder with a single-file visualizer.
+- Includes the **Sandbox Mode**, allowing viewers to temporarily edit the model in their browser.
+- Perfect for hosting on **GitHub Pages**, S3, or internal documentation portals.
 
 ## YAML Schema Example
 
 ```yaml
 tables:
-  - id: customers
-    name: Customers
+  - id: hub_customer
+    name: HUB_CUSTOMER
     conceptual:
-      description: "People who purchased products."
-      tags: ["WHO", "PARTY"]
+      description: "Business keys for unique customers."
+      tags: ["HUB", "PARTY"]
     columns:
-      - id: cust_id
-        logical: { name: "Customer ID", type: "Integer", isPrimaryKey: true }
-        physical: { name: "id", type: "SERIAL" }
-    sampleData:
-      columns: ["cust_id"]
-      rows:
-        - [1]
-        - [2]
+      - id: hk_customer
+        logical: { name: "HK_CUSTOMER", type: "Binary", isPrimaryKey: true }
+        physical: { name: "HK_CUST", type: "BINARY(16)", constraints: ["NOT NULL"] }
+
+domains:
+  - id: customer_domain
+    name: Customer Domain
+    tables: ["hub_customer"]
+    color: "rgba(59, 130, 246, 0.05)"
 
 relationships:
-  - from: { table: customers, column: cust_id }
-    to: { table: orders, column: cust_id }
+  - from: { table: hub_customer, column: hk_customer }
+    to: { table: sat_customer_crm, column: hk_customer }
     type: "one-to-many"
 ```
 

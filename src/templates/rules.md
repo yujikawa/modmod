@@ -43,10 +43,21 @@ tables:
       rows:
         - ["value1", "value2"]
 
+domains: # Optional: Group tables into visual containers
+  - id: domain_id
+    name: Domain Name
+    description: "Domain purpose"
+    tables: ["table_id_1", "table_id_2"]
+    color: "rgba(59, 130, 246, 0.05)" # Optional background color
+
 relationships:
   - from: { table: table_id, column: column_id }
     to: { table: other_id, column: column_id }
     type: "one-to-many" # or "one-to-one", "many-to-many"
+
+layout: # Automatically managed by the visualizer
+  table_id: { x: 100, y: 100 }
+  domain_id: { x: 50, y: 50, width: 600, height: 400 }
 ```
 
 ## 5. The Golden Rules
