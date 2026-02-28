@@ -1,10 +1,10 @@
 {
-  "name": "modmod",
+  "name": "modscape",
   "version": "1.0.0",
-  "description": "YAML-driven data modeling visualizer CLI",
+  "description": "Modscape: A YAML-driven data modeling visualizer CLI",
   "type": "module",
   "bin": {
-    "modmod": "./src/index.js"
+    "modscape": "./src/index.js"
   },
   "files": [
     "src",

@@ -132,7 +132,7 @@ export async function startDevServer(paths, visualizerPath) {
       let html = fs.readFileSync(path.join(distPath, 'index.html'), 'utf8');
       html = html.replace(
         '</head>',
-        '<script>window.MODMOD_CLI_MODE = true;</script></head>'
+        '<script>window.MODSCAPE_CLI_MODE = true;</script></head>'
       );
       res.send(html);
     } catch (e) {
@@ -143,7 +143,7 @@ export async function startDevServer(paths, visualizerPath) {
   const port = 5173;
   app.listen(port, () => {
     const url = `http://localhost:${port}`;
-    console.log(`\n  🚀 ModMod Visualizer running at: ${url}`);
+    console.log(`\n  🚀 Modscape Visualizer running at: ${url}`);
     console.log(`  Watching ${modelMap.size} file(s)`);
     open(url);
   });

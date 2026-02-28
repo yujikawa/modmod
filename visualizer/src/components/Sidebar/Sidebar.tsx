@@ -21,8 +21,8 @@ const Sidebar = () => {
       {/* Header */}
       <div className={`p-4 border-b border-slate-800 flex items-center justify-between ${!isSidebarOpen && 'hidden'}`}>
         <div className="flex items-center gap-2">
-          <img src={logo} alt="ModMod Logo" className="w-5 h-5 rounded-md" />
-          <h1 className="text-base font-bold text-white tracking-tight">ModMod</h1>
+          <img src={logo} alt="Modscape Logo" className="w-5 h-5 rounded-md" />
+          <h1 className="text-base font-bold text-white tracking-tight">Modscape</h1>
         </div>
         {isCliMode && (
           <span className="px-1.5 py-0.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold rounded uppercase">

@@ -52,7 +52,7 @@ export const useStore = create<AppState>((set, get) => ({
   selectedTableId: null,
   hoveredColumnId: null,
   error: null,
-  isCliMode: (typeof window !== 'undefined' && (window as any).MODMOD_CLI_MODE === true),
+  isCliMode: (typeof window !== 'undefined' && (window as any).MODSCAPE_CLI_MODE === true),
 
   // Multi-file Defaults
   availableFiles: [],
@@ -84,7 +84,7 @@ export const useStore = create<AppState>((set, get) => ({
   
   fetchAvailableFiles: async () => {
     // Check for injected data (static build)
-    const injectedData = (window as any).__MODMOD_DATA__;
+    const injectedData = (window as any).__MODSCAPE_DATA__;
     if (injectedData && injectedData.models) {
       const files = injectedData.models.map((m: any) => ({
         slug: m.slug,
@@ -106,7 +106,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   setCurrentModel: async (slug: string) => {
     // Check for injected data (static build)
-    const injectedData = (window as any).__MODMOD_DATA__;
+    const injectedData = (window as any).__MODSCAPE_DATA__;
     if (injectedData && injectedData.models) {
       const model = injectedData.models.find((m: any) => m.slug === slug);
       if (model) {

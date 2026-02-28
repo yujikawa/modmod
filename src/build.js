@@ -100,7 +100,7 @@ export async function build(paths, visualizerPath, outputDir) {
 
   html = html.replace(
     '</head>',
-    `<script>window.__MODMOD_DATA__ = ${JSON.stringify(injectionData)}; window.MODMOD_CLI_MODE = false;</script></head>`
+    `<script>window.__MODSCAPE_DATA__ = ${JSON.stringify(injectionData)}; window.MODSCAPE_CLI_MODE = false;</script></head>`
   );
   fs.writeFileSync(indexPath, html, 'utf8');
 
