@@ -7,15 +7,27 @@ interface AppState {
   selectedTableId: string | null;
   hoveredColumnId: string | null;
   error: string | null;
+  isCliMode: boolean;
+  
+  // Sidebar State
+  isSidebarOpen: boolean;
+  activeTab: 'editor' | 'entities';
+  focusNodeId: string | null;
   
   // Actions
   setSchema: (schema: Schema) => void;
   setSelectedTableId: (id: string | null) => void;
   setHoveredColumnId: (id: string | null) => void;
+  setIsCliMode: (isCli: boolean) => void;
   parseAndSetSchema: (yaml: string) => void;
   updateNodePosition: (id: string, x: number, y: number) => void;
   updateNodeDimensions: (id: string, width: number, height: number) => void;
   saveLayout: () => Promise<void>;
+  
+  // Sidebar Actions
+  setIsSidebarOpen: (isOpen: boolean) => void;
+  setActiveTab: (tab: 'editor' | 'entities') => void;
+  setFocusNodeId: (id: string | null) => void;
   
   // Computed (helpers)
   getSelectedTable: () => Table | null;
@@ -26,12 +38,24 @@ export const useStore = create<AppState>((set, get) => ({
   selectedTableId: null,
   hoveredColumnId: null,
   error: null,
+  isCliMode: (typeof window !== 'undefined' && (window as any).MODMOD_CLI_MODE === true),
+
+  // Sidebar Defaults
+  isSidebarOpen: true,
+  activeTab: 'editor',
+  focusNodeId: null,
 
   setSchema: (schema) => set({ schema, error: null }),
   
   setSelectedTableId: (id) => set({ selectedTableId: id }),
 
   setHoveredColumnId: (id) => set({ hoveredColumnId: id }),
+
+  setIsCliMode: (isCli) => set({ isCliMode: isCli }),
+  
+  setIsSidebarOpen: (isOpen) => set({ isSidebarOpen: isOpen }),
+  setActiveTab: (tab) => set({ activeTab: tab }),
+  setFocusNodeId: (id) => set({ focusNodeId: id }),
   
   parseAndSetSchema: (yaml) => {
     try {
