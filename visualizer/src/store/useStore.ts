@@ -1,6 +1,12 @@
 import { create } from 'zustand'
 import type { Schema, Table } from '../types/schema'
-import { parseYAML } from '../lib/parser'
+import { parseYAML, normalizeSchema } from '../lib/parser'
+
+export interface ModelFile {
+  slug: string;
+  name: string;
+  path: string;
+}
 
 interface AppState {
   schema: Schema | null;
@@ -9,13 +15,17 @@ interface AppState {
   error: string | null;
   isCliMode: boolean;
   
+  // Multi-file state
+  availableFiles: ModelFile[];
+  currentModelSlug: string | null;
+  
   // Sidebar State
   isSidebarOpen: boolean;
   activeTab: 'editor' | 'entities';
   focusNodeId: string | null;
   
   // Actions
-  setSchema: (schema: Schema) => void;
+  setSchema: (schema: any) => void;
   setSelectedTableId: (id: string | null) => void;
   setHoveredColumnId: (id: string | null) => void;
   setIsCliMode: (isCli: boolean) => void;
@@ -23,6 +33,10 @@ interface AppState {
   updateNodePosition: (id: string, x: number, y: number) => void;
   updateNodeDimensions: (id: string, width: number, height: number) => void;
   saveLayout: () => Promise<void>;
+  
+  // Multi-file Actions
+  fetchAvailableFiles: () => Promise<void>;
+  setCurrentModel: (slug: string) => Promise<void>;
   
   // Sidebar Actions
   setIsSidebarOpen: (isOpen: boolean) => void;
@@ -40,12 +54,23 @@ export const useStore = create<AppState>((set, get) => ({
   error: null,
   isCliMode: (typeof window !== 'undefined' && (window as any).MODMOD_CLI_MODE === true),
 
+  // Multi-file Defaults
+  availableFiles: [],
+  currentModelSlug: null,
+
   // Sidebar Defaults
   isSidebarOpen: true,
   activeTab: 'editor',
   focusNodeId: null,
 
-  setSchema: (schema) => set({ schema, error: null }),
+  setSchema: (data) => {
+    try {
+      const schema = normalizeSchema(data);
+      set({ schema, error: null });
+    } catch (e: any) {
+      set({ error: e.message });
+    }
+  },
   
   setSelectedTableId: (id) => set({ selectedTableId: id }),
 
@@ -57,6 +82,72 @@ export const useStore = create<AppState>((set, get) => ({
   setActiveTab: (tab) => set({ activeTab: tab }),
   setFocusNodeId: (id) => set({ focusNodeId: id }),
   
+  fetchAvailableFiles: async () => {
+    // Check for injected data (static build)
+    const injectedData = (window as any).__MODMOD_DATA__;
+    if (injectedData && injectedData.models) {
+      const files = injectedData.models.map((m: any) => ({
+        slug: m.slug,
+        name: m.name,
+        path: ''
+      }));
+      set({ availableFiles: files });
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/files');
+      const files = await res.json();
+      set({ availableFiles: files });
+    } catch (e) {
+      console.error('Failed to fetch files:', e);
+    }
+  },
+
+  setCurrentModel: async (slug: string) => {
+    // Check for injected data (static build)
+    const injectedData = (window as any).__MODMOD_DATA__;
+    if (injectedData && injectedData.models) {
+      const model = injectedData.models.find((m: any) => m.slug === slug);
+      if (model) {
+        set({ 
+          currentModelSlug: slug, 
+          schema: normalizeSchema(model.schema), 
+          selectedTableId: null, 
+          error: null 
+        });
+        
+        // Update URL
+        const searchParams = new URLSearchParams(window.location.search);
+        searchParams.set('model', slug);
+        const newRelativePathQuery = window.location.pathname + '?' + searchParams.toString();
+        window.history.pushState(null, '', newRelativePathQuery);
+      }
+      return;
+    }
+
+    try {
+      const url = `/api/model?model=${slug}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      
+      set({ 
+        currentModelSlug: slug, 
+        schema: normalizeSchema(data), 
+        selectedTableId: null, 
+        error: null 
+      });
+
+      // Update URL without reload
+      const searchParams = new URLSearchParams(window.location.search);
+      searchParams.set('model', slug);
+      const newRelativePathQuery = window.location.pathname + '?' + searchParams.toString();
+      window.history.pushState(null, '', newRelativePathQuery);
+    } catch (e) {
+      console.error('Failed to fetch model:', e);
+    }
+  },
+
   parseAndSetSchema: (yaml) => {
     try {
       const schema = parseYAML(yaml)
@@ -93,11 +184,12 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   saveLayout: async () => {
-    const schema = get().schema;
+    const { schema, currentModelSlug } = get();
     if (!schema || !schema.layout) return;
 
     try {
-      await fetch('/api/layout', {
+      const url = currentModelSlug ? `/api/layout?model=${currentModelSlug}` : '/api/layout';
+      await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(schema.layout)

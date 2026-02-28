@@ -1,0 +1,84 @@
+tables:
+  - id: hub_customer
+    name: HUB_CUSTOMER
+    appearance:
+      type: hub
+    conceptual:
+      description: "Business keys for customers (e.g., Customer Number)."
+    columns:
+      - id: hk_customer
+        logical: { name: "HK_CUSTOMER", type: "Binary", isPrimaryKey: true }
+      - id: customer_id
+        logical: { name: "CUSTOMER_ID", type: "String" }
+      - id: record_source
+        logical: { name: "RECORD_SOURCE", type: "String" }
+
+  - id: sat_customer_crm
+    name: SAT_CUSTOMER_CRM
+    appearance:
+      type: satellite
+    conceptual:
+      description: "Customer descriptive data from CRM system."
+    columns:
+      - id: hk_customer
+        logical: { name: "HK_CUSTOMER", type: "Binary", isForeignKey: true }
+      - id: load_date
+        logical: { name: "LOAD_DATE", type: "Timestamp", isPrimaryKey: true }
+      - id: hash_diff
+        logical: { name: "HASH_DIFF", type: "Binary" }
+      - id: first_name
+        logical: { name: "FIRST_NAME", type: "String" }
+      - id: last_name
+        logical: { name: "LAST_NAME", type: "String" }
+      - id: email
+        logical: { name: "EMAIL", type: "String" }
+
+  - id: hub_product
+    name: HUB_PRODUCT
+    appearance:
+      type: hub
+    conceptual:
+      description: "Business keys for products."
+    columns:
+      - id: hk_product
+        logical: { name: "HK_PRODUCT", type: "Binary", isPrimaryKey: true }
+      - id: product_code
+        logical: { name: "PRODUCT_CODE", type: "String" }
+
+  - id: link_sale
+    name: LINK_SALE
+    appearance:
+      type: link
+    conceptual:
+      description: "Relationship between Customer and Product for a sale event."
+    columns:
+      - id: hk_sale
+        logical: { name: "HK_SALE", type: "Binary", isPrimaryKey: true }
+      - id: hk_customer
+        logical: { name: "HK_CUSTOMER", type: "Binary", isForeignKey: true }
+      - id: hk_product
+        logical: { name: "HK_PRODUCT", type: "Binary", isForeignKey: true }
+
+relationships:
+  - from: { table: hub_customer, column: hk_customer }
+    to: { table: sat_customer_crm, column: hk_customer }
+    type: "one-to-many"
+  - from: { table: hub_customer, column: hk_customer }
+    to: { table: link_sale, column: hk_customer }
+    type: "one-to-many"
+  - from: { table: hub_product, column: hk_product }
+    to: { table: link_sale, column: hk_product }
+    type: "one-to-many"
+
+domains:
+  - id: dv_raw
+    name: "Raw Vault"
+    tables: [hub_customer, sat_customer_crm, hub_product, link_sale]
+    color: "rgba(139, 92, 246, 0.05)"
+
+layout:
+  dv_raw: { x: 50, y: 50, width: 900, height: 600 }
+  hub_customer: { x: 100, y: 150 }
+  sat_customer_crm: { x: 450, y: 100 }
+  hub_product: { x: 100, y: 450 }
+  link_sale: { x: 450, y: 400 }

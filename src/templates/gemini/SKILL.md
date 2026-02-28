@@ -6,6 +6,12 @@ BEFORE making any suggestions or changes, you MUST read and strictly follow the 
 
 If a requested change violates these rules, warn the user.
 
+## 📁 Multi-file Awareness
+`modmod dev` supports pointing to a directory (e.g., `modmod dev samples/`).
+-   **Switching Models**: Identify which YAML file you are editing from the directory.
+-   **Domain Separation**: Suggest splitting large models into multiple, domain-specific YAML files to improve organization.
+-   **Slug-based Access**: Be aware that the visualizer identifies models via slugs (filename without extension).
+
 ## Layout & Appearance Management
 - **Appearance**: When creating new tables, assign an appropriate `appearance.type` (e.g., `fact`, `hub`) to ensure correct visualization.
 - **Layout**: You are responsible for the initial placement of new entities. Assign logical `x` and `y` coordinates in the `layout` section so they don't overlap existing nodes. The user will fine-tune the layout via the GUI.

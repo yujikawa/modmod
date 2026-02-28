@@ -31,7 +31,6 @@ function Flow() {
     schema, 
     setSelectedTableId, 
     selectedTableId,
-    setSchema,
     updateNodePosition,
     saveLayout,
     isCliMode,
@@ -42,9 +41,6 @@ function Flow() {
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const { setCenter, getNode } = useReactFlow()
-
-  // Consistent detection
-  const hasInjectedData = !!(window as any).__MODMOD_DATA__;
 
   // Handle focusNodeId changes
   useEffect(() => {
@@ -59,27 +55,6 @@ function Flow() {
       setFocusNodeId(null)
     }
   }, [focusNodeId, getNode, setCenter, setFocusNodeId])
-
-  // Initial Data & File Watching Sync
-  useEffect(() => {
-    if (isCliMode) {
-      fetch('/api/model')
-        .then(res => res.json())
-        .then(data => {
-          setSchema(data);
-        })
-        .catch(err => console.error('CLI fetch error:', err));
-
-      if ((import.meta as any).hot) {
-        (import.meta as any).hot.on('model-update', (data: any) => {
-          setSchema(data);
-        });
-      }
-    } else if (hasInjectedData) {
-      const data = (window as any).__MODMOD_DATA__;
-      setSchema(data);
-    }
-  }, [isCliMode, hasInjectedData, setSchema]);
 
   // Sync Nodes
   useEffect(() => {
@@ -175,6 +150,71 @@ function Flow() {
 }
 
 function App() {
+  const { 
+    isCliMode, 
+    fetchAvailableFiles, 
+    setCurrentModel, 
+    setSchema
+  } = useStore()
+
+  // Consistent detection for injected data
+  const hasInjectedData = !!(window as any).__MODMOD_DATA__;
+
+  // Initial Data Load
+  useEffect(() => {
+    // 1. CLI Mode (Live updates)
+    if (isCliMode) {
+      fetchAvailableFiles().then(() => {
+        const params = new URLSearchParams(window.location.search)
+        const modelSlug = params.get('model')
+        if (modelSlug) {
+          setCurrentModel(modelSlug)
+        } else {
+          fetch('/api/model')
+            .then(res => res.json())
+            .then(data => setSchema(data));
+        }
+      });
+
+      if ((import.meta as any).hot) {
+        (import.meta as any).hot.on('model-update', (data: any) => {
+          setSchema(data);
+        });
+      }
+      return;
+    }
+
+    // 2. Static Build (Injected data)
+    if (hasInjectedData) {
+      const data = (window as any).__MODMOD_DATA__;
+      
+      // Handle multi-file static build
+      if (data && data.isMultiFile && data.models) {
+        fetchAvailableFiles().then(() => {
+          const params = new URLSearchParams(window.location.search)
+          const modelSlug = params.get('model')
+          if (modelSlug) {
+            setCurrentModel(modelSlug)
+          } else {
+            // Use first model by default
+            setSchema(data.models[0].schema);
+            // also update currentModelSlug
+            // (directly update store because setCurrentModel is async and might fetch)
+            // But setCurrentModel already handles static data now.
+            // Let's just use it.
+            setCurrentModel(data.models[0].slug);
+          }
+        });
+      } else if (data && data.schema) {
+        // Single file (old format support or just .schema)
+        setSchema(data.schema);
+      } else {
+        // Just the schema object directly (legacy)
+        setSchema(data);
+      }
+    }
+  }, [isCliMode, hasInjectedData, fetchAvailableFiles, setCurrentModel, setSchema]);
+
   return (
     <ReactFlowProvider>
       <div className="flex h-screen w-screen overflow-hidden bg-slate-950 text-slate-100 font-sans">

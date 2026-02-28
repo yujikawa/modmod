@@ -63,12 +63,18 @@ modmod init
 Start a local session to edit your YAML and arrange entities.
 
 ```bash
+# Point to a directory to manage all models within it
+modmod dev samples/
+
+# Or point to a specific file
 modmod dev my-model.yaml
 ```
 - Opens `http://localhost:5173` automatically.
+- **Multi-file Support**: Switch between models using the dropdown in the sidebar.
+- **Secure Routing**: Models are accessed via slugs (e.g., `?model=ecommerce`), keeping your local paths private.
 - **Editor Tab**: Edit YAML with live updates to the diagram.
 - **Entities Tab**: Search and quickly navigate to specific tables or domains.
-- **Persistence**: Drag entities to save positions directly to `my-model.yaml`.
+- **Persistence**: Drag entities to save positions directly to the source YAML file.
 
 ### 2. Static Site Build
 Generate a standalone documentation site from your YAML model.

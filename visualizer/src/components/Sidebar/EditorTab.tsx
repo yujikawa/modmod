@@ -7,6 +7,7 @@ const EditorTab = () => {
     schema, 
     error, 
     isCliMode, 
+    currentModelSlug,
     parseAndSetSchema 
   } = useStore()
   
@@ -25,7 +26,8 @@ const EditorTab = () => {
     parseAndSetSchema(yamlInput);
     if (isCliMode) {
       try {
-        await fetch('/api/save-yaml', {
+        const url = currentModelSlug ? `/api/save-yaml?model=${currentModelSlug}` : '/api/save-yaml';
+        await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ yaml: yamlInput })
