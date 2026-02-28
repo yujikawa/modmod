@@ -2,136 +2,90 @@
 
 Modscape is a YAML-driven data modeling visualizer. It helps data engineers and architects bridge the gap between conceptual, logical, and physical data models while maintaining sample data "stories".
 
-[sample page](https://yujikawa.github.io/modscape/)
+[Live Demo](https://yujikawa.github.io/modscape/)
 
 ## Features
 
 - **YAML-First**: Define your entire data model in a single, simple YAML file.
-- **Unified Sidebar**: A feature-rich sidebar accessible in both `dev` and `build` modes.
-  - **Tabs**: Switch between **Editor** (YAML) and **Entities** (Navigation).
-  - **Collapsible**: Collapse the sidebar to maximize your ER diagram viewing area.
-- **Interactive ER Diagram**: Drag-and-drop entities to create the perfect layout.
-- **Diagram Navigation**: Click entities in the sidebar to smoothly focus and zoom in on them.
-- **Sandbox Mode**: Temporary in-memory editing in static builds. Try "What-if" modeling without affecting the source.
-- **Layout Persistence**: Diagram positions (including **Domains**) are automatically saved to your YAML file in dev mode.
-- **CLI-Driven Workflow**:
-  - `modscape dev`: Interactive editor with live updates.
-  - `modscape build`: Package your model into a standalone static site.
+- **Unified Sidebar**: A feature-rich sidebar for navigation, search, and YAML editing.
+- **Sample Data "Stories"**: Attach sample data to entities to explain the data's purpose.
+- **Interactive Layout**: Arrange entities via drag-and-drop; positions are saved directly back to your YAML.
+- **Multi-file Support**: Manage multiple models in a single directory and switch between them seamlessly.
+- **AI-Agent Ready**: Scaffolding for Gemini, Claude, and Codex to help you model via AI.
 
 ## Installation
 
-### Prerequisites
-- Node.js (v18 or higher)
-
-### Global Installation (via GitHub)
-You can install Modscape directly from GitHub to use the `modscape` command anywhere:
+Install Modscape globally via npm:
 
 ```bash
-npm install -g https://github.com/yujikawa/modscape
+npm install -g modscape
 ```
 
-### Local Setup (for Development)
-```bash
-# Clone the repository
-git clone https://github.com/yujikawa/modscape.git
-cd modscape
+## Quick Start in 3 Steps
 
-# Install dependencies for both CLI and Visualizer
-npm install
-cd visualizer && npm install
-cd ..
-
-# Link the command to your system
-npm link
-```
-
-## Usage
-
-### 0. Initialization (AI Agent Setup)
-Scaffold project-specific modeling rules and configure your favorite AI agents (Gemini, Codex, Claude) to follow them.
+### 1. Initialize your project
+Create the necessary configuration and modeling rules for your project (and AI agents).
 
 ```bash
 modscape init
 ```
-- Creates `.modscape/rules.md` as your project's "Source of Truth" for modeling.
-- Generates agent-specific configurations (skills, prompts, commands) that point to these rules.
-- **Why?**: This ensures AI agents generate YAML that perfectly matches your organization's standards.
 
-### 1. Development Mode (Interactive Editor)
+### 2. Explore Samples
+Try Modscape immediately using the built-in sample models.
+
+```bash
+# Clone the repo or download the samples directory to try this:
+modscape dev samples/
+```
+
+### 3. Start Modeling
+Create a `model.yaml` and launch the interactive visualizer.
+
+```bash
+modscape dev model.yaml
+```
+
+## Usage
+
+### Development Mode (Interactive Editor)
 Start a local session to edit your YAML and arrange entities.
 
 ```bash
 # Point to a directory to manage all models within it
-modscape dev samples/
+modscape dev models/
 
 # Or point to a specific file
 modscape dev my-model.yaml
 ```
 - Opens `http://localhost:5173` automatically.
-- **Multi-file Support**: Switch between models using the dropdown in the sidebar.
-- **Secure Routing**: Models are accessed via slugs (e.g., `?model=ecommerce`), keeping your local paths private.
-- **Editor Tab**: Edit YAML with live updates to the diagram.
-- **Entities Tab**: Search and quickly navigate to specific tables or domains.
 - **Persistence**: Drag entities to save positions directly to the source YAML file.
+- **Secure Routing**: Models are accessed via safe slugs, keeping your local paths private.
 
-### 2. Static Site Build
-Generate a standalone documentation site from your YAML model.
+### Build Mode (Static Site Generation)
+Generate a standalone static website to share your documentation (perfect for GitHub Pages).
 
 ```bash
-modscape build my-model.yaml -o ./docs-site
-```
-- Generates a `docs-site/` folder with a single-file visualizer.
-- Includes the **Sandbox Mode**, allowing viewers to temporarily edit the model in their browser.
-- Perfect for hosting on **GitHub Pages**, S3, or internal documentation portals.
-
-## YAML Schema Example
-
-```yaml
-tables:
-  - id: hub_customer
-    name: HUB_CUSTOMER
-    appearance: # Optional: Visual style (icon and color)
-      type: "hub" # Predefined: hub, link, satellite, fact, dimension
-      icon: "🌐"  # Optional: Emoji override
-      color: "#fbbf24" # Optional: Hex color override
-    conceptual:
-      description: "Business keys for unique customers."
-      tags: ["HUB", "PARTY"]
-    columns:
-      - id: hk_customer
-        logical: { name: "HK_CUSTOMER", type: "Binary", isPrimaryKey: true }
-        physical: { name: "HK_CUST", type: "BINARY(16)", constraints: ["NOT NULL"] }
-
-domains:
-  - id: customer_domain
-    name: Customer Domain
-    tables: ["hub_customer"]
-    color: "rgba(59, 130, 246, 0.05)"
-
-relationships:
-  - from: { table: hub_customer, column: hk_customer }
-    to: { table: sat_customer_crm, column: hk_customer }
-    type: "one-to-many"
-
-layout: # Automatically managed by the visualizer or AI Agent
-  hub_customer: { x: 100, y: 100 }
-  customer_domain: { x: 50, y: 50, width: 600, height: 400 }
+modscape build models/ -o dist-site
 ```
 
-### Key Attributes
-- **appearance**: Controls the node's visual identity. `type` sets a default icon and color (e.g., `hub` is Amber 🌐, `fact` is Red 📊). Use `icon` or `color` to override.
-- **layout**: Stores (x, y) coordinates and dimensions. While the visualizer manages this automatically during drag-and-drop, AI Agents use this to arrange new entities logically.
+## AI Agent Integration
 
+Modscape is designed to work alongside AI coding assistants. By running `modscape init`, you get:
+
+- **`.modscape/rules.md`**: The Single Source of Truth for your modeling conventions.
+- **Agent Instructions**: Pre-configured prompts for Gemini, Claude, and Cursor/Codex.
+
+Tell your AI: *"Follow the rules in .modscape/rules.md to add a new billing domain to my model.yaml."*
 
 ## Credits
 
 Modscape is built upon several incredible open-source projects:
 
 - **[React Flow](https://reactflow.dev/)**: Powering the interactive graph engine.
-- **[Radix UI](https://www.radix-ui.com/)**: Providing accessible, high-quality primitives for the sidebar.
+- **[Radix UI](https://www.radix-ui.com/)**: Providing accessible UI primitives.
 - **[Lucide](https://lucide.dev/)**: Beautiful, consistent iconography.
-- **[shadcn/ui](https://ui.shadcn.com/)**: Design inspiration and component patterns.
-- **[Express](https://expressjs.com/)**: Serving the development environment.
+- **[shadcn/ui](https://ui.shadcn.com/)**: Component patterns and design inspiration.
+- **[Express](https://expressjs.com/)**: Serving the local development environment.
 
 ## License
 MIT
