@@ -68,7 +68,7 @@ layout: # Automatically managed by the visualizer OR updated by AI Agent
 
 For larger projects, it is recommended to **split the model into multiple YAML files by domain** rather than keeping everything in a single file.
 
--   **Directory Management**: By specifying a directory with `modmod dev models/`, the visualizer will automatically scan and manage all YAML files within that folder.
+-   **Directory Management**: By specifying a directory with `modscape dev models/`, the visualizer will automatically scan and manage all YAML files within that folder.
 -   **Naming Conventions**: The filename (without extension) is used as the "model slug" in the visualizer (e.g., `customer.yaml`, `billing.yaml`).
 -   **Common Structure**: Maintain a consistent `layout` format across all files. AI agents MUST respect the existing `layout` section when making updates.
 

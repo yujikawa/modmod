@@ -12,7 +12,7 @@ const VISUALIZER_PATH = path.resolve(__dirname, '../visualizer');
 const program = new Command();
 
 program
-  .name('modmod')
+  .name('modscape')
   .description('A YAML-driven data modeling visualizer CLI')
   .version('1.0.0');
 

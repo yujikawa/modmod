@@ -1,10 +1,10 @@
-# <img src="./readme_assets/logo.svg" width="32" height="32" align="center" /> ModMod (Modeling-Modeler)
+# <img src="./readme_assets/logo.svg" width="32" height="32" align="center" /> Modscape (Modeling-Modeler)
 
-ModMod is a YAML-driven data modeling visualizer. It helps data engineers and architects bridge the gap between conceptual, logical, and physical data models while maintaining sample data "stories".
+Modscape is a YAML-driven data modeling visualizer. It helps data engineers and architects bridge the gap between conceptual, logical, and physical data models while maintaining sample data "stories".
 
-![ModMod Visualizer Screenshot](./readme_assets/modmod.png) 
+![Modscape Visualizer Screenshot](./readme_assets/modscape.png) 
 
-[sample page](https://yujikawa.github.io/modmod/)
+[sample page](https://yujikawa.github.io/modscape/)
 
 ## Features
 
@@ -17,8 +17,8 @@ ModMod is a YAML-driven data modeling visualizer. It helps data engineers and ar
 - **Sandbox Mode**: Temporary in-memory editing in static builds. Try "What-if" modeling without affecting the source.
 - **Layout Persistence**: Diagram positions (including **Domains**) are automatically saved to your YAML file in dev mode.
 - **CLI-Driven Workflow**:
-  - `modmod dev`: Interactive editor with live updates.
-  - `modmod build`: Package your model into a standalone static site.
+  - `modscape dev`: Interactive editor with live updates.
+  - `modscape build`: Package your model into a standalone static site.
 
 ## Installation
 
@@ -26,17 +26,17 @@ ModMod is a YAML-driven data modeling visualizer. It helps data engineers and ar
 - Node.js (v18 or higher)
 
 ### Global Installation (via GitHub)
-You can install ModMod directly from GitHub to use the `modmod` command anywhere:
+You can install Modscape directly from GitHub to use the `modscape` command anywhere:
 
 ```bash
-npm install -g https://github.com/yujikawa/modmod
+npm install -g https://github.com/yujikawa/modscape
 ```
 
 ### Local Setup (for Development)
 ```bash
 # Clone the repository
-git clone https://github.com/yujikawa/modmod.git
-cd modmod
+git clone https://github.com/yujikawa/modscape.git
+cd modscape
 
 # Install dependencies for both CLI and Visualizer
 npm install
@@ -53,9 +53,9 @@ npm link
 Scaffold project-specific modeling rules and configure your favorite AI agents (Gemini, Codex, Claude) to follow them.
 
 ```bash
-modmod init
+modscape init
 ```
-- Creates `.modmod/rules.md` as your project's "Source of Truth" for modeling.
+- Creates `.modscape/rules.md` as your project's "Source of Truth" for modeling.
 - Generates agent-specific configurations (skills, prompts, commands) that point to these rules.
 - **Why?**: This ensures AI agents generate YAML that perfectly matches your organization's standards.
 
@@ -64,10 +64,10 @@ Start a local session to edit your YAML and arrange entities.
 
 ```bash
 # Point to a directory to manage all models within it
-modmod dev samples/
+modscape dev samples/
 
 # Or point to a specific file
-modmod dev my-model.yaml
+modscape dev my-model.yaml
 ```
 - Opens `http://localhost:5173` automatically.
 - **Multi-file Support**: Switch between models using the dropdown in the sidebar.
@@ -80,7 +80,7 @@ modmod dev my-model.yaml
 Generate a standalone documentation site from your YAML model.
 
 ```bash
-modmod build my-model.yaml -o ./docs-site
+modscape build my-model.yaml -o ./docs-site
 ```
 - Generates a `docs-site/` folder with a single-file visualizer.
 - Includes the **Sandbox Mode**, allowing viewers to temporarily edit the model in their browser.

@@ -158,7 +158,7 @@ function App() {
   } = useStore()
 
   // Consistent detection for injected data
-  const hasInjectedData = !!(window as any).__MODMOD_DATA__;
+  const hasInjectedData = !!(window as any).__MODSCAPE_DATA__;
 
   // Initial Data Load
   useEffect(() => {
@@ -186,7 +186,7 @@ function App() {
 
     // 2. Static Build (Injected data)
     if (hasInjectedData) {
-      const data = (window as any).__MODMOD_DATA__;
+      const data = (window as any).__MODSCAPE_DATA__;
       
       // Handle multi-file static build
       if (data && data.isMultiFile && data.models) {

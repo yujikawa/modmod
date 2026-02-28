@@ -57,17 +57,17 @@ export async function initProject(options = {}) {
     }
 
     if (agents.length === 0) {
-      console.log('\n  ⚠️  No agents selected. Only ".modmod/rules.md" will be created.');
+      console.log('\n  ⚠️  No agents selected. Only ".modscape/rules.md" will be created.');
     } else {
       console.log(`\n  Selected agents: ${agents.join(', ')}`);
     }
 
     console.log('\n  Scaffolding modeling rules and commands...');
 
-    // 1. Create .modmod/rules.md
+    // 1. Create .modscape/rules.md
     const rulesTemplatePath = path.join(__dirname, 'templates/rules.md');
     const rulesTemplate = fs.readFileSync(rulesTemplatePath, 'utf8');
-    await safeWriteFile('.modmod/rules.md', rulesTemplate);
+    await safeWriteFile('.modscape/rules.md', rulesTemplate);
 
     // 2. Create agent-specific files
     if (agents.includes('gemini')) {
@@ -91,7 +91,7 @@ export async function initProject(options = {}) {
       await safeWriteFile('.claude/commands/modmod/modeling.md', commandTemplate);
     }
 
-    console.log('\n  ✅ Initialization complete! Customize ".modmod/rules.md" to match your project standards.\n');
+    console.log('\n  ✅ Initialization complete! Customize ".modscape/rules.md" to match your project standards.\n');
   } catch (error) {
     if (error.name === 'ExitPromptError') {
       console.log('\n  Initialization cancelled by user.');
