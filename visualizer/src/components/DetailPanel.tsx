@@ -151,8 +151,12 @@ const DetailPanel = () => {
                     {table.columns!.map(col => (
                       <tr key={col.id} style={{ borderBottom: '1px solid #1e293b' }}>
                         <td style={{ padding: '8px 16px', fontWeight: 500, color: '#e2e8f0' }}>
-                          {col.logical?.isPrimaryKey && <span style={{ marginRight: '6px' }}>🔑</span>}
-                          {col.logical?.name || col.id}
+                          <div style={{ display: 'flex', alignItems: 'center' }}>
+                            {col.logical?.isPrimaryKey && <span style={{ marginRight: '6px' }}>🔑</span>}
+                            {col.logical?.isForeignKey && <span style={{ marginRight: '6px' }}>🔩</span>}
+                            {col.logical?.isPartitionKey && <span style={{ marginRight: '6px' }}>📂</span>}
+                            <span>{col.logical?.name || col.id}</span>
+                          </div>
                         </td>
                         <td style={{ padding: '8px 16px', color: '#94a3b8', fontStyle: 'italic', fontFamily: 'monospace', fontSize: '11px' }}>{col.logical?.type || 'Unknown'}</td>
                         <td style={{ padding: '8px 16px', color: '#64748b', fontSize: '11px' }}>{col.logical?.description || '-'}</td>

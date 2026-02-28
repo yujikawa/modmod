@@ -111,8 +111,14 @@ const TableNode = ({ data, selected }: NodeProps<{ table: Table }>) => {
                     textOverflow: 'ellipsis',
                     maxWidth: '350px' // Proportionally increased
                   }}>
-                    {col.logical?.isPrimaryKey && <span style={{ color: '#eab308', marginRight: '4px' }}>🔑</span>}
-                    {col.logical?.name || col.id}
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      {col.logical?.isPrimaryKey && <span style={{ color: '#eab308', marginRight: '4px' }}>🔑</span>}
+                      {col.logical?.isForeignKey && <span style={{ marginRight: '4px' }}>🔩</span>}
+                      {col.logical?.isPartitionKey && <span style={{ marginRight: '4px' }}>📂</span>}
+                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {col.logical?.name || col.id}
+                      </span>
+                    </div>
                   </td>
                   <td style={{ 
                     padding: '6px 12px', 
