@@ -162,6 +162,7 @@ function App() {
 
   // Initial Data Load
   useEffect(() => {
+    // 1. CLI Mode (Live updates)
     if (isCliMode) {
       fetchAvailableFiles().then(() => {
         const params = new URLSearchParams(window.location.search)
@@ -169,22 +170,48 @@ function App() {
         if (modelSlug) {
           setCurrentModel(modelSlug)
         } else {
-          // Fetch default model (which server handles at /api/model)
           fetch('/api/model')
             .then(res => res.json())
             .then(data => setSchema(data));
         }
       });
 
-      // Watcher sync (for Vite dev)
       if ((import.meta as any).hot) {
         (import.meta as any).hot.on('model-update', (data: any) => {
           setSchema(data);
         });
       }
-    } else if (hasInjectedData) {
+      return;
+    }
+
+    // 2. Static Build (Injected data)
+    if (hasInjectedData) {
       const data = (window as any).__MODMOD_DATA__;
-      setSchema(data);
+      
+      // Handle multi-file static build
+      if (data && data.isMultiFile && data.models) {
+        fetchAvailableFiles().then(() => {
+          const params = new URLSearchParams(window.location.search)
+          const modelSlug = params.get('model')
+          if (modelSlug) {
+            setCurrentModel(modelSlug)
+          } else {
+            // Use first model by default
+            setSchema(data.models[0].schema);
+            // also update currentModelSlug
+            // (directly update store because setCurrentModel is async and might fetch)
+            // But setCurrentModel already handles static data now.
+            // Let's just use it.
+            setCurrentModel(data.models[0].slug);
+          }
+        });
+      } else if (data && data.schema) {
+        // Single file (old format support or just .schema)
+        setSchema(data.schema);
+      } else {
+        // Just the schema object directly (legacy)
+        setSchema(data);
+      }
     }
   }, [isCliMode, hasInjectedData, fetchAvailableFiles, setCurrentModel, setSchema]);
 

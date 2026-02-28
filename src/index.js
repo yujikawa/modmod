@@ -37,11 +37,11 @@ program
 
 program
   .command('build')
-  .description('Build a static site from a YAML model')
-  .argument('<yamlFile>', 'path to the YAML model file')
+  .description('Build a static site from YAML models')
+  .argument('<paths...>', 'paths to YAML model files or directories')
   .option('-o, --output <dir>', 'output directory', 'dist')
-  .action((yamlFile, options) => {
-    build(yamlFile, VISUALIZER_PATH, options.output);
+  .action((paths, options) => {
+    build(paths, VISUALIZER_PATH, options.output);
   });
 
 program.parse();

@@ -83,6 +83,18 @@ export const useStore = create<AppState>((set, get) => ({
   setFocusNodeId: (id) => set({ focusNodeId: id }),
   
   fetchAvailableFiles: async () => {
+    // Check for injected data (static build)
+    const injectedData = (window as any).__MODMOD_DATA__;
+    if (injectedData && injectedData.models) {
+      const files = injectedData.models.map((m: any) => ({
+        slug: m.slug,
+        name: m.name,
+        path: ''
+      }));
+      set({ availableFiles: files });
+      return;
+    }
+
     try {
       const res = await fetch('/api/files');
       const files = await res.json();
@@ -93,14 +105,35 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   setCurrentModel: async (slug: string) => {
+    // Check for injected data (static build)
+    const injectedData = (window as any).__MODMOD_DATA__;
+    if (injectedData && injectedData.models) {
+      const model = injectedData.models.find((m: any) => m.slug === slug);
+      if (model) {
+        set({ 
+          currentModelSlug: slug, 
+          schema: normalizeSchema(model.schema), 
+          selectedTableId: null, 
+          error: null 
+        });
+        
+        // Update URL
+        const searchParams = new URLSearchParams(window.location.search);
+        searchParams.set('model', slug);
+        const newRelativePathQuery = window.location.pathname + '?' + searchParams.toString();
+        window.history.pushState(null, '', newRelativePathQuery);
+      }
+      return;
+    }
+
     try {
       const url = `/api/model?model=${slug}`;
       const res = await fetch(url);
-      const schema = await res.json();
+      const data = await res.json();
       
       set({ 
         currentModelSlug: slug, 
-        schema, 
+        schema: normalizeSchema(data), 
         selectedTableId: null, 
         error: null 
       });

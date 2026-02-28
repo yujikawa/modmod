@@ -32,8 +32,8 @@ jobs:
 
       - name: Build Static Site
         run: |
-          # Use the CLI to package the model
-          node src/index.js build visualizer/sample-model.yaml -o dist-site
+          # Use the CLI to package all models in the samples directory
+          node src/index.js build samples/ -o dist-site
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
