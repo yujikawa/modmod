@@ -3,7 +3,7 @@ import EditorTab from './EditorTab'
 import EntitiesTab from './EntitiesTab'
 import SidebarToggle from './SidebarToggle'
 import { useStore } from '../../store/useStore'
-import { Edit3, ListTree, Activity } from 'lucide-react'
+import { Edit3, ListTree } from 'lucide-react'
 
 const Sidebar = () => {
   const { isSidebarOpen, activeTab, setActiveTab, isCliMode } = useStore()
@@ -19,7 +19,7 @@ const Sidebar = () => {
       {/* Header */}
       <div className={`p-4 border-b border-slate-800 flex items-center justify-between ${!isSidebarOpen && 'hidden'}`}>
         <div className="flex items-center gap-2">
-          <Activity size={18} className="text-blue-500" />
+          <img src="/favicon.svg" alt="ModMod Logo" className="w-5 h-5 rounded-md" />
           <h1 className="text-base font-bold text-white tracking-tight">ModMod</h1>
         </div>
         {isCliMode && (

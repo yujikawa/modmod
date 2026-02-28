@@ -1,4 +1,4 @@
-# ModMod (Modeling-Modeler)
+# <img src="./readme_assets/logo.svg" width="32" height="32" align="center" /> ModMod (Modeling-Modeler)
 
 ModMod is a YAML-driven data modeling visualizer. It helps data engineers and architects bridge the gap between conceptual, logical, and physical data models while maintaining sample data "stories".
 

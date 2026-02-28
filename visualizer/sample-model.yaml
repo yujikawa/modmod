@@ -3,7 +3,7 @@ tables:
     name: PROSPECT
     appearance:
       type: dimension
-      icon: ':thump-up:'
+      icon: 🛠️
     conceptual:
       description: Potential customers who haven't registered yet.
       tags:
