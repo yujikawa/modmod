@@ -23,6 +23,7 @@ export function parseYAML(input: string): Schema {
       ...table,
       id: table.id || 'unknown',
       name: table.name || table.id || 'Unnamed Table',
+      appearance: table.appearance || undefined,
       columns: Array.isArray(table.columns) ? table.columns : []
     }))
 

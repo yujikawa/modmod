@@ -3,6 +3,14 @@ import { useStore } from '../store/useStore'
 import { X } from 'lucide-react'
 import SampleDataGrid from './SampleDataGrid'
 
+const TYPE_CONFIG: Record<string, { color: string; icon: string; label: string }> = {
+  fact: { color: '#f87171', icon: '📊', label: 'FACT' },
+  dimension: { color: '#60a5fa', icon: '🏷️', label: 'DIM' },
+  hub: { color: '#fbbf24', icon: '🌐', label: 'HUB' },
+  link: { color: '#34d399', icon: '🔗', label: 'LINK' },
+  satellite: { color: '#a78bfa', icon: '🛰️', label: 'SAT' }
+};
+
 const DetailPanel = () => {
   const { selectedTableId, getSelectedTable, setSelectedTableId } = useStore()
   const table = getSelectedTable()
@@ -19,6 +27,12 @@ const DetailPanel = () => {
 
   const hasColumns = table.columns && table.columns.length > 0;
 
+  // Resolve appearance for DetailPanel header
+  const typeConfig = table.appearance?.type ? TYPE_CONFIG[table.appearance.type] : null;
+  const themeColor = table.appearance?.color || typeConfig?.color || '#334155';
+  const icon = table.appearance?.icon || typeConfig?.icon || '';
+  const typeLabel = typeConfig?.label || '';
+
   return (
     <div 
       className="bg-slate-900 border-t border-slate-800 shadow-2xl z-50 flex flex-col text-slate-100"
@@ -27,7 +41,7 @@ const DetailPanel = () => {
         maxHeight: '400px',
         minHeight: '200px',
         backgroundColor: '#0f172a', 
-        borderTop: '1px solid #1e293b', 
+        borderTop: `2px solid ${themeColor}`, // Reduced from 4px to 2px
         display: 'flex', 
         flexDirection: 'column',
         color: '#f1f5f9',
@@ -37,9 +51,28 @@ const DetailPanel = () => {
     >
       {/* Panel Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 20px', borderBottom: '1px solid #1e293b', backgroundColor: '#020617' }}>
-        <div>
-          <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#ffffff', margin: 0 }}>{table.name}</h2>
-          <p style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', margin: 0 }}>{table.id}</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {icon && <span style={{ fontSize: '18px' }}>{icon}</span>}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#ffffff', margin: 0 }}>{table.name}</h2>
+              {typeLabel && (
+                <span style={{ 
+                  fontSize: '9px', 
+                  fontWeight: 800, 
+                  padding: '1px 5px', 
+                  borderRadius: '3px', 
+                  backgroundColor: `${themeColor}20`, 
+                  color: themeColor,
+                  border: `1px solid ${themeColor}40`,
+                  textTransform: 'uppercase'
+                }}>
+                  {typeLabel}
+                </span>
+              )}
+            </div>
+            <p style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', margin: 0 }}>{table.id}</p>
+          </div>
         </div>
         <button 
           onClick={(e) => {

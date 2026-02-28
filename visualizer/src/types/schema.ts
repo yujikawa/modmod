@@ -16,6 +16,11 @@ export interface Domain {
 export interface Table {
   id: string; // Internal name/key
   name: string; // Display name (Logical name)
+  appearance?: {
+    type?: 'fact' | 'dimension' | 'hub' | 'link' | 'satellite';
+    icon?: string;
+    color?: string;
+  };
   conceptual?: {
     description?: string;
     tags?: string[]; // BEAM* tags (WHO, WHAT, WHEN, etc.)
