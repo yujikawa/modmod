@@ -79,7 +79,7 @@ const Sidebar = () => {
       {isSidebarOpen && (
         <div className="p-3 border-t border-slate-800 bg-slate-950/20">
           <p className="text-[10px] text-slate-500 text-center font-medium">
-            Visualizer v1.0.0
+            Modscape v0.1.0
           </p>
         </div>
       )}
