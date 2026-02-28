@@ -8,12 +8,50 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-export async function startDevServer(yamlFilePath, visualizerPath) {
+function scanFiles(inputPaths) {
+  const modelMap = new Map();
+  inputPaths.forEach(inputPath => {
+    const absolutePath = path.resolve(process.cwd(), inputPath);
+    if (!fs.existsSync(absolutePath)) {
+      console.warn(`  ⚠️ Warning: Path not found: ${inputPath}`);
+      return;
+    }
+
+    const stats = fs.statSync(absolutePath);
+    if (stats.isDirectory()) {
+      const files = fs.readdirSync(absolutePath);
+      files.forEach(file => {
+        if (file.endsWith('.yaml') || file.endsWith('.yml')) {
+          const slug = path.parse(file).name;
+          const fullPath = path.join(absolutePath, file);
+          if (modelMap.has(slug)) {
+            // Collision handling: append folder name
+            const parentName = path.basename(absolutePath);
+            modelMap.set(`${parentName}-${slug}`, fullPath);
+          } else {
+            modelMap.set(slug, fullPath);
+          }
+        }
+      });
+    } else if (stats.isFile() && (inputPath.endsWith('.yaml') || inputPath.endsWith('.yml'))) {
+      const slug = path.parse(absolutePath).name;
+      modelMap.set(slug, absolutePath);
+    }
+  });
+  return modelMap;
+}
+
+export async function startDevServer(paths, visualizerPath) {
   const app = express();
   app.use(express.json());
 
-  const absoluteYamlPath = path.resolve(process.cwd(), yamlFilePath);
+  const modelMap = scanFiles(Array.isArray(paths) ? paths : [paths]);
   const distPath = path.resolve(__dirname, '../visualizer-dist');
+
+  if (modelMap.size === 0) {
+    console.error(`\n  ❌ Error: No YAML files found in the specified paths.`);
+    return;
+  }
 
   if (!fs.existsSync(distPath)) {
     console.error(`\n  ❌ Error: visualizer-dist not found at ${distPath}`);
@@ -21,10 +59,32 @@ export async function startDevServer(yamlFilePath, visualizerPath) {
     return;
   }
 
+  // Helper to get absolute path from model slug
+  const getModelPath = (slug) => {
+    if (slug) return modelMap.get(slug);
+    // If no slug provided, return the first available model
+    return modelMap.values().next().value;
+  };
+
+  // API to list all available models
+  app.get('/api/files', (req, res) => {
+    const files = Array.from(modelMap.entries()).map(([slug, fullPath]) => ({
+      slug,
+      name: slug.charAt(0).toUpperCase() + slug.slice(1).replace(/[-_]/g, ' '),
+      path: path.relative(process.cwd(), fullPath)
+    }));
+    res.json(files);
+  });
+
   // API to get current YAML data
   app.get('/api/model', (req, res) => {
+    const modelPath = getModelPath(req.query.model);
+    if (!modelPath || !fs.existsSync(modelPath)) {
+      return res.status(404).json({ error: 'Model not found' });
+    }
+
     try {
-      const content = fs.readFileSync(absoluteYamlPath, 'utf8');
+      const content = fs.readFileSync(modelPath, 'utf8');
       res.json(yaml.load(content));
     } catch (e) {
       res.status(500).json({ error: e.message });
@@ -33,12 +93,15 @@ export async function startDevServer(yamlFilePath, visualizerPath) {
 
   // API to save layout changes
   app.post('/api/layout', (req, res) => {
+    const modelPath = getModelPath(req.query.model);
+    if (!modelPath) return res.status(404).json({ error: 'Model not found' });
+
     try {
       const layout = req.body;
-      const content = fs.readFileSync(absoluteYamlPath, 'utf8');
+      const content = fs.readFileSync(modelPath, 'utf8');
       const data = yaml.load(content);
       data.layout = layout;
-      fs.writeFileSync(absoluteYamlPath, yaml.dump(data, { indent: 2, lineWidth: -1 }), 'utf8');
+      fs.writeFileSync(modelPath, yaml.dump(data, { indent: 2, lineWidth: -1 }), 'utf8');
       res.json({ success: true });
     } catch (e) {
       res.status(500).json({ error: e.message });
@@ -47,10 +110,13 @@ export async function startDevServer(yamlFilePath, visualizerPath) {
 
   // API to save entire YAML content
   app.post('/api/save-yaml', (req, res) => {
+    const modelPath = getModelPath(req.query.model);
+    if (!modelPath) return res.status(404).json({ error: 'Model not found' });
+
     try {
       const { yaml: yamlContent } = req.body;
       yaml.load(yamlContent);
-      fs.writeFileSync(absoluteYamlPath, yamlContent, 'utf8');
+      fs.writeFileSync(modelPath, yamlContent, 'utf8');
       res.json({ success: true });
     } catch (e) {
       res.status(500).json({ error: e.message });
@@ -64,7 +130,6 @@ export async function startDevServer(yamlFilePath, visualizerPath) {
   app.get('{/*path}', (req, res) => {
     try {
       let html = fs.readFileSync(path.join(distPath, 'index.html'), 'utf8');
-      // Inject the flag here
       html = html.replace(
         '</head>',
         '<script>window.MODMOD_CLI_MODE = true;</script></head>'
@@ -79,11 +144,11 @@ export async function startDevServer(yamlFilePath, visualizerPath) {
   app.listen(port, () => {
     const url = `http://localhost:${port}`;
     console.log(`\n  🚀 ModMod Visualizer running at: ${url}`);
-    console.log(`  Watching: ${absoluteYamlPath}\n`);
+    console.log(`  Watching ${modelMap.size} file(s)`);
     open(url);
   });
 
-  chokidar.watch(absoluteYamlPath).on('change', () => {
-    console.log(`  File changed: ${yamlFilePath}. Please refresh the browser.`);
+  chokidar.watch(Array.from(modelMap.values())).on('change', (changedPath) => {
+    console.log(`  File changed: ${path.relative(process.cwd(), changedPath)}. Please refresh the browser.`);
   });
 }

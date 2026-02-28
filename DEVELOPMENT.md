@@ -5,16 +5,17 @@
 ## 🎨 開発用コマンド
 
 ### ローカル開発サーバーの起動
-モデルファイルを指定して、ビジュアライザを起動します。
+モデルファイルまたはディレクトリを指定して、ビジュアライザを起動します。
 
 ```bash
-# 任意モデルファイルを指定して起動
-npm run dev -- <モデルファイル.yaml>
+# サンプルのディレクトリを指定して起動 (全サンプルを切り替え可能)
+npm run dev -- samples/
 
-# 例: サンプルモデルで起動
-npm run dev -- visualizer/sample-model.yaml
+# 特定のファイルを指定して起動
+npm run dev -- samples/ecommerce.yaml
 ```
 - `npm run dev` の後の `--` は、それ以降の引数をスクリプトに直接渡すために必要です。
+- ディレクトリを指定すると、サイドバーのドロップダウンでファイルを切り替えられます。
 - ブラウザが自動的に開き、モデルの変更（ホットリロード）が反映されます。
 
 ### UI（React/Vite）のビルド
@@ -56,6 +57,7 @@ npm run build-ui
 
 ## 🛠 プロジェクト構造
 - `src/`: CLI（Node.js/Express）のソースコード
+- `samples/`: YAML形式のデータモデルのサンプル集
 - `visualizer/`: フロントエンド（React/Vite/ReactFlow）のソースコード
 - `visualizer-dist/`: ビルド済みのフロントエンド資産（CLIから配布）
 - `openspec/`: OpenSpecによる開発プロセスの管理

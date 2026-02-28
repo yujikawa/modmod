@@ -2,6 +2,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs'
 import EditorTab from './EditorTab'
 import EntitiesTab from './EntitiesTab'
 import SidebarToggle from './SidebarToggle'
+import FileSelector from './FileSelector'
 import { useStore } from '../../store/useStore'
 import { Edit3, ListTree } from 'lucide-react'
 import logo from '/favicon.svg?url' // Use ?url to get the string path
@@ -28,6 +29,11 @@ const Sidebar = () => {
             Live
           </span>
         )}
+      </div>
+
+      {/* Multi-file selector */}
+      <div className="mt-4">
+        {isSidebarOpen && <FileSelector />}
       </div>
 
       {/* Tabs Content */}

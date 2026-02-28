@@ -1,0 +1,89 @@
+tables:
+  - id: users
+    name: USERS
+    appearance:
+      type: dimension
+      icon: "👤"
+    conceptual:
+      description: "App users who can place orders."
+    columns:
+      - id: user_id
+        logical: { name: "USER_ID", type: "UUID", isPrimaryKey: true }
+      - id: email
+        logical: { name: "EMAIL", type: "String" }
+      - id: full_name
+        logical: { name: "FULL_NAME", type: "String" }
+
+  - id: products
+    name: PRODUCTS
+    appearance:
+      type: dimension
+      icon: "📦"
+    conceptual:
+      description: "Items available for sale."
+    columns:
+      - id: product_id
+        logical: { name: "PRODUCT_ID", type: "UUID", isPrimaryKey: true }
+      - id: name
+        logical: { name: "NAME", type: "String" }
+      - id: price
+        logical: { name: "PRICE", type: "Decimal" }
+
+  - id: orders
+    name: ORDERS
+    appearance:
+      type: fact
+      icon: "🛒"
+    conceptual:
+      description: "Customer orders."
+    columns:
+      - id: order_id
+        logical: { name: "ORDER_ID", type: "UUID", isPrimaryKey: true }
+      - id: user_id
+        logical: { name: "USER_ID", type: "UUID", isForeignKey: true }
+      - id: order_date
+        logical: { name: "ORDER_DATE", type: "Timestamp" }
+      - id: status
+        logical: { name: "STATUS", type: "String" }
+
+  - id: order_items
+    name: ORDER_ITEMS
+    appearance:
+      type: fact
+    conceptual:
+      description: "Line items for each order."
+    columns:
+      - id: order_item_id
+        logical: { name: "ORDER_ITEM_ID", type: "UUID", isPrimaryKey: true }
+      - id: order_id
+        logical: { name: "ORDER_ID", type: "UUID", isForeignKey: true }
+      - id: product_id
+        logical: { name: "PRODUCT_ID", type: "UUID", isForeignKey: true }
+      - id: quantity
+        logical: { name: "QUANTITY", type: "Integer" }
+      - id: unit_price
+        logical: { name: "UNIT_PRICE", type: "Decimal" }
+
+relationships:
+  - from: { table: users, column: user_id }
+    to: { table: orders, column: user_id }
+    type: "one-to-many"
+  - from: { table: orders, column: order_id }
+    to: { table: order_items, column: order_id }
+    type: "one-to-many"
+  - from: { table: products, column: product_id }
+    to: { table: order_items, column: product_id }
+    type: "one-to-many"
+
+domains:
+  - id: ecommerce_app
+    name: "E-Commerce App"
+    tables: [users, products, orders, order_items]
+    color: "rgba(34, 197, 94, 0.05)"
+
+layout:
+  ecommerce_app: { x: 50, y: 50, width: 850, height: 600 }
+  users: { x: 50, y: 150 }
+  orders: { x: 350, y: 150 }
+  order_items: { x: 650, y: 150 }
+  products: { x: 650, y: 450 }

@@ -29,10 +29,10 @@ program
 
 program
   .command('dev')
-  .description('Start the development visualizer with a local YAML file')
-  .argument('<yamlFile>', 'path to the YAML model file')
-  .action((yamlFile) => {
-    startDevServer(yamlFile, VISUALIZER_PATH);
+  .description('Start the development visualizer with local YAML files or directories')
+  .argument('<paths...>', 'paths to YAML model files or directories')
+  .action((paths) => {
+    startDevServer(paths, VISUALIZER_PATH);
   });
 
 program

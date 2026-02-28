@@ -64,6 +64,14 @@ layout: # Automatically managed by the visualizer OR updated by AI Agent
   domain_id: { x: 50, y: 50, width: 600, height: 400 }
 ```
 
+## 📁 File Management
+
+For larger projects, it is recommended to **split the model into multiple YAML files by domain** rather than keeping everything in a single file.
+
+-   **Directory Management**: By specifying a directory with `modmod dev models/`, the visualizer will automatically scan and manage all YAML files within that folder.
+-   **Naming Conventions**: The filename (without extension) is used as the "model slug" in the visualizer (e.g., `customer.yaml`, `billing.yaml`).
+-   **Common Structure**: Maintain a consistent `layout` format across all files. AI agents MUST respect the existing `layout` section when making updates.
+
 ## 5. Layout Management
 - **Visualizer Priority**: The GUI handles layout through drag-and-drop, writing to the `layout` section.
 - **AI Agent Responsibility**: When creating new entities or domains, you MUST assign initial coordinates (x, y) to place them logically near related tables. Do NOT leave new entities at (0, 0) or stacked on top of each other.
