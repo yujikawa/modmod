@@ -4,85 +4,146 @@ tables:
     appearance:
       type: fact
     conceptual:
-      description: "Aggregated sales transactions for analysis."
+      description: Aggregated sales transactions for analysis.
     columns:
       - id: sale_id
-        logical: { name: "SALE_ID", type: "Integer", isPrimaryKey: true }
+        logical:
+          name: SALE_ID
+          type: Integer
+          isPrimaryKey: true
       - id: date_id
-        logical: { name: "DATE_ID", type: "Integer", isForeignKey: true }
+        logical:
+          name: DATE_ID
+          type: Integer
+          isForeignKey: true
       - id: product_id
-        logical: { name: "PRODUCT_ID", type: "Integer", isForeignKey: true }
+        logical:
+          name: PRODUCT_ID
+          type: Integer
+          isForeignKey: true
       - id: store_id
-        logical: { name: "STORE_ID", type: "Integer", isForeignKey: true }
+        logical:
+          name: STORE_ID
+          type: Integer
+          isForeignKey: true
       - id: quantity
-        logical: { name: "QUANTITY", type: "Integer" }
+        logical:
+          name: QUANTITY
+          type: Integer
       - id: amount
-        logical: { name: "AMOUNT", type: "Decimal" }
-
+        logical:
+          name: AMOUNT
+          type: Decimal
   - id: dim_date
     name: DIM_DATE
     appearance:
       type: dimension
     conceptual:
-      description: "Time dimension for filtering by day, month, year."
+      description: Time dimension for filtering by day, month, year.
     columns:
       - id: date_id
-        logical: { name: "DATE_ID", type: "Integer", isPrimaryKey: true }
+        logical:
+          name: DATE_ID
+          type: Integer
+          isPrimaryKey: true
       - id: full_date
-        logical: { name: "FULL_DATE", type: "Date" }
+        logical:
+          name: FULL_DATE
+          type: Date
       - id: day_of_week
-        logical: { name: "DAY_OF_WEEK", type: "String" }
+        logical:
+          name: DAY_OF_WEEK
+          type: String
       - id: month
-        logical: { name: "MONTH", type: "Integer" }
-
+        logical:
+          name: MONTH
+          type: Integer
   - id: dim_product
     name: DIM_PRODUCT
     appearance:
       type: dimension
     conceptual:
-      description: "Master data for products."
+      description: Master data for products.
     columns:
       - id: product_id
-        logical: { name: "PRODUCT_ID", type: "Integer", isPrimaryKey: true }
+        logical:
+          name: PRODUCT_ID
+          type: Integer
+          isPrimaryKey: true
       - id: product_name
-        logical: { name: "PRODUCT_NAME", type: "String" }
+        logical:
+          name: PRODUCT_NAME
+          type: String
       - id: category
-        logical: { name: "CATEGORY", type: "String" }
-
+        logical:
+          name: CATEGORY
+          type: String
   - id: dim_store
     name: DIM_STORE
     appearance:
       type: dimension
     conceptual:
-      description: "Physical store locations."
+      description: Physical store locations.
     columns:
       - id: store_id
-        logical: { name: "STORE_ID", type: "Integer", isPrimaryKey: true }
+        logical:
+          name: STORE_ID
+          type: Integer
+          isPrimaryKey: true
       - id: store_name
-        logical: { name: "STORE_NAME", type: "String" }
+        logical:
+          name: STORE_NAME
+          type: String
       - id: city
-        logical: { name: "CITY", type: "String" }
-
+        logical:
+          name: CITY
+          type: String
 relationships:
-  - from: { table: dim_date, column: date_id }
-    to: { table: fact_sales, column: date_id }
-    type: "one-to-many"
-  - from: { table: dim_product, column: product_id }
-    to: { table: fact_sales, column: product_id }
-    type: "one-to-many"
-  - from: { table: dim_store, column: store_id }
-    to: { table: fact_sales, column: store_id }
-    type: "one-to-many"
-
+  - from:
+      table: dim_date
+      column: date_id
+    to:
+      table: fact_sales
+      column: date_id
+    type: one-to-many
+  - from:
+      table: dim_product
+      column: product_id
+    to:
+      table: fact_sales
+      column: product_id
+    type: one-to-many
+  - from:
+      table: dim_store
+      column: store_id
+    to:
+      table: fact_sales
+      column: store_id
+    type: one-to-many
 domains:
   - id: star_schema
-    name: "Sales Star Schema"
-    tables: [fact_sales, dim_date, dim_product, dim_store]
-    color: "rgba(239, 68, 68, 0.05)"
-
+    name: Sales Star Schema
+    tables:
+      - fact_sales
+      - dim_date
+      - dim_product
+      - dim_store
+    color: rgba(239, 68, 68, 0.05)
 layout:
-  star_schema: { x: 50, y: 50, width: 850, height: 600 }
-  fact_sales: { x: 350, y: 200 }
-  dim_date: { x: 50, y: 50 }
-  dim_product: { x: 50, y: 400 }
-  dim_store: { x: 650, y: 200 }
+  star_schema:
+    x: 50
+    'y': 50
+    width: 850
+    height: 600
+  fact_sales:
+    x: 350
+    'y': 200
+  dim_date:
+    x: 50
+    'y': 50
+  dim_product:
+    x: 50
+    'y': 400
+  dim_store:
+    x: 630
+    'y': 54

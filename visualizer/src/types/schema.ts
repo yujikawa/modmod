@@ -38,6 +38,7 @@ export interface Column {
     description?: string;
     isPrimaryKey?: boolean;
     isForeignKey?: boolean;
+    isPartitionKey?: boolean;
   };
   physical?: { // Optional
     name?: string;

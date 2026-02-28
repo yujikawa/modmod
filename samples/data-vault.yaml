@@ -21,9 +21,9 @@ tables:
       description: "Customer descriptive data from CRM system."
     columns:
       - id: hk_customer
-        logical: { name: "HK_CUSTOMER", type: "Binary", isForeignKey: true }
+        logical: { name: "HK_CUSTOMER", type: "Binary", isPrimaryKey: true }
       - id: load_date
-        logical: { name: "LOAD_DATE", type: "Timestamp", isPrimaryKey: true }
+        logical: { name: "LOAD_DATE", type: "Timestamp", isPrimaryKey: true, isPartitionKey: true }
       - id: hash_diff
         logical: { name: "HASH_DIFF", type: "Binary" }
       - id: first_name
