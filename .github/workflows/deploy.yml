@@ -27,8 +27,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # Note: We assume visualizer-dist is NOT in git (ignored).
-      # If it is in git, you can skip build-ui.
+      - name: Build UI
+        run: npm run build-ui
 
       - name: Build Static Site
         run: |
