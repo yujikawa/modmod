@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { startDevServer } from './dev.js';
 import { build } from './build.js';
 import { initProject } from './init.js';
+import { exportModel } from './export.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const VISUALIZER_PATH = path.resolve(__dirname, '../visualizer');
@@ -14,7 +15,7 @@ const program = new Command();
 program
   .name('modscape')
   .description('A YAML-driven data modeling visualizer CLI')
-  .version('0.1.2');
+  .version('0.2.0');
 
 program
   .command('init')
@@ -42,6 +43,15 @@ program
   .option('-o, --output <dir>', 'output directory', 'dist')
   .action((paths, options) => {
     build(paths, VISUALIZER_PATH, options.output);
+  });
+
+program
+  .command('export')
+  .description('Export YAML models to Mermaid-compatible Markdown documentation')
+  .argument('<paths...>', 'paths to YAML model files or directories')
+  .option('-o, --output <path>', 'output file or directory')
+  .action((paths, options) => {
+    exportModel(paths, options);
   });
 
 program.parse();

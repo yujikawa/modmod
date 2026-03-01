@@ -17,6 +17,7 @@ Modscape is a YAML-driven data modeling visualizer. It helps data engineers and 
 - **Sample Data "Stories"**: Attach sample data to entities to explain the data's purpose.
 - **Interactive Layout**: Arrange entities via drag-and-drop; positions are saved directly back to your YAML.
 - **Multi-file Support**: Manage multiple models in a single directory and switch between them seamlessly.
+- **Documentation Export**: Generate Mermaid-compatible Markdown documentation including ER diagrams and domain catalogs.
 - **AI-Agent Ready**: Scaffolding for Gemini, Claude, and Codex to help you model via AI.
 
 ## Installation
@@ -122,6 +123,17 @@ Generate a standalone static website to share your documentation (perfect for Gi
 
 ```bash
 modscape build models/ -o dist-site
+```
+
+### Export Mode (Static Documentation)
+Generate a comprehensive Markdown document with embedded Mermaid diagrams.
+
+```bash
+# Print to stdout
+modscape export models/ecommerce.yaml
+
+# Save to a file
+modscape export models/ -o docs/
 ```
 
 ## AI Agent Integration
