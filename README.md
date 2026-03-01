@@ -27,44 +27,47 @@ Install Modscape globally via npm:
 npm install -g modscape
 ```
 
-## Quick Start in 3 Steps
+---
 
-### 1. Initialize your project
-Create the necessary configuration and modeling rules for your project (and AI agents).
+## Getting Started
 
-```bash
-modscape init
-```
+Choose the path that fits your workflow.
 
-### 2. Explore Samples
-Try Modscape immediately using the built-in sample models.
+### Path A: AI-Driven Modeling (Recommended)
+Best if you use AI coding assistants (Gemini CLI, Claude Code, Cursor/Codex).
 
-```bash
-# Clone the repo or download the samples directory to try this:
-modscape dev samples/
-```
+1.  **Initialize**: Scaffold modeling rules and AI agent instructions.
+    ```bash
+    modscape init
+    ```
+2.  **Start Dev**: Launch the visualizer on your model.
+    ```bash
+    modscape dev model.yaml
+    ```
+3.  **Prompt Your AI**: Tell your agent to use the rules in `.modscape/rules.md` to add tables or columns to your `model.yaml`.
 
-### 3. Start Modeling
-Create a `model.yaml` and launch the interactive visualizer.
+### Path B: Manual Modeling
+Best for direct YAML editing and architectural control.
 
-```bash
-modscape dev model.yaml
-```
+1.  **Create YAML**: Create a file named `model.yaml` (see [Defining Your Model](#defining-your-model-yaml)).
+2.  **Start Dev**: Launch the visualizer.
+    ```bash
+    modscape dev model.yaml
+    ```
+3.  **Explore Samples**: Try it out with our built-in samples:
+    ```bash
+    # Clone the repo or download the samples directory
+    modscape dev samples/
+    ```
+
+---
 
 ## Defining Your Model (YAML)
 
 Modscape uses a human-readable YAML schema. While you can write it manually, we **highly recommend using an AI coding assistant** (like Gemini, Claude, or Cursor) to handle the boilerplate.
 
-### Option A: AI-Assisted Modeling (Recommended)
-After running `modscape init`, you can use the generated rules to "talk" to your model.
-
-1.  **Open your AI agent.**
-2.  **Point it to `.modscape/rules.md`.**
-3.  **Give a prompt:**
-    > "Based on the rules in `.modscape/rules.md`, add a `payments` table to `model.yaml` with columns for `amount` and `status`. Connect it to the `orders` table."
-
-### Option B: Manual Definition
-If you prefer to write YAML by hand, here is the basic structure:
+### Manual Definition Reference
+Here is the basic structure for your `model.yaml`:
 
 ```yaml
 tables:
@@ -95,6 +98,8 @@ tables:
   - `hub` / `link` / `satellite`: For Data Vault 2.0 modeling.
 - **IDs**: Use lowercase, snake_case for `id` fields (used for internal linking).
 - **Layout**: Don't worry about the `layout:` section. Modscape will automatically add and update coordinates when you drag entities in the browser.
+
+---
 
 ## Usage
 
