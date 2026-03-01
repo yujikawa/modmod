@@ -1,0 +1,48 @@
+name: PR Build Check
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'visualizer/**'
+      - 'samples/**'
+      - 'package.json'
+      - '.github/workflows/**'
+
+jobs:
+  build-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm install
+          cd visualizer && npm install
+
+      - name: UI Type Check
+        run: |
+          cd visualizer && npm run build
+
+      - name: CLI Build UI
+        run: npm run build-ui
+
+      - name: Test Static Site Build
+        run: |
+          # Verify that the build command works with actual samples
+          node src/index.js build samples/ -o test-dist
+          # Basic check to ensure index.html was generated
+          if [ ! -f "test-dist/index.html" ]; then
+            echo "Error: index.html not found in build output"
+            exit 1
+          fi
+          echo "Success: Static site build verified"
