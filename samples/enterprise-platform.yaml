@@ -1,0 +1,160 @@
+domains:
+  - id: sales_domain
+    name: Sales & Orders
+    color: '#3b82f6'
+    tables:
+      - orders
+      - order_items
+      - payments
+      - shipments
+      - invoices
+      - returns
+  - id: catalog_domain
+    name: Product Catalog
+    color: '#10b981'
+    tables:
+      - products
+      - categories
+      - inventory
+      - suppliers
+      - product_reviews
+  - id: identity_domain
+    name: Identity & Access
+    color: '#f59e0b'
+    tables:
+      - users
+      - profiles
+      - roles
+      - permissions
+tables:
+  - id: orders
+    name: Orders
+    columns:
+      - id: id
+      - id: user_id
+      - id: status
+  - id: order_items
+    name: Order Items
+    columns:
+      - id: id
+      - id: order_id
+      - id: product_id
+      - id: quantity
+  - id: payments
+    name: Payments
+    columns:
+      - id: id
+      - id: order_id
+      - id: amount
+  - id: shipments
+    name: Shipments
+    columns:
+      - id: id
+      - id: order_id
+      - id: carrier
+  - id: invoices
+    name: Invoices
+    columns:
+      - id: id
+      - id: order_id
+  - id: returns
+    name: Returns
+    columns:
+      - id: id
+      - id: order_id
+  - id: products
+    name: Products
+    columns:
+      - id: id
+      - id: name
+      - id: price
+  - id: categories
+    name: Categories
+    columns:
+      - id: id
+      - id: name
+  - id: inventory
+    name: Inventory
+    columns:
+      - id: id
+      - id: product_id
+      - id: quantity
+  - id: suppliers
+    name: Suppliers
+    columns:
+      - id: id
+      - id: name
+  - id: product_reviews
+    name: Product Reviews
+    columns:
+      - id: id
+      - id: product_id
+      - id: rating
+  - id: users
+    name: Users
+    columns:
+      - id: id
+      - id: email
+  - id: profiles
+    name: Profiles
+    columns:
+      - id: id
+      - id: user_id
+      - id: bio
+  - id: roles
+    name: Roles
+    columns:
+      - id: id
+      - id: name
+  - id: permissions
+    name: Permissions
+    columns:
+      - id: id
+      - id: name
+relationships:
+  - from:
+      table: orders
+      column: user_id
+    to:
+      table: users
+      column: id
+  - from:
+      table: order_items
+      column: order_id
+    to:
+      table: orders
+      column: id
+  - from:
+      table: order_items
+      column: product_id
+    to:
+      table: products
+      column: id
+  - from:
+      table: payments
+      column: order_id
+    to:
+      table: orders
+      column: id
+  - from:
+      table: profiles
+      column: user_id
+    to:
+      table: users
+      column: id
+  - from:
+      table: inventory
+      column: product_id
+    to:
+      table: products
+      column: id
+layout:
+  identity_domain:
+    x: -340
+    'y': 500
+  catalog_domain:
+    x: -375
+    'y': -343
+  sales_domain:
+    x: 1145
+    'y': -23

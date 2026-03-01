@@ -5,6 +5,12 @@ import { useStore } from '../store/useStore'
 const DomainNode = ({ id, data, selected }: NodeProps) => {
   const { updateNodeDimensions, saveLayout } = useStore()
 
+  const color = data.color || '#1e293b';
+  // If the color string seems to already have an alpha channel (rgba, hsla, or #RRGGBBAA), 
+  // we use opacity 1 to respect it. Otherwise, we apply 0.5 as the default.
+  const hasAlpha = color.startsWith('rgba') || color.startsWith('hsla') || (color.startsWith('#') && color.length > 7);
+  const opacity = hasAlpha ? 1 : 0.5;
+
   const onResizeEnd = (_: any, params: { width: number; height: number }) => {
     updateNodeDimensions(id, params.width, params.height)
     saveLayout()
@@ -15,7 +21,6 @@ const DomainNode = ({ id, data, selected }: NodeProps) => {
       style={{
         width: '100%',
         height: '100%',
-        backgroundColor: data.color || 'rgba(30, 41, 59, 0.1)',
         border: `2px dashed ${selected ? '#3b82f6' : '#334155'}`,
         borderRadius: '12px',
         padding: '10px',
@@ -24,6 +29,17 @@ const DomainNode = ({ id, data, selected }: NodeProps) => {
         pointerEvents: 'none', 
       }}
     >
+      {/* Semi-transparent Background Layer */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundColor: color,
+          opacity: opacity,
+          borderRadius: '10px',
+          zIndex: -1,
+        }}
+      />
       <NodeResizer
         color="#3b82f6"
         isVisible={selected}
