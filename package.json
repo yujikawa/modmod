@@ -1,7 +1,11 @@
 {
   "name": "modscape",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Modscape: A YAML-driven data modeling visualizer CLI",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yujikawa/modscape.git"
+  },
   "type": "module",
   "bin": {
     "modscape": "./src/index.js"
