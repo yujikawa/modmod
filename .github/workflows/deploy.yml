@@ -1,9 +1,15 @@
-name: Deploy ModMod Visualizer
+name: Deploy Demo to GitHub Pages
 
 on:
   push:
     branches:
       - main
+    paths:
+      - 'src/**'
+      - 'visualizer/**'
+      - 'samples/**'
+      - 'package.json'
+      - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
 permissions:
@@ -34,7 +40,6 @@ jobs:
 
       - name: Build Static Site
         run: |
-          # Use the CLI to package all models in the samples directory
           node src/index.js build samples/ -o dist-site
 
       - name: Setup Pages
