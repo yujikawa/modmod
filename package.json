@@ -1,6 +1,6 @@
 {
   "name": "modscape",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Modscape: A YAML-driven data modeling visualizer CLI",
   "repository": {
     "type": "git",

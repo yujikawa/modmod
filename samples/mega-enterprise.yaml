@@ -1,0 +1,2027 @@
+domains:
+  - id: identity_domain
+    name: Identity Ecosystem
+    tables:
+      - identity_table_0
+      - identity_table_1
+      - identity_table_2
+      - identity_table_3
+      - identity_table_4
+      - identity_table_5
+      - identity_table_6
+      - identity_table_7
+      - identity_table_8
+      - identity_table_9
+      - identity_table_10
+      - identity_table_11
+    color: hsl(0, 70%, 40%)
+  - id: sales_domain
+    name: Sales Ecosystem
+    tables:
+      - sales_table_0
+      - sales_table_1
+      - sales_table_2
+      - sales_table_3
+      - sales_table_4
+      - sales_table_5
+      - sales_table_6
+      - sales_table_7
+      - sales_table_8
+      - sales_table_9
+      - sales_table_10
+      - sales_table_11
+    color: hsl(36, 70%, 40%)
+  - id: inventory_domain
+    name: Inventory Ecosystem
+    tables:
+      - inventory_table_0
+      - inventory_table_1
+      - inventory_table_2
+      - inventory_table_3
+      - inventory_table_4
+      - inventory_table_5
+      - inventory_table_6
+      - inventory_table_7
+      - inventory_table_8
+      - inventory_table_9
+      - inventory_table_10
+      - inventory_table_11
+    color: hsl(72, 70%, 40%)
+  - id: support_domain
+    name: Support Ecosystem
+    tables:
+      - support_table_0
+      - support_table_1
+      - support_table_2
+      - support_table_3
+      - support_table_4
+      - support_table_5
+      - support_table_6
+      - support_table_7
+      - support_table_8
+      - support_table_9
+      - support_table_10
+      - support_table_11
+    color: hsl(108, 70%, 40%)
+  - id: marketing_domain
+    name: Marketing Ecosystem
+    tables:
+      - marketing_table_0
+      - marketing_table_1
+      - marketing_table_2
+      - marketing_table_3
+      - marketing_table_4
+      - marketing_table_5
+      - marketing_table_6
+      - marketing_table_7
+      - marketing_table_8
+      - marketing_table_9
+      - marketing_table_10
+      - marketing_table_11
+    color: hsl(144, 70%, 40%)
+  - id: logistics_domain
+    name: Logistics Ecosystem
+    tables:
+      - logistics_table_0
+      - logistics_table_1
+      - logistics_table_2
+      - logistics_table_3
+      - logistics_table_4
+      - logistics_table_5
+      - logistics_table_6
+      - logistics_table_7
+      - logistics_table_8
+      - logistics_table_9
+      - logistics_table_10
+      - logistics_table_11
+    color: hsl(180, 70%, 40%)
+  - id: finance_domain
+    name: Finance Ecosystem
+    tables:
+      - finance_table_0
+      - finance_table_1
+      - finance_table_2
+      - finance_table_3
+      - finance_table_4
+      - finance_table_5
+      - finance_table_6
+      - finance_table_7
+      - finance_table_8
+      - finance_table_9
+      - finance_table_10
+      - finance_table_11
+    color: hsl(216, 70%, 40%)
+  - id: analytics_domain
+    name: Analytics Ecosystem
+    tables:
+      - analytics_table_0
+      - analytics_table_1
+      - analytics_table_2
+      - analytics_table_3
+      - analytics_table_4
+      - analytics_table_5
+      - analytics_table_6
+      - analytics_table_7
+      - analytics_table_8
+      - analytics_table_9
+      - analytics_table_10
+      - analytics_table_11
+    color: hsl(252, 70%, 40%)
+  - id: hr_domain
+    name: HR Ecosystem
+    tables:
+      - hr_table_0
+      - hr_table_1
+      - hr_table_2
+      - hr_table_3
+      - hr_table_4
+      - hr_table_5
+      - hr_table_6
+      - hr_table_7
+      - hr_table_8
+      - hr_table_9
+      - hr_table_10
+      - hr_table_11
+    color: hsl(288, 70%, 40%)
+  - id: external_domain
+    name: External Ecosystem
+    tables:
+      - external_table_0
+      - external_table_1
+      - external_table_2
+      - external_table_3
+      - external_table_4
+      - external_table_5
+      - external_table_6
+      - external_table_7
+      - external_table_8
+      - external_table_9
+      - external_table_10
+      - external_table_11
+    color: hsl(324, 70%, 40%)
+tables:
+  - id: identity_table_0
+    name: Identity Entity 0
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: identity_table_1
+    name: Identity Entity 1
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: identity_table_2
+    name: Identity Entity 2
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: identity_table_3
+    name: Identity Entity 3
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: identity_table_4
+    name: Identity Entity 4
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: identity_table_5
+    name: Identity Entity 5
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: identity_table_6
+    name: Identity Entity 6
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: identity_table_7
+    name: Identity Entity 7
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: identity_table_8
+    name: Identity Entity 8
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: identity_table_9
+    name: Identity Entity 9
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: identity_table_10
+    name: Identity Entity 10
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: identity_table_11
+    name: Identity Entity 11
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: sales_table_0
+    name: Sales Entity 0
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: sales_table_1
+    name: Sales Entity 1
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: sales_table_2
+    name: Sales Entity 2
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: sales_table_3
+    name: Sales Entity 3
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: sales_table_4
+    name: Sales Entity 4
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: sales_table_5
+    name: Sales Entity 5
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: sales_table_6
+    name: Sales Entity 6
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: sales_table_7
+    name: Sales Entity 7
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: sales_table_8
+    name: Sales Entity 8
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: sales_table_9
+    name: Sales Entity 9
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: sales_table_10
+    name: Sales Entity 10
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: sales_table_11
+    name: Sales Entity 11
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: inventory_table_0
+    name: Inventory Entity 0
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: inventory_table_1
+    name: Inventory Entity 1
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: inventory_table_2
+    name: Inventory Entity 2
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: inventory_table_3
+    name: Inventory Entity 3
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: inventory_table_4
+    name: Inventory Entity 4
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: inventory_table_5
+    name: Inventory Entity 5
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: inventory_table_6
+    name: Inventory Entity 6
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: inventory_table_7
+    name: Inventory Entity 7
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: inventory_table_8
+    name: Inventory Entity 8
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: inventory_table_9
+    name: Inventory Entity 9
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: inventory_table_10
+    name: Inventory Entity 10
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: inventory_table_11
+    name: Inventory Entity 11
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: support_table_0
+    name: Support Entity 0
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: support_table_1
+    name: Support Entity 1
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: support_table_2
+    name: Support Entity 2
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: support_table_3
+    name: Support Entity 3
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: support_table_4
+    name: Support Entity 4
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: support_table_5
+    name: Support Entity 5
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: support_table_6
+    name: Support Entity 6
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: support_table_7
+    name: Support Entity 7
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: support_table_8
+    name: Support Entity 8
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: support_table_9
+    name: Support Entity 9
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: support_table_10
+    name: Support Entity 10
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: support_table_11
+    name: Support Entity 11
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: marketing_table_0
+    name: Marketing Entity 0
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: marketing_table_1
+    name: Marketing Entity 1
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: marketing_table_2
+    name: Marketing Entity 2
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: marketing_table_3
+    name: Marketing Entity 3
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: marketing_table_4
+    name: Marketing Entity 4
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: marketing_table_5
+    name: Marketing Entity 5
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: marketing_table_6
+    name: Marketing Entity 6
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: marketing_table_7
+    name: Marketing Entity 7
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: marketing_table_8
+    name: Marketing Entity 8
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: marketing_table_9
+    name: Marketing Entity 9
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: marketing_table_10
+    name: Marketing Entity 10
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: marketing_table_11
+    name: Marketing Entity 11
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: logistics_table_0
+    name: Logistics Entity 0
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: logistics_table_1
+    name: Logistics Entity 1
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: logistics_table_2
+    name: Logistics Entity 2
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: logistics_table_3
+    name: Logistics Entity 3
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: logistics_table_4
+    name: Logistics Entity 4
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: logistics_table_5
+    name: Logistics Entity 5
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: logistics_table_6
+    name: Logistics Entity 6
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: logistics_table_7
+    name: Logistics Entity 7
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: logistics_table_8
+    name: Logistics Entity 8
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: logistics_table_9
+    name: Logistics Entity 9
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: logistics_table_10
+    name: Logistics Entity 10
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: logistics_table_11
+    name: Logistics Entity 11
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: finance_table_0
+    name: Finance Entity 0
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: finance_table_1
+    name: Finance Entity 1
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: finance_table_2
+    name: Finance Entity 2
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: finance_table_3
+    name: Finance Entity 3
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: finance_table_4
+    name: Finance Entity 4
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: finance_table_5
+    name: Finance Entity 5
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: finance_table_6
+    name: Finance Entity 6
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: finance_table_7
+    name: Finance Entity 7
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: finance_table_8
+    name: Finance Entity 8
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: finance_table_9
+    name: Finance Entity 9
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: finance_table_10
+    name: Finance Entity 10
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: finance_table_11
+    name: Finance Entity 11
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: analytics_table_0
+    name: Analytics Entity 0
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: analytics_table_1
+    name: Analytics Entity 1
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: analytics_table_2
+    name: Analytics Entity 2
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: analytics_table_3
+    name: Analytics Entity 3
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: analytics_table_4
+    name: Analytics Entity 4
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: analytics_table_5
+    name: Analytics Entity 5
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: analytics_table_6
+    name: Analytics Entity 6
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: analytics_table_7
+    name: Analytics Entity 7
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: analytics_table_8
+    name: Analytics Entity 8
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: analytics_table_9
+    name: Analytics Entity 9
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: analytics_table_10
+    name: Analytics Entity 10
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: analytics_table_11
+    name: Analytics Entity 11
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: hr_table_0
+    name: HR Entity 0
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: hr_table_1
+    name: HR Entity 1
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: hr_table_2
+    name: HR Entity 2
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: hr_table_3
+    name: HR Entity 3
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: hr_table_4
+    name: HR Entity 4
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: hr_table_5
+    name: HR Entity 5
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: hr_table_6
+    name: HR Entity 6
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: hr_table_7
+    name: HR Entity 7
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: hr_table_8
+    name: HR Entity 8
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: hr_table_9
+    name: HR Entity 9
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: hr_table_10
+    name: HR Entity 10
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: hr_table_11
+    name: HR Entity 11
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: external_table_0
+    name: External Entity 0
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: external_table_1
+    name: External Entity 1
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: external_table_2
+    name: External Entity 2
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: external_table_3
+    name: External Entity 3
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: external_table_4
+    name: External Entity 4
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: external_table_5
+    name: External Entity 5
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: external_table_6
+    name: External Entity 6
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: external_table_7
+    name: External Entity 7
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: external_table_8
+    name: External Entity 8
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: external_table_9
+    name: External Entity 9
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: external_table_10
+    name: External Entity 10
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+  - id: external_table_11
+    name: External Entity 11
+    columns:
+      - id: id
+      - id: attr_0
+      - id: attr_1
+      - id: attr_2
+      - id: attr_3
+      - id: attr_4
+relationships:
+  - from:
+      table: identity_table_1
+      column: id
+    to:
+      table: identity_table_0
+      column: id
+  - from:
+      table: identity_table_2
+      column: id
+    to:
+      table: identity_table_1
+      column: id
+  - from:
+      table: identity_table_3
+      column: id
+    to:
+      table: identity_table_2
+      column: id
+  - from:
+      table: identity_table_4
+      column: id
+    to:
+      table: identity_table_3
+      column: id
+  - from:
+      table: identity_table_5
+      column: id
+    to:
+      table: identity_table_4
+      column: id
+  - from:
+      table: identity_table_6
+      column: id
+    to:
+      table: identity_table_5
+      column: id
+  - from:
+      table: identity_table_7
+      column: id
+    to:
+      table: identity_table_6
+      column: id
+  - from:
+      table: identity_table_8
+      column: id
+    to:
+      table: identity_table_7
+      column: id
+  - from:
+      table: identity_table_9
+      column: id
+    to:
+      table: identity_table_8
+      column: id
+  - from:
+      table: identity_table_10
+      column: id
+    to:
+      table: identity_table_9
+      column: id
+  - from:
+      table: identity_table_11
+      column: id
+    to:
+      table: identity_table_10
+      column: id
+  - from:
+      table: sales_table_1
+      column: id
+    to:
+      table: sales_table_0
+      column: id
+  - from:
+      table: sales_table_2
+      column: id
+    to:
+      table: sales_table_1
+      column: id
+  - from:
+      table: sales_table_3
+      column: id
+    to:
+      table: sales_table_2
+      column: id
+  - from:
+      table: sales_table_4
+      column: id
+    to:
+      table: sales_table_3
+      column: id
+  - from:
+      table: sales_table_5
+      column: id
+    to:
+      table: sales_table_4
+      column: id
+  - from:
+      table: sales_table_6
+      column: id
+    to:
+      table: sales_table_5
+      column: id
+  - from:
+      table: sales_table_7
+      column: id
+    to:
+      table: sales_table_6
+      column: id
+  - from:
+      table: sales_table_8
+      column: id
+    to:
+      table: sales_table_7
+      column: id
+  - from:
+      table: sales_table_9
+      column: id
+    to:
+      table: sales_table_8
+      column: id
+  - from:
+      table: sales_table_10
+      column: id
+    to:
+      table: sales_table_9
+      column: id
+  - from:
+      table: sales_table_11
+      column: id
+    to:
+      table: sales_table_10
+      column: id
+  - from:
+      table: inventory_table_1
+      column: id
+    to:
+      table: inventory_table_0
+      column: id
+  - from:
+      table: inventory_table_2
+      column: id
+    to:
+      table: inventory_table_1
+      column: id
+  - from:
+      table: inventory_table_3
+      column: id
+    to:
+      table: inventory_table_2
+      column: id
+  - from:
+      table: inventory_table_4
+      column: id
+    to:
+      table: inventory_table_3
+      column: id
+  - from:
+      table: inventory_table_5
+      column: id
+    to:
+      table: inventory_table_4
+      column: id
+  - from:
+      table: inventory_table_6
+      column: id
+    to:
+      table: inventory_table_5
+      column: id
+  - from:
+      table: inventory_table_7
+      column: id
+    to:
+      table: inventory_table_6
+      column: id
+  - from:
+      table: inventory_table_8
+      column: id
+    to:
+      table: inventory_table_7
+      column: id
+  - from:
+      table: inventory_table_9
+      column: id
+    to:
+      table: inventory_table_8
+      column: id
+  - from:
+      table: inventory_table_10
+      column: id
+    to:
+      table: inventory_table_9
+      column: id
+  - from:
+      table: inventory_table_11
+      column: id
+    to:
+      table: inventory_table_10
+      column: id
+  - from:
+      table: support_table_1
+      column: id
+    to:
+      table: support_table_0
+      column: id
+  - from:
+      table: support_table_2
+      column: id
+    to:
+      table: support_table_1
+      column: id
+  - from:
+      table: support_table_3
+      column: id
+    to:
+      table: support_table_2
+      column: id
+  - from:
+      table: support_table_4
+      column: id
+    to:
+      table: support_table_3
+      column: id
+  - from:
+      table: support_table_5
+      column: id
+    to:
+      table: support_table_4
+      column: id
+  - from:
+      table: support_table_6
+      column: id
+    to:
+      table: support_table_5
+      column: id
+  - from:
+      table: support_table_7
+      column: id
+    to:
+      table: support_table_6
+      column: id
+  - from:
+      table: support_table_8
+      column: id
+    to:
+      table: support_table_7
+      column: id
+  - from:
+      table: support_table_9
+      column: id
+    to:
+      table: support_table_8
+      column: id
+  - from:
+      table: support_table_10
+      column: id
+    to:
+      table: support_table_9
+      column: id
+  - from:
+      table: support_table_11
+      column: id
+    to:
+      table: support_table_10
+      column: id
+  - from:
+      table: marketing_table_1
+      column: id
+    to:
+      table: marketing_table_0
+      column: id
+  - from:
+      table: marketing_table_2
+      column: id
+    to:
+      table: marketing_table_1
+      column: id
+  - from:
+      table: marketing_table_3
+      column: id
+    to:
+      table: marketing_table_2
+      column: id
+  - from:
+      table: marketing_table_4
+      column: id
+    to:
+      table: marketing_table_3
+      column: id
+  - from:
+      table: marketing_table_5
+      column: id
+    to:
+      table: marketing_table_4
+      column: id
+  - from:
+      table: marketing_table_6
+      column: id
+    to:
+      table: marketing_table_5
+      column: id
+  - from:
+      table: marketing_table_7
+      column: id
+    to:
+      table: marketing_table_6
+      column: id
+  - from:
+      table: marketing_table_8
+      column: id
+    to:
+      table: marketing_table_7
+      column: id
+  - from:
+      table: marketing_table_9
+      column: id
+    to:
+      table: marketing_table_8
+      column: id
+  - from:
+      table: marketing_table_10
+      column: id
+    to:
+      table: marketing_table_9
+      column: id
+  - from:
+      table: marketing_table_11
+      column: id
+    to:
+      table: marketing_table_10
+      column: id
+  - from:
+      table: logistics_table_1
+      column: id
+    to:
+      table: logistics_table_0
+      column: id
+  - from:
+      table: logistics_table_2
+      column: id
+    to:
+      table: logistics_table_1
+      column: id
+  - from:
+      table: logistics_table_3
+      column: id
+    to:
+      table: logistics_table_2
+      column: id
+  - from:
+      table: logistics_table_4
+      column: id
+    to:
+      table: logistics_table_3
+      column: id
+  - from:
+      table: logistics_table_5
+      column: id
+    to:
+      table: logistics_table_4
+      column: id
+  - from:
+      table: logistics_table_6
+      column: id
+    to:
+      table: logistics_table_5
+      column: id
+  - from:
+      table: logistics_table_7
+      column: id
+    to:
+      table: logistics_table_6
+      column: id
+  - from:
+      table: logistics_table_8
+      column: id
+    to:
+      table: logistics_table_7
+      column: id
+  - from:
+      table: logistics_table_9
+      column: id
+    to:
+      table: logistics_table_8
+      column: id
+  - from:
+      table: logistics_table_10
+      column: id
+    to:
+      table: logistics_table_9
+      column: id
+  - from:
+      table: logistics_table_11
+      column: id
+    to:
+      table: logistics_table_10
+      column: id
+  - from:
+      table: finance_table_1
+      column: id
+    to:
+      table: finance_table_0
+      column: id
+  - from:
+      table: finance_table_2
+      column: id
+    to:
+      table: finance_table_1
+      column: id
+  - from:
+      table: finance_table_3
+      column: id
+    to:
+      table: finance_table_2
+      column: id
+  - from:
+      table: finance_table_4
+      column: id
+    to:
+      table: finance_table_3
+      column: id
+  - from:
+      table: finance_table_5
+      column: id
+    to:
+      table: finance_table_4
+      column: id
+  - from:
+      table: finance_table_6
+      column: id
+    to:
+      table: finance_table_5
+      column: id
+  - from:
+      table: finance_table_7
+      column: id
+    to:
+      table: finance_table_6
+      column: id
+  - from:
+      table: finance_table_8
+      column: id
+    to:
+      table: finance_table_7
+      column: id
+  - from:
+      table: finance_table_9
+      column: id
+    to:
+      table: finance_table_8
+      column: id
+  - from:
+      table: finance_table_10
+      column: id
+    to:
+      table: finance_table_9
+      column: id
+  - from:
+      table: finance_table_11
+      column: id
+    to:
+      table: finance_table_10
+      column: id
+  - from:
+      table: analytics_table_1
+      column: id
+    to:
+      table: analytics_table_0
+      column: id
+  - from:
+      table: analytics_table_2
+      column: id
+    to:
+      table: analytics_table_1
+      column: id
+  - from:
+      table: analytics_table_3
+      column: id
+    to:
+      table: analytics_table_2
+      column: id
+  - from:
+      table: analytics_table_4
+      column: id
+    to:
+      table: analytics_table_3
+      column: id
+  - from:
+      table: analytics_table_5
+      column: id
+    to:
+      table: analytics_table_4
+      column: id
+  - from:
+      table: analytics_table_6
+      column: id
+    to:
+      table: analytics_table_5
+      column: id
+  - from:
+      table: analytics_table_7
+      column: id
+    to:
+      table: analytics_table_6
+      column: id
+  - from:
+      table: analytics_table_8
+      column: id
+    to:
+      table: analytics_table_7
+      column: id
+  - from:
+      table: analytics_table_9
+      column: id
+    to:
+      table: analytics_table_8
+      column: id
+  - from:
+      table: analytics_table_10
+      column: id
+    to:
+      table: analytics_table_9
+      column: id
+  - from:
+      table: analytics_table_11
+      column: id
+    to:
+      table: analytics_table_10
+      column: id
+  - from:
+      table: hr_table_1
+      column: id
+    to:
+      table: hr_table_0
+      column: id
+  - from:
+      table: hr_table_2
+      column: id
+    to:
+      table: hr_table_1
+      column: id
+  - from:
+      table: hr_table_3
+      column: id
+    to:
+      table: hr_table_2
+      column: id
+  - from:
+      table: hr_table_4
+      column: id
+    to:
+      table: hr_table_3
+      column: id
+  - from:
+      table: hr_table_5
+      column: id
+    to:
+      table: hr_table_4
+      column: id
+  - from:
+      table: hr_table_6
+      column: id
+    to:
+      table: hr_table_5
+      column: id
+  - from:
+      table: hr_table_7
+      column: id
+    to:
+      table: hr_table_6
+      column: id
+  - from:
+      table: hr_table_8
+      column: id
+    to:
+      table: hr_table_7
+      column: id
+  - from:
+      table: hr_table_9
+      column: id
+    to:
+      table: hr_table_8
+      column: id
+  - from:
+      table: hr_table_10
+      column: id
+    to:
+      table: hr_table_9
+      column: id
+  - from:
+      table: hr_table_11
+      column: id
+    to:
+      table: hr_table_10
+      column: id
+  - from:
+      table: external_table_1
+      column: id
+    to:
+      table: external_table_0
+      column: id
+  - from:
+      table: external_table_2
+      column: id
+    to:
+      table: external_table_1
+      column: id
+  - from:
+      table: external_table_3
+      column: id
+    to:
+      table: external_table_2
+      column: id
+  - from:
+      table: external_table_4
+      column: id
+    to:
+      table: external_table_3
+      column: id
+  - from:
+      table: external_table_5
+      column: id
+    to:
+      table: external_table_4
+      column: id
+  - from:
+      table: external_table_6
+      column: id
+    to:
+      table: external_table_5
+      column: id
+  - from:
+      table: external_table_7
+      column: id
+    to:
+      table: external_table_6
+      column: id
+  - from:
+      table: external_table_8
+      column: id
+    to:
+      table: external_table_7
+      column: id
+  - from:
+      table: external_table_9
+      column: id
+    to:
+      table: external_table_8
+      column: id
+  - from:
+      table: external_table_10
+      column: id
+    to:
+      table: external_table_9
+      column: id
+  - from:
+      table: external_table_11
+      column: id
+    to:
+      table: external_table_10
+      column: id
+  - from:
+      table: identity_table_0
+      column: id
+    to:
+      table: sales_table_0
+      column: id
+    type: one-to-many
+  - from:
+      table: sales_table_0
+      column: id
+    to:
+      table: inventory_table_0
+      column: id
+    type: one-to-many
+  - from:
+      table: inventory_table_0
+      column: id
+    to:
+      table: support_table_0
+      column: id
+    type: one-to-many
+  - from:
+      table: support_table_0
+      column: id
+    to:
+      table: marketing_table_0
+      column: id
+    type: one-to-many
+  - from:
+      table: marketing_table_0
+      column: id
+    to:
+      table: logistics_table_0
+      column: id
+    type: one-to-many
+  - from:
+      table: logistics_table_0
+      column: id
+    to:
+      table: finance_table_0
+      column: id
+    type: one-to-many
+  - from:
+      table: finance_table_0
+      column: id
+    to:
+      table: analytics_table_0
+      column: id
+    type: one-to-many
+  - from:
+      table: analytics_table_0
+      column: id
+    to:
+      table: hr_table_0
+      column: id
+    type: one-to-many
+  - from:
+      table: hr_table_0
+      column: id
+    to:
+      table: external_table_0
+      column: id
+    type: one-to-many
+layout:
+  external_domain:
+    x: -455
+    'y': 1837
+  hr_domain:
+    x: 1228
+    'y': 1695
+  analytics_domain:
+    x: 1521
+    'y': 579
+  finance_domain:
+    x: 269
+    'y': 924
+  logistics_domain:
+    x: -992
+    'y': -174
+  marketing_domain:
+    x: 2873
+    'y': 52
+  support_domain:
+    x: 466
+    'y': -295
+  inventory_domain:
+    x: -470
+    'y': -1300
+  sales_domain:
+    x: 926
+    'y': -1269
+  identity_domain:
+    x: 2144
+    'y': -1261
+  identity_table_0:
+    x: 0
+    'y': 154
+  identity_table_2:
+    x: 356
+    'y': 154
+  identity_table_3:
+    x: 380
+    'y': 154
+  identity_table_4:
+    x: 604
+    'y': 116
+  inventory_table_0:
+    x: 380
+    'y': 154
+  hr_table_10:
+    x: 800
+    'y': 814
+  hr_table_11:
+    x: 412
+    'y': 814
+  identity_table_5:
+    x: 668
+    'y': 280
+  identity_table_1:
+    x: 278
+    'y': 476
+  identity_table_7:
+    x: 250
+    'y': 0

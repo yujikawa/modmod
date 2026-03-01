@@ -61,24 +61,74 @@ function Flow() {
     if (!schema) return
 
     const newNodes: Node[] = []
+    const TABLE_WIDTH = 320;
+    const TABLE_HEIGHT = 250;
+    const DOMAIN_PADDING = 60;
+    const GRID_COLS = 3;
 
-    // 1. Generate Domain Nodes (Parents)
+    // 1. Generate Domain Nodes and their Tables
     if (schema.domains) {
-      schema.domains.forEach((domain) => {
-        const layout = schema.layout?.[domain.id] || { x: 0, y: 0, width: 600, height: 400 };
+      const DOMAIN_GRID_COLS = 2; // Arrange domains in 2 columns
+      const DOMAIN_X_GAP = 1600;
+      const DOMAIN_Y_GAP = 1200;
+
+      schema.domains.forEach((domain, dIndex) => {
+        const tableCount = domain.tables.length;
+        const rows = Math.ceil(tableCount / GRID_COLS);
+        const cols = Math.min(tableCount, GRID_COLS);
+
+        // Dynamic Size Calculation
+        const autoWidth = Math.max(2, cols) * TABLE_WIDTH + DOMAIN_PADDING;
+        const autoHeight = Math.max(1.5, rows) * TABLE_HEIGHT + DOMAIN_PADDING;
+
+        const layout = schema.layout?.[domain.id];
+
+        // Domain Grid Positioning
+        const dRow = Math.floor(dIndex / DOMAIN_GRID_COLS);
+        const dCol = dIndex % DOMAIN_GRID_COLS;
+        const x = layout?.x ?? (dCol * DOMAIN_X_GAP);
+        const y = layout?.y ?? (dRow * DOMAIN_Y_GAP);
+
+        const width = layout?.width ?? autoWidth;
+        const height = layout?.height ?? autoHeight;
+
         newNodes.push({
           id: domain.id,
           type: 'domain',
-          position: { x: layout.x, y: layout.y },
-          style: { width: layout.width || 600, height: layout.height || 400 },
+          position: { x, y },
+          style: { width, height },
           data: { label: domain.name, color: domain.color },
+        });
+
+        // Generate Table Nodes for this domain
+        domain.tables.forEach((tableId, tIndex) => {
+          const table = schema.tables.find(t => t.id === tableId);
+          if (!table) return;
+
+          const localRow = Math.floor(tIndex / GRID_COLS);
+          const localCol = tIndex % GRID_COLS;
+
+          const tableLayout = schema.layout?.[table.id];
+          const tx = tableLayout?.x ?? (localCol * TABLE_WIDTH + DOMAIN_PADDING / 2);
+          const ty = tableLayout?.y ?? (localRow * TABLE_HEIGHT + DOMAIN_PADDING / 2);
+
+          newNodes.push({
+            id: table.id,
+            type: 'table',
+            position: { x: tx, y: ty },
+            data: { table },
+            parentNode: domain.id,
+            extent: 'parent',
+          });
         });
       });
     }
 
-    // 2. Generate Table Nodes (Children or Top-level)
-    schema.tables.forEach((table, index) => {
-      const domain = schema.domains?.find((d) => d.tables.includes(table.id));
+    // 2. Generate Top-level Table Nodes (Not in any domain)
+    const domainTableIds = new Set(schema.domains?.flatMap(d => d.tables) || []);
+    const topLevelTables = schema.tables.filter(t => !domainTableIds.has(t.id));
+
+    topLevelTables.forEach((table, index) => {
       const layout = schema.layout?.[table.id] || { x: index * 300, y: 100 };
       
       newNodes.push({
@@ -86,8 +136,6 @@ function Flow() {
         type: 'table',
         position: { x: layout.x, y: layout.y },
         data: { table },
-        parentNode: domain?.id,
-        extent: domain ? 'parent' : undefined,
       });
     });
 
