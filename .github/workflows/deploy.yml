@@ -25,7 +25,9 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: |
+          npm install
+          cd visualizer && npm install
 
       - name: Build UI
         run: npm run build-ui
