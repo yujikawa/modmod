@@ -4,4 +4,5 @@ test-build
 *.log
 .DS_Store
 visualizer/dist
+visualizer-dist
 visualizer/node_modules

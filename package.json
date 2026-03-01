@@ -13,6 +13,7 @@
   "files": [
     "src",
     "visualizer-dist",
+    "visualizer/public/favicon.svg",
     "package.json",
     "README.md"
   ],

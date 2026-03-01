@@ -1,4 +1,4 @@
-# <img src="./visualizer-dist/favicon.svg" width="32" height="32" align="center" /> Modscape
+# <img src="./visualizer/public/favicon.svg" width="32" height="32" align="center" /> Modscape
 
 Modscape is a YAML-driven data modeling visualizer. It helps data engineers and architects bridge the gap between conceptual, logical, and physical data models while maintaining sample data "stories".
 
