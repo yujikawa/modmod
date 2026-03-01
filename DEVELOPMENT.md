@@ -19,45 +19,68 @@ npm run dev -- samples/ecommerce.yaml
 - ブラウザが自動的に開き、モデルの変更（ホットリロード）が反映されます。
 
 ### UI（React/Vite）のビルド
-フロントエンドの変更を CLI に反映させるには、UI をビルドして `visualizer-dist` を更新する必要があります。
+フロントエンド（`visualizer/`）の変更を CLI に反映させるには、UI をビルドして `visualizer-dist` を生成する必要があります。
 
 ```bash
 npm run build-ui
 ```
+> [!NOTE]
+> `visualizer-dist` は Git 管理から除外されています。npm 公開時や GitHub Actions 上で自動生成されます。
+
+### 静的サイトのビルド（デモ出力）
+YAML モデルを埋め込んだ、ポータブルな HTML サイトを書き出します。
+
+```bash
+# samples ディレクトリの全ファイルを dist-site に書き出し
+node src/index.js build samples/ -o dist-site
+```
+
+---
+
+## 🚀 リリースとデプロイ (CI/CD)
+
+GitHub Actions を使用して、デモの公開と npm へのリリースを自動化しています。
+
+### 1. デモサイトの更新 (GitHub Pages)
+`main` ブランチにプッシュされると、`src/`, `visualizer/`, `samples/` のいずれかに変更がある場合にのみ自動で [GitHub Pages](https://yujikawa.github.io/modscape/) が更新されます。
+- **README** や **LICENSE** の修正のみでは実行されません（リソース節約のため）。
+
+### 2. npm への公開
+バージョンタグをプッシュすることで、自動的に npm レジストリへ公開されます。
+
+```bash
+# 1. バージョンを上げる (package.json の更新と git tag の作成)
+npm version patch # または minor, major
+
+# 2. タグと一緒にプッシュ
+git push origin main --tags
+```
+> [!IMPORTANT]
+> GitHub のリポジトリ設定（Secrets）に `NPM_TOKEN` が登録されている必要があります。
 
 ---
 
 ## ✨ ビジュアル・アピアランス（見た目）のカスタマイズ
 
-各エンティティ（テーブル）の `appearance` ブロックで、直感的なアイコンとアクセントカラーを設定できます。
+各エンティティ（テーブル）の `appearance` ブロックで、アイコンとアクセントカラーを設定できます。
 
 ### 標準タイプ設定
 `appearance.type` を指定すると、デフォルトの絵文字とカラーが適用されます。
 
-| タイプ (`type`) | デフォルト絵文字 | デフォルトカラー | 役割 |
-| :--- | :---: | :--- | :--- |
-| `fact` | 📊 | 赤 (Red-400) | 数値・集計データ |
-| `dimension` | 🏷️ | 青 (Blue-400) | 属性・マスタデータ |
-| `hub` | 🌐 | 琥珀 (Amber-400) | 中心・ビジネスキー (Data Vault) |
-| `link` | 🔗 | 緑 (Emerald-400) | 関係・リンク (Data Vault) |
-| `satellite` | 🛰️ | 紫 (Violet-400) | 履歴・詳細 (Data Vault) |
-
-### 個別のカスタマイズ
-`icon` や `color` を個別に指定して、デフォルトを上書きできます。
-
-```yaml
-- id: orders
-  appearance:
-    type: fact
-    icon: "💰"      # 絵文字を上書き
-    color: "#ff0000" # カラーを上書き
-```
+| タイプ (`type`) | 役割 | デフォルト絵文字 |
+| :--- | :--- | :---: |
+| `fact` | 数値・集計データ | 📊 |
+| `dimension` | 属性・マスタデータ | 🏷️ |
+| `hub` | 中心・ビジネスキー (Data Vault) | 🌐 |
+| `link` | 関係・リンク (Data Vault) | 🔗 |
+| `satellite` | 履歴・詳細 (Data Vault) | 🛰️ |
 
 ---
 
 ## 🛠 プロジェクト構造
 - `src/`: CLI（Node.js/Express）のソースコード
-- `samples/`: YAML形式のデータモデルのサンプル集
 - `visualizer/`: フロントエンド（React/Vite/ReactFlow）のソースコード
-- `visualizer-dist/`: ビルド済みのフロントエンド資産（CLIから配布）
+- `visualizer-dist/`: **ビルド済みのフロントエンド資産**（Git管理外、npm配布用）
+- `samples/`: YAML形式のデータモデルのサンプル集
 - `openspec/`: OpenSpecによる開発プロセスの管理
+
