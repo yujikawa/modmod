@@ -43,7 +43,7 @@ function Flow() {
     isCliMode,
     focusNodeId,
     setFocusNodeId,
-    addEdge: createEdge,
+    addRelationship,
     removeNode
   } = useStore()
   
@@ -121,12 +121,19 @@ function Flow() {
           const tableLayout = schema.layout?.[table.id];
           const tx = tableLayout?.x ?? (localCol * TABLE_WIDTH + DOMAIN_PADDING / 2);
           const ty = tableLayout?.y ?? (localRow * TABLE_HEIGHT + DOMAIN_PADDING / 2);
+          
+          // Apply default height if many columns and no manual resize
+          const defaultHeight = (table.columns && table.columns.length > 10) ? 350 : undefined;
+          const nodeHeight = tableLayout?.height ?? defaultHeight;
 
           newNodes.push({
             id: table.id,
             type: 'table',
             position: { x: tx, y: ty },
-            style: tableLayout?.width ? { width: tableLayout.width, height: tableLayout.height } : undefined,
+            style: { 
+              ...(tableLayout?.width ? { width: tableLayout.width } : {}),
+              ...(nodeHeight ? { height: nodeHeight } : {})
+            },
             dragHandle: '.table-drag-handle',
             data: { table },
             parentNode: domain.id,
@@ -141,13 +148,22 @@ function Flow() {
     const topLevelTables = schema.tables.filter(t => !domainTableIds.has(t.id));
 
     topLevelTables.forEach((table, index) => {
-      const layout = schema.layout?.[table.id] || { x: index * 300, y: 100 };
+      const tableLayout = schema.layout?.[table.id];
+      const lx = tableLayout?.x ?? (index * 300);
+      const ly = tableLayout?.y ?? 100;
       
+      // Apply default height if many columns and no manual resize
+      const defaultHeight = (table.columns && table.columns.length > 10) ? 350 : undefined;
+      const nodeHeight = tableLayout?.height ?? defaultHeight;
+
       newNodes.push({
         id: table.id,
         type: 'table',
-        position: { x: layout.x, y: layout.y },
-        style: layout?.width ? { width: layout.width, height: layout.height } : undefined,
+        position: { x: lx, y: ly },
+        style: { 
+          ...(tableLayout?.width ? { width: tableLayout.width } : {}),
+          ...(nodeHeight ? { height: nodeHeight } : {})
+        },
         dragHandle: '.table-drag-handle',
         data: { table },
       });
@@ -191,10 +207,10 @@ function Flow() {
   const onConnect = useCallback(
     (params: Connection) => {
       if (params.source && params.target) {
-        createEdge(params.source, params.target);
+        addRelationship(params.source, params.target, params.sourceHandle, params.targetHandle);
       }
     },
-    [createEdge]
+    [addRelationship]
   )
 
   const onNodesDelete = useCallback((deletedNodes: Node[]) => {

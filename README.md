@@ -14,8 +14,14 @@ Modscape is a YAML-driven data modeling visualizer. It helps data engineers and 
 
 - **YAML-First**: Define your entire data model in a single, simple YAML file.
 - **Unified Sidebar**: A feature-rich sidebar for navigation, search, and YAML editing.
+- **Interactive Modeling**: 
+  - **Drag-to-Connect**: Create relationships by dragging from a column handle to another table.
+  - **Property Editor**: Edit table and relationship metadata directly in the UI.
+  - **Interactive Deletion**: Remove tables or relationships with a single click.
 - **Sample Data "Stories"**: Attach sample data to entities to explain the data's purpose.
-- **Interactive Layout**: Arrange entities via drag-and-drop; positions are saved directly back to your YAML.
+- **Smart Layout**: 
+  - **Auto-Positioning**: Arrange entities via drag-and-drop; positions are saved directly back to your YAML.
+  - **Adaptive Sizing**: Tables with many columns are automatically capped at 10 rows with scrolling for better canvas visibility.
 - **Multi-file Support**: Manage multiple models in a single directory and switch between them seamlessly.
 - **Documentation Export**: Generate Mermaid-compatible Markdown documentation including ER diagrams and domain catalogs.
 - **AI-Agent Ready**: Scaffolding for Gemini, Claude, and Codex to help you model via AI.
@@ -65,40 +71,85 @@ Best for direct YAML editing and architectural control.
 
 ## Defining Your Model (YAML)
 
-Modscape uses a human-readable YAML schema. While you can write it manually, we **highly recommend using an AI coding assistant** (like Gemini, Claude, or Cursor) to handle the boilerplate.
+Modscape uses a comprehensive yet human-readable YAML schema. This single file acts as the **Single Source of Truth** for your conceptual, logical, and physical data models.
 
-### Manual Definition Reference
-Here is the basic structure for your `model.yaml`:
+### Complete YAML Reference
 
 ```yaml
-tables:
-  - id: users
-    name: USERS
-    appearance:
-      type: dimension # dimension | fact | hub | link | satellite
-      icon: 👤
-    columns:
-      - id: user_id
-        logical: { name: USER_ID, type: UUID, isPrimaryKey: true }
-      - id: email
-        logical: { name: EMAIL, type: String }
+# 1. Domains: Visual containers to group related tables
+domains:
+  - id: sales_domain
+    name: Sales & Orders
+    description: Core commerce transactions
+    color: "rgba(59, 130, 246, 0.05)" # Container background
+    tables: [orders, order_items] # List of table IDs
 
-  # Data Vault Example
-  - id: hub_customer
-    name: HUB_CUSTOMER
-    appearance: { type: hub, icon: 🔑 }
+# 2. Tables: Entity definitions
+tables:
+  - id: orders
+    name: ORDERS
+    appearance:
+      type: fact    # fact | dimension | hub | link | satellite
+      icon: 📦      # Any emoji or character
+      color: "#f87171" # Custom theme color for this entity
+    
+    conceptual:
+      description: "Records of customer purchases"
+      tags: ["WHAT", "WHEN"] # BEAM* methodology tags
+    
+    physical:
+      name: T_ORDERS     # Actual table name in database
+      schema: RAW_SALES  # Database schema name
+    
     columns:
-      - id: hk_customer
-        logical: { name: HK_CUSTOMER, type: Binary, isPrimaryKey: true }
+      - id: order_id
+        logical:
+          name: ORDER_ID
+          type: Integer
+          description: "Unique identifier for an order"
+          isPrimaryKey: true
+        physical:
+          name: O_ID
+          type: NUMBER(38,0)
+          constraints: ["NOT NULL"]
+      
       - id: customer_id
-        logical: { name: CUSTOMER_ID, type: String }
+        logical:
+          name: CUSTOMER_ID
+          type: Integer
+          isForeignKey: true
+
+    # 3. Sample Data: Realistic data for storytelling
+    sampleData:
+      columns: [order_id, customer_id]
+      rows:
+        - [1001, 501]
+        - [1002, 502]
+
+# 4. Relationships: Connections between tables
+relationships:
+  - from: { table: orders, column: customer_id }
+    to: { table: customers, column: id }
+    type: many-to-one # one-to-one | one-to-many | many-to-many
+
+# 5. Layout: Visual coordinates (Auto-managed)
+# You don't need to write this manually; Modscape updates it on drag.
+layout:
+  orders: { x: 100, y: 100, width: 320, height: 400 }
 ```
 
-- **Appearance Types**: 
-  - `dimension` / `fact`: For Star Schema / Dimensional modeling.
-  - `hub` / `link` / `satellite`: For Data Vault 2.0 modeling.
-- **IDs**: Use lowercase, snake_case for `id` fields (used for internal linking).
-- **Layout**: Don't worry about the `layout:` section. Modscape will automatically add and update coordinates when you drag entities in the browser.
+### Schema Breakdown
+
+| Section | Field | Description |
+| :--- | :--- | :--- |
+| **`domains`** | `color` | Defines the background of the grouping container in the visualizer. |
+| **`appearance`**| `type` | Determines the header icon/color if not specified (Standard: Star Schema or Data Vault). |
+| **`conceptual`**| `tags` | Business context tags. Great for identifying key modeling grains (WHO, WHAT, WHERE). |
+| **`physical`** | `name`/`schema` | Maps the logical entity to your real database objects. |
+| **`columns`** | `isPrimaryKey` | Adds a 🔑 icon and marks the grain of the table. |
+| | `isForeignKey` | Adds a 🔩 icon to indicate a downstream connection. |
+| **`sampleData`**| `rows` | A 2D array. This is what makes your model "alive" in the Detail Panel. |
+| **`relationships`**| `type` | Controls the arrowheads and visual style of the connection lines. |
 
 ---
 

@@ -45,7 +45,8 @@ interface AppState {
   // Modeling Actions
   addTable: (x: number, y: number) => void;
   addDomain: (x: number, y: number) => void;
-  addEdge: (source: string, target: string) => void;
+  addRelationship: (source: string, target: string, sourceHandle?: string | null, targetHandle?: string | null) => void;
+  updateRelationship: (index: number, updates: Partial<Relationship>) => void;
   removeEdge: (sourceId: string, targetId: string) => void;
   removeNode: (id: string) => void;
   updateTable: (id: string, updates: Partial<Table>) => void;
@@ -63,6 +64,7 @@ interface AppState {
   // Computed (helpers)
   getSelectedTable: () => Table | null;
   getSelectedDomain: () => Domain | null;
+  getSelectedRelationship: () => { relationship: Relationship; index: number } | null;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -294,16 +296,30 @@ export const useStore = create<AppState>((set, get) => ({
     set({ schema: normalizeSchema(newSchema), error: null });
     get().syncToYamlInput();
   },
+addRelationship: (source, target, sourceHandle, targetHandle) => {
+  const schema = get().schema;
+  if (!schema) return;
 
-  addEdge: (source, target) => {
-    const schema = get().schema;
-    if (!schema) return;
+  // Correctly extract column ID by removing table ID and suffix
+  const sourceCol = sourceHandle ? (sourceHandle.replace(`${source}-`, '').replace('-source', '') || undefined) : undefined;
+  const targetCol = targetHandle ? (targetHandle.replace(`${target}-`, '').replace('-target', '') || undefined) : undefined;
 
-    const newRelationship: Relationship = {
-      from: { table: source, column: 'id' },
-      to: { table: target, column: 'id' },
-      type: 'one-to-many'
-    };
+  // Validation: Prevent duplicate relationships
+  const isDuplicate = (schema.relationships || []).some(rel => 
+    rel.from.table === source && 
+    rel.from.column === sourceCol && 
+    rel.to.table === target && 
+    rel.to.column === targetCol
+  );
+
+  if (isDuplicate) return;
+
+  const newRelationship: Relationship = {
+    from: { table: source, column: sourceCol },
+    to: { table: target, column: targetCol },
+    type: 'one-to-many'
+  };
+
 
     const newSchema = {
       ...schema,
@@ -311,6 +327,21 @@ export const useStore = create<AppState>((set, get) => ({
     };
 
     set({ schema: normalizeSchema(newSchema) });
+    get().syncToYamlInput();
+  },
+
+  updateRelationship: (index, updates) => {
+    const { schema } = get();
+    if (!schema || !schema.relationships) return;
+
+    const newRelationships = schema.relationships.map((rel, i) => {
+      if (i === index) {
+        return { ...rel, ...updates };
+      }
+      return rel;
+    });
+
+    set({ schema: { ...schema, relationships: newRelationships } });
     get().syncToYamlInput();
   },
 
@@ -399,5 +430,14 @@ export const useStore = create<AppState>((set, get) => ({
     const { schema, selectedTableId } = get();
     if (!schema || !selectedTableId || !schema.domains) return null;
     return schema.domains.find(d => d.id === selectedTableId) || null;
+  },
+
+  getSelectedRelationship: () => {
+    const { schema, selectedEdgeId } = get();
+    if (!schema || !schema.relationships || !selectedEdgeId || !selectedEdgeId.startsWith('e-')) return null;
+    const index = parseInt(selectedEdgeId.split('-')[1]);
+    const relationship = schema.relationships[index];
+    if (!relationship) return null;
+    return { relationship, index };
   }
 }));
