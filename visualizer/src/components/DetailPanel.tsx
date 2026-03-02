@@ -12,15 +12,124 @@ const TYPE_CONFIG: Record<string, { color: string; icon: string; label: string }
 };
 
 const DetailPanel = () => {
-  const { selectedTableId, getSelectedTable, setSelectedTableId, updateTable } = useStore()
-  const table = getSelectedTable()
-  const [activeTab, setActiveTab] = useState('conceptual')
+  const { 
+    selectedTableId, 
+    getSelectedTable, 
+    getSelectedDomain,
+    setSelectedTableId, 
+    updateTable,
+    updateDomain 
+  } = useStore()
   
-  // Local state for tags
+  const table = getSelectedTable()
+  const domain = getSelectedDomain()
+  
+  const [activeTab, setActiveTab] = useState('conceptual')
   const [tagInput, setTagInput] = useState('')
 
-  if (!selectedTableId || !table) return null
+  if (!selectedTableId) return null
+  if (!table && !domain) return null
 
+  // --- Domain Editor Rendering ---
+  if (domain) {
+    return (
+      <div 
+        className="bg-slate-900 border-t border-slate-800 shadow-2xl z-50 flex flex-col text-slate-100"
+        style={{ 
+          height: '35vh', 
+          maxHeight: '400px',
+          minHeight: '200px',
+          backgroundColor: '#0f172a', 
+          borderTop: `2px solid ${domain.color || '#3b82f6'}`,
+          display: 'flex', 
+          flexDirection: 'column',
+          color: '#f1f5f9',
+          boxShadow: '0 -10px 25px -5px rgba(0, 0, 0, 0.4)',
+          fontFamily: 'sans-serif'
+        }}
+      >
+        {/* Panel Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 20px', borderBottom: '1px solid #1e293b', backgroundColor: '#020617' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+            <Layers size={18} style={{ color: domain.color || '#3b82f6' }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input 
+                  value={domain.name}
+                  onChange={(e) => updateDomain(domain.id, { name: e.target.value })}
+                  style={{ 
+                    fontSize: '16px', 
+                    fontWeight: 'bold', 
+                    color: '#ffffff', 
+                    backgroundColor: 'transparent', 
+                    border: 'none',
+                    borderBottom: '1px solid transparent',
+                    padding: '2px 0',
+                    outline: 'none',
+                    width: 'fit-content',
+                    minWidth: '200px'
+                  }}
+                  onFocus={(e) => (e.target as HTMLInputElement).style.borderBottom = '1px solid #3b82f6'}
+                  onBlur={(e) => (e.target as HTMLInputElement).style.borderBottom = '1px solid transparent'}
+                />
+                <span style={{ fontSize: '9px', fontWeight: 800, padding: '1px 5px', borderRadius: '3px', backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.2)', textTransform: 'uppercase' }}>
+                  DOMAIN
+                </span>
+              </div>
+              <p style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', margin: 0 }}>{domain.id}</p>
+            </div>
+          </div>
+          <button onClick={() => setSelectedTableId(null)} style={{ padding: '6px', backgroundColor: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><X size={18} /></button>
+        </div>
+
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <section>
+              <h3 style={{ fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Domain Description</h3>
+              <textarea 
+                value={domain.description || ''}
+                onChange={(e) => updateDomain(domain.id, { description: e.target.value })}
+                placeholder="What is the purpose of this domain?"
+                style={{ 
+                  width: '100%', 
+                  minHeight: '80px',
+                  backgroundColor: '#1e293b', 
+                  border: '1px solid #334155', 
+                  borderRadius: '6px',
+                  padding: '12px',
+                  color: '#e2e8f0',
+                  fontSize: '13px',
+                  lineHeight: '1.6',
+                  resize: 'none',
+                  outline: 'none'
+                }}
+              />
+            </section>
+
+            <section>
+              <h3 style={{ fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Domain Theme Color</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <input 
+                  type="color" 
+                  value={domain.color?.startsWith('rgba') ? '#3b82f6' : (domain.color || '#3b82f6')} 
+                  onChange={(e) => updateDomain(domain.id, { color: e.target.value })}
+                  style={{ width: '40px', height: '40px', padding: 0, border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
+                />
+                <input 
+                  value={domain.color || ''}
+                  onChange={(e) => updateDomain(domain.id, { color: e.target.value })}
+                  placeholder="e.g. #3b82f6 or rgba(...)"
+                  className="bg-slate-800 border border-slate-700 text-slate-300 font-mono text-sm p-2 rounded focus:ring-1 focus:ring-blue-500 outline-none flex-1"
+                />
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Table Editor Rendering ---
   const tabs = [
     { id: 'conceptual', label: 'Conceptual', icon: <TagIcon size={14} /> },
     { id: 'logical', label: 'Logical', icon: <Layers size={14} /> },
@@ -28,32 +137,31 @@ const DetailPanel = () => {
     { id: 'sample', label: 'Sample Data', icon: <TableIcon size={14} /> }
   ]
 
-  const typeConfig = table.appearance?.type ? TYPE_CONFIG[table.appearance.type] : null;
-  const themeColor = table.appearance?.color || typeConfig?.color || '#334155';
-  const icon = table.appearance?.icon || typeConfig?.icon || '';
+  const typeConfig = table!.appearance?.type ? TYPE_CONFIG[table!.appearance.type] : null;
+  const themeColor = table!.appearance?.color || typeConfig?.color || '#334155';
+  const icon = table!.appearance?.icon || typeConfig?.icon || '';
   const typeLabel = typeConfig?.label || '';
 
   const handleUpdateTable = (updates: Partial<Table>) => {
-    updateTable(table.id, updates);
+    updateTable(table!.id, updates);
   };
 
-  // --- Column Helpers ---
   const handleAddColumn = () => {
     const newCol: Column = {
       id: `col_${Date.now()}`,
       logical: { name: 'New Column', type: 'String', description: '' },
       physical: { name: '', type: 'VARCHAR(255)', constraints: [] }
     };
-    handleUpdateTable({ columns: [...(table.columns || []), newCol] });
+    handleUpdateTable({ columns: [...(table!.columns || []), newCol] });
   };
 
   const handleRemoveColumn = (colId: string) => {
-    const newColumns = table.columns?.filter(col => col.id !== colId) || [];
+    const newColumns = table!.columns?.filter(col => col.id !== colId) || [];
     handleUpdateTable({ columns: newColumns });
   };
 
   const handleUpdateLogicalColumn = (colId: string, updates: Partial<NonNullable<Column['logical']>>) => {
-    const newColumns: Column[] = table.columns?.map(col => {
+    const newColumns: Column[] = table!.columns?.map(col => {
       if (col.id === colId) {
         return { 
           ...col, 
@@ -71,7 +179,7 @@ const DetailPanel = () => {
   };
 
   const handleUpdatePhysicalColumn = (colId: string, updates: Partial<NonNullable<Column['physical']>>) => {
-    const newColumns: Column[] = table.columns?.map(col => {
+    const newColumns: Column[] = table!.columns?.map(col => {
       if (col.id === colId) {
         return { 
           ...col, 
@@ -86,14 +194,13 @@ const DetailPanel = () => {
     handleUpdateTable({ columns: newColumns });
   };
 
-  // --- Tag Helpers ---
   const handleAddTag = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && tagInput.trim()) {
-      const currentTags = table.conceptual?.tags || [];
+      const currentTags = table!.conceptual?.tags || [];
       if (!currentTags.includes(tagInput.trim())) {
         handleUpdateTable({
           conceptual: {
-            ...table.conceptual,
+            ...table!.conceptual,
             tags: [...currentTags, tagInput.trim()]
           }
         });
@@ -103,37 +210,36 @@ const DetailPanel = () => {
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    const currentTags = table.conceptual?.tags || [];
+    const currentTags = table!.conceptual?.tags || [];
     handleUpdateTable({
       conceptual: {
-        ...table.conceptual,
+        ...table!.conceptual,
         tags: currentTags.filter(t => t !== tagToRemove)
       }
     });
   };
 
-  // --- Sample Data Helpers ---
   const handleUpdateSampleData = (updates: Partial<SampleData>) => {
-    const currentSample = table.sampleData || { columns: [], rows: [] };
+    const currentSample = table!.sampleData || { columns: [], rows: [] };
     handleUpdateTable({ 
       sampleData: { ...currentSample, ...updates } 
     });
   };
 
   const handleAddSampleRow = () => {
-    const currentSample = table.sampleData || { columns: [], rows: [] };
+    const currentSample = table!.sampleData || { columns: [], rows: [] };
     const newRow = new Array(currentSample.columns.length).fill('');
     handleUpdateSampleData({ rows: [...currentSample.rows, newRow] });
   };
 
   const handleRemoveSampleRow = (index: number) => {
-    const currentSample = table.sampleData || { columns: [], rows: [] };
+    const currentSample = table!.sampleData || { columns: [], rows: [] };
     const newRows = currentSample.rows.filter((_, i) => i !== index);
     handleUpdateSampleData({ rows: newRows });
   };
 
   const handleUpdateSampleCell = (rowIndex: number, colIndex: number, value: any) => {
-    const currentSample = table.sampleData || { columns: [], rows: [] };
+    const currentSample = table!.sampleData || { columns: [], rows: [] };
     const newRows = [...currentSample.rows];
     newRows[rowIndex] = [...newRows[rowIndex]];
     newRows[rowIndex][colIndex] = value;
@@ -141,7 +247,7 @@ const DetailPanel = () => {
   };
 
   const handleAddSampleColumn = (colId: string) => {
-    const currentSample = table.sampleData || { columns: [], rows: [] };
+    const currentSample = table!.sampleData || { columns: [], rows: [] };
     if (currentSample.columns.includes(colId)) return;
     
     const newCols = [...currentSample.columns, colId];
@@ -150,7 +256,7 @@ const DetailPanel = () => {
   };
 
   const handleRemoveSampleColumn = (colId: string) => {
-    const currentSample = table.sampleData || { columns: [], rows: [] };
+    const currentSample = table!.sampleData || { columns: [], rows: [] };
     const colIndex = currentSample.columns.indexOf(colId);
     if (colIndex === -1) return;
 
@@ -182,7 +288,7 @@ const DetailPanel = () => {
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <input 
-                value={table.name}
+                value={table!.name}
                 onChange={(e) => handleUpdateTable({ name: e.target.value })}
                 title="Logical Table Name"
                 style={{ 
@@ -215,7 +321,7 @@ const DetailPanel = () => {
                 </span>
               )}
             </div>
-            <p style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', margin: 0 }}>{table.id}</p>
+            <p style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', margin: 0 }}>{table!.id}</p>
           </div>
         </div>
         <button 
@@ -262,9 +368,9 @@ const DetailPanel = () => {
             <section>
               <h3 style={{ fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Description</h3>
               <textarea 
-                value={table.conceptual?.description || ''}
+                value={table!.conceptual?.description || ''}
                 onChange={(e) => handleUpdateTable({ 
-                  conceptual: { ...table.conceptual, description: e.target.value } 
+                  conceptual: { ...table!.conceptual, description: e.target.value } 
                 })}
                 placeholder="Enter business description..."
                 style={{ 
@@ -286,7 +392,7 @@ const DetailPanel = () => {
             <section>
               <h3 style={{ fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Tags</h3>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
-                {table.conceptual?.tags?.map(tag => (
+                {table!.conceptual?.tags?.map(tag => (
                   <span key={tag} className="flex items-center gap-2 px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full text-xs">
                     {tag}
                     <button onClick={() => handleRemoveTag(tag)} className="hover:text-red-400"><X size={12} /></button>
@@ -336,7 +442,7 @@ const DetailPanel = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {(table.columns || []).map(col => (
+                  {(table!.columns || []).map(col => (
                     <tr key={col.id} style={{ borderBottom: '1px solid #1e293b', backgroundColor: '#0f172a' }}>
                       <td style={{ padding: '6px 16px' }}>
                         <div className="flex items-center gap-2">
@@ -398,7 +504,7 @@ const DetailPanel = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {(table.columns || []).map(col => (
+                    {(table!.columns || []).map(col => (
                       <tr key={col.id} style={{ borderBottom: '1px solid #1e293b', backgroundColor: '#0f172a' }}>
                         <td style={{ padding: '6px 16px', color: '#94a3b8', borderRight: '1px solid #1e293b' }}>
                           <div className="text-[11px] font-medium truncate" title={col.logical?.name || col.id}>
@@ -452,7 +558,7 @@ const DetailPanel = () => {
                   value=""
                 >
                   <option value="">+ Add Column</option>
-                  {(table.columns || []).filter(c => !table.sampleData?.columns.includes(c.id)).map(c => (
+                  {(table!.columns || []).filter(c => !table!.sampleData?.columns.includes(c.id)).map(c => (
                     <option key={c.id} value={c.id}>{c.logical?.name || c.id}</option>
                   ))}
                 </select>
@@ -462,11 +568,11 @@ const DetailPanel = () => {
               </div>
             </div>
 
-            {!table.sampleData || table.sampleData.columns.length === 0 ? (
+            {!table!.sampleData || table!.sampleData.columns.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center p-8 bg-slate-900/50 rounded-lg border border-dashed border-slate-700">
                 <p className="text-sm text-slate-500 italic mb-4">No sample data structure defined.</p>
                 <button 
-                  onClick={() => handleUpdateTable({ sampleData: { columns: (table.columns || []).slice(0,3).map(c => c.id), rows: [['Sample 1', 'Sample 2', 'Sample 3']] } })}
+                  onClick={() => handleUpdateTable({ sampleData: { columns: (table!.columns || []).slice(0,3).map(c => c.id), rows: [['Sample 1', 'Sample 2', 'Sample 3']] } })}
                   className="text-blue-500 hover:underline text-xs"
                 >Auto-generate from first 3 columns</button>
               </div>
@@ -475,8 +581,8 @@ const DetailPanel = () => {
                 <table className="w-full border-collapse text-xs">
                   <thead className="sticky top-0 bg-slate-950 z-10 border-bottom border-slate-800">
                     <tr>
-                      {table.sampleData.columns.map((colId) => {
-                        const col = table.columns?.find(c => c.id === colId);
+                      {table!.sampleData.columns.map((colId) => {
+                        const col = table!.columns?.find(c => c.id === colId);
                         return (
                           <th key={colId} className="p-3 text-left border-r border-slate-800 min-w-[140px]">
                             <div className="flex justify-between items-start">
@@ -495,7 +601,7 @@ const DetailPanel = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {table.sampleData.rows.map((row, rowIndex) => (
+                    {table!.sampleData.rows.map((row, rowIndex) => (
                       <tr key={rowIndex} className="border-b border-slate-800 hover:bg-slate-800/30">
                         {row.map((cell, colIndex) => (
                           <td key={colIndex} className="p-0 border-r border-slate-800">

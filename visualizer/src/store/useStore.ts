@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import yaml from 'js-yaml'
-import type { Schema, Table, Relationship } from '../types/schema'
+import type { Schema, Table, Relationship, Domain } from '../types/schema'
 import { parseYAML, normalizeSchema } from '../lib/parser'
 
 export interface ModelFile {
@@ -46,6 +46,7 @@ interface AppState {
   addEdge: (source: string, target: string) => void;
   removeNode: (id: string) => void;
   updateTable: (id: string, updates: Partial<Table>) => void;
+  updateDomain: (id: string, updates: Partial<Domain>) => void;
   
   // Multi-file Actions
   fetchAvailableFiles: () => Promise<void>;
@@ -58,6 +59,7 @@ interface AppState {
   
   // Computed (helpers)
   getSelectedTable: () => Table | null;
+  getSelectedDomain: () => Domain | null;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -348,10 +350,32 @@ export const useStore = create<AppState>((set, get) => ({
     set({ schema: normalizeSchema(newSchema) });
     get().syncToYamlInput();
   },
+
+  updateDomain: (id, updates) => {
+    const { schema } = get();
+    if (!schema || !schema.domains) return;
+
+    const newDomains = schema.domains.map(domain => {
+      if (domain.id === id) {
+        return { ...domain, ...updates };
+      }
+      return domain;
+    });
+
+    const newSchema = { ...schema, domains: newDomains };
+    set({ schema: normalizeSchema(newSchema) });
+    get().syncToYamlInput();
+  },
   
   getSelectedTable: () => {
     const { schema, selectedTableId } = get();
     if (!schema || !selectedTableId) return null;
     return schema.tables.find(t => t.id === selectedTableId) || null;
+  },
+
+  getSelectedDomain: () => {
+    const { schema, selectedTableId } = get();
+    if (!schema || !selectedTableId || !schema.domains) return null;
+    return schema.domains.find(d => d.id === selectedTableId) || null;
   }
 }));
