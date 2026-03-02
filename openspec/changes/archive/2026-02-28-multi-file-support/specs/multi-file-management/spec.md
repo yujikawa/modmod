@@ -4,7 +4,7 @@
 The system SHALL scan the specified directory for all files with `.yaml` or `.yml` extensions.
 
 #### Scenario: Scanning a directory with multiple models
-- **WHEN** the user starts the dev server with `modmod dev ./models`
+- **WHEN** the user starts the dev server with `modscape dev ./models`
 - **THEN** the server identifies all YAML files in that directory
 
 ### Requirement: Secure Model Mapping

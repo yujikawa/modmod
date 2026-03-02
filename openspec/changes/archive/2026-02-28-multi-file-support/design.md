@@ -1,11 +1,11 @@
 ## Context
 
-The current `modmod` CLI assumes a single source of truth for its data model, passed as a command-line argument to `modmod dev`. While effective for simple projects, it restricts scalability. This design introduces a mechanism to scan, map, and navigate multiple models securely.
+The current `modscape` CLI assumes a single source of truth for its data model, passed as a command-line argument to `modscape dev`. While effective for simple projects, it restricts scalability. This design introduces a mechanism to scan, map, and navigate multiple models securely.
 
 ## Goals / Non-Goals
 
 **Goals:**
-- Support directories and multiple file paths in the `modmod dev` command.
+- Support directories and multiple file paths in the `modscape dev` command.
 - Securely map file paths to URL-safe slugs to prevent path traversal.
 - Enable seamless switching between models in the visualizer UI.
 - Maintain selection state across page refreshes.

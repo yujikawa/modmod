@@ -1,13 +1,13 @@
 ## Why
 
-The original project name `modmod` is already taken on the npm registry. To publish the package and establish a unique brand identity, we are renaming the project to `modscape` (Modeling + Landscape).
+The original project name `modscape` is already taken on the npm registry. To publish the package and establish a unique brand identity, we are renaming the project to `modscape` (Modeling + Landscape).
 
 ## What Changes
 
-- **Renaming**: Replace all occurrences of `modmod` with `modscape`.
-- **CLI Command**: Change the binary name from `modmod` to `modscape`.
+- **Renaming**: Replace all occurrences of `modscape` with `modscape`.
+- **CLI Command**: Change the binary name from `modscape` to `modscape`.
 - **Metadata**: Update `package.json` names and descriptions.
-- **Directories**: Rename `.modmod/` to `.modscape/`.
+- **Directories**: Rename `.modscape/` to `.modscape/`.
 - **AI Templates**: Update scaffolding and agent skills to use the new branding.
 - **Branding**: Update documentation titles and logos.
 
@@ -25,4 +25,4 @@ The original project name `modmod` is already taken on the npm registry. To publ
 - `DEVELOPMENT.md`
 - `src/**/*`
 - `visualizer/**/*`
-- `.modmod/` directory
+- `.modscape/` directory

@@ -4,7 +4,7 @@
 - [x] 1.2 Implement command routing for `dev` and `build` subcommands
 - [x] 1.3 Add logic to resolve paths for the visualizer source code
 
-## 2. Development Server (modmod dev)
+## 2. Development Server (modscape dev)
 
 - [x] 2.1 Implement Vite dev server wrapper within the CLI
 - [x] 2.2 Add YAML file watching and reload triggers
@@ -18,7 +18,7 @@
 - [x] 3.3 Implement the debounced auto-save listener for node position changes
 - [x] 3.4 Add a "CLI Mode" indicator to the UI for clarity
 
-## 4. Static Site Builder (modmod build)
+## 4. Static Site Builder (modscape build)
 
 - [x] 4.1 Implement the `build` command to trigger the production Vite build
 - [x] 4.2 Create a Vite plugin/mechanism to inject the target YAML into the build artifacts

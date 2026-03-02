@@ -5,13 +5,13 @@ Currently, the `visualizer` is a standalone React project. To make it a true too
 ## Goals / Non-Goals
 
 **Goals:**
-- Provide a `modmod` CLI with `dev` and `build` commands.
+- Provide a `modscape` CLI with `dev` and `build` commands.
 - Support interactive layout editing that saves coordinates back to the local YAML file.
 - Generate a standalone static site from a YAML file.
 - Keep the visualizer code flexible enough to work both in CLI and standalone modes.
 
 **Non-Goals:**
-- Supporting multiple YAML files in a single `modmod dev` session (MVP focus is one file).
+- Supporting multiple YAML files in a single `modscape dev` session (MVP focus is one file).
 - Advanced auto-layout algorithms (user-driven layout is preferred).
 - Full database integration (staying YAML-centric).
 

@@ -1,6 +1,6 @@
 ## Context
 
-The recent `multi-file-support` change allows `modmod dev` to point at directories. We want to leverage this by providing a set of sample models in a single `samples/` folder. This makes it easier for users to see the tool's capabilities.
+The recent `multi-file-support` change allows `modscape dev` to point at directories. We want to leverage this by providing a set of sample models in a single `samples/` folder. This makes it easier for users to see the tool's capabilities.
 
 ## Goals / Non-Goals
 
@@ -10,7 +10,7 @@ The recent `multi-file-support` change allows `modmod dev` to point at directori
 - Update development documentation for accuracy.
 
 **Non-Goals:**
-- Creating a separate CLI command for samples (existing `modmod dev samples` is sufficient).
+- Creating a separate CLI command for samples (existing `modscape dev samples` is sufficient).
 - Advanced documentation for each model (the YAML content should be self-explanatory).
 
 ## Decisions

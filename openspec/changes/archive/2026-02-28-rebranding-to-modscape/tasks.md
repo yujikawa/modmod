@@ -1,15 +1,15 @@
 ## 1. Global Rename
 
-- [x] 1.1 Replace `modmod` with `modscape` in `package.json` (name and bin).
-- [x] 1.2 Replace `modmod` with `modscape` in `src/index.js` (commander configuration).
-- [x] 1.3 Replace `ModMod` with `Modscape` in `README.md`.
-- [x] 1.4 Replace `modmod` with `modscape` in `DEVELOPMENT.md`.
-- [x] 1.5 Replace `ModMod` with `Modscape` in `visualizer/src/components/Sidebar/Sidebar.tsx`.
+- [x] 1.1 Replace `modscape` with `modscape` in `package.json` (name and bin).
+- [x] 1.2 Replace `modscape` with `modscape` in `src/index.js` (commander configuration).
+- [x] 1.3 Replace `ModScape` with `Modscape` in `README.md`.
+- [x] 1.4 Replace `modscape` with `modscape` in `DEVELOPMENT.md`.
+- [x] 1.5 Replace `ModScape` with `Modscape` in `visualizer/src/components/Sidebar/Sidebar.tsx`.
 
 ## 2. Directory and Scaffolding Update
 
-- [x] 2.1 Rename `src/init.js` logic to create `.modscape/` instead of `.modmod/`.
-- [x] 2.2 Rename the existing `.modmod/` directory in the repository to `.modscape/`.
+- [x] 2.1 Rename `src/init.js` logic to create `.modscape/` instead of `.modscape/`.
+- [x] 2.2 Rename the existing `.modscape/` directory in the repository to `.modscape/`.
 - [x] 2.3 Update all files in `src/templates/` to reference `.modscape/` and `Modscape`.
 
 ## 3. Visual and Internal Consistency

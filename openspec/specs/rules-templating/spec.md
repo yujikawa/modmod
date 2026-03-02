@@ -1,11 +1,11 @@
 ## ADDED Requirements
 
 ### Requirement: Centralized Rules Template
-The system SHALL create a template file at `.modmod/rules.md` containing sections for methodology, conventions, and standard types.
+The system SHALL create a template file at `.modscape/rules.md` containing sections for methodology, conventions, and standard types.
 
 #### Scenario: Creating rules.md
 - **WHEN** the `init` command is run
-- **THEN** the system creates `.modmod/rules.md` with structured Markdown headers for Strategy, Conventions, and Standard Types
+- **THEN** the system creates `.modscape/rules.md` with structured Markdown headers for Strategy, Conventions, and Standard Types
 
 ### Requirement: Methodology Customization
 The rules template SHALL include placeholder sections for project-specific modeling methodologies (e.g., Data Vault, Star Schema).

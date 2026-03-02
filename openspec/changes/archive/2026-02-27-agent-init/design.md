@@ -1,12 +1,12 @@
 ## Context
 
-The `modmod` tool currently focuses on visualization and basic CLI interaction. However, the creation of `model.yaml` is often where users need the most help. AI agents (Gemini, Codex, Claude) are capable of generating YAML but need project-specific guidance to adhere to company standards. This design outlines how the `modmod init` command will scaffold this environment.
+The `modscape` tool currently focuses on visualization and basic CLI interaction. However, the creation of `model.yaml` is often where users need the most help. AI agents (Gemini, Codex, Claude) are capable of generating YAML but need project-specific guidance to adhere to company standards. This design outlines how the `modscape init` command will scaffold this environment.
 
 ## Goals / Non-Goals
 
 **Goals:**
-- Implement a `modmod init` command.
-- Create a centralized `.modmod/rules.md` template.
+- Implement a `modscape init` command.
+- Create a centralized `.modscape/rules.md` template.
 - Scaffold agent-specific files (`.gemini/skills/modeler.md`, `.codex/instructions.md`, `.clauderules`) that reference the centralized rules.
 - Support interactive selection of which agents to scaffold for.
 
@@ -17,7 +17,7 @@ The `modmod` tool currently focuses on visualization and basic CLI interaction. 
 
 ## Decisions
 
-- **Centralized Rules (SSoT)**: All project-specific modeling rules will reside in `.modmod/rules.md`.
+- **Centralized Rules (SSoT)**: All project-specific modeling rules will reside in `.modscape/rules.md`.
   - *Rationale*: Prevents duplication and ensures all AI agents operate on the same logic.
 - **Agent Templates**: The CLI will contain embedded Markdown templates for each agent type.
   - *Rationale*: Simplifies scaffolding and allows for future agent support (e.g., Windsurf, Cursor).
@@ -28,5 +28,5 @@ The `modmod` tool currently focuses on visualization and basic CLI interaction. 
 
 ## Risks / Trade-offs
 
-- **Template Drift**: [Risk] Agent-specific file formats might change. → [Mitigation] Keep agent instructions simple and focused on "Read .modmod/rules.md".
-- **File Overwrites**: [Risk] `modmod init` might overwrite existing configurations. → [Mitigation] Implement checks to ensure files are only created if they don't exist, or prompt for confirmation.
+- **Template Drift**: [Risk] Agent-specific file formats might change. → [Mitigation] Keep agent instructions simple and focused on "Read .modscape/rules.md".
+- **File Overwrites**: [Risk] `modscape init` might overwrite existing configurations. → [Mitigation] Implement checks to ensure files are only created if they don't exist, or prompt for confirmation.

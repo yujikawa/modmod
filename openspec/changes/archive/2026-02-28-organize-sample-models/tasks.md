@@ -7,7 +7,7 @@
 
 ## 2. Documentation and Cleanup
 
-- [x] 2.1 Update `DEVELOPMENT.md` with instructions on how to use `modmod dev samples`.
+- [x] 2.1 Update `DEVELOPMENT.md` with instructions on how to use `modscape dev samples`.
 - [x] 2.2 Remove the old `visualizer/sample-model.yaml` file.
 - [x] 2.3 Search for any remaining references to `visualizer/sample-model.yaml` and update them.
 

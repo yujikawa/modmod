@@ -14,7 +14,7 @@
 
 - [x] 3.1 Implement the multi-select prompt for AI agents
 - [x] 3.2 Add logic to scaffold only the selected agent files
-- [x] 3.3 Verify that `.modmod/rules.md` is always created as the SSoT
+- [x] 3.3 Verify that `.modscape/rules.md` is always created as the SSoT
 
 ## 4. Verification
 

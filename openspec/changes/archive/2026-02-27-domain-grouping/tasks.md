@@ -19,12 +19,12 @@
 ## 4. Layout & Persistence
 
 - [x] 4.1 Update `useStore.ts` to handle coordinate and dimension updates for domain nodes
-- [x] 4.2 Implement layout persistence logic for domains in `modmod dev` mode (API calls)
-- [x] 4.3 Update `modmod build` to correctly embed domain and layout data into the static site
+- [x] 4.2 Implement layout persistence logic for domains in `modscape dev` mode (API calls)
+- [x] 4.3 Update `modscape build` to correctly embed domain and layout data into the static site
 
 ## 5. Verification
 
 - [x] 5.1 Test with a YAML containing one domain and multiple tables
 - [x] 5.2 Verify that dragging a domain moves its member tables
 - [x] 5.3 Test cross-domain relationships to ensure edges remain connected
-- [x] 5.4 Confirm that `modmod build` generates a static site with correct grouping
+- [x] 5.4 Confirm that `modscape build` generates a static site with correct grouping

@@ -29,7 +29,7 @@ async function safeWriteFile(filePath, content) {
 }
 
 export async function initProject(options = {}) {
-  console.log('\n  🛠️  ModMod Project Initialization\n');
+  console.log('\n  🛠️  ModScape Project Initialization\n');
 
   try {
     const agents = [];
@@ -72,15 +72,15 @@ export async function initProject(options = {}) {
     // 2. Create agent-specific files
     if (agents.includes('gemini')) {
       const skillTemplate = fs.readFileSync(path.join(__dirname, 'templates/gemini/SKILL.md'), 'utf8');
-      await safeWriteFile('.gemini/skills/modmod/SKILL.md', skillTemplate);
+      await safeWriteFile('.gemini/skills/modscape/SKILL.md', skillTemplate);
       
       const commandTemplate = fs.readFileSync(path.join(__dirname, 'templates/gemini/command.toml'), 'utf8');
-      await safeWriteFile('.gemini/commands/modmod/modeling.toml', commandTemplate);
+      await safeWriteFile('.gemini/commands/modscape/modeling.toml', commandTemplate);
     }
 
     if (agents.includes('codex')) {
       const promptTemplate = fs.readFileSync(path.join(__dirname, 'templates/codex/prompt.md'), 'utf8');
-      await safeWriteFile('.codex/prompts/modmod-modeling.md', promptTemplate);
+      await safeWriteFile('.codex/prompts/modscape-modeling.md', promptTemplate);
     }
 
     if (agents.includes('claude')) {
@@ -88,7 +88,7 @@ export async function initProject(options = {}) {
       await safeWriteFile('.clauderules', clauderules);
       
       const commandTemplate = fs.readFileSync(path.join(__dirname, 'templates/claude/command.md'), 'utf8');
-      await safeWriteFile('.claude/commands/modmod/modeling.md', commandTemplate);
+      await safeWriteFile('.claude/commands/modscape/modeling.md', commandTemplate);
     }
 
     console.log('\n  ✅ Initialization complete! Customize ".modscape/rules.md" to match your project standards.\n');

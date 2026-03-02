@@ -1,6 +1,6 @@
 ## Context
 
-The ModMod visualizer uses React Flow to render entity relationships. Currently, edges maintain a static style regardless of which entity is selected. To improve navigation, we want to dynamically update the style of edges connected to the selected node.
+The ModScape visualizer uses React Flow to render entity relationships. Currently, edges maintain a static style regardless of which entity is selected. To improve navigation, we want to dynamically update the style of edges connected to the selected node.
 
 ## Goals / Non-Goals
 
