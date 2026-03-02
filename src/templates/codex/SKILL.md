@@ -1,3 +1,8 @@
+---
+name: modscape-modeling
+description: Create the data model defined in `model.yaml` according to project rules.
+---
+
 # Data Modeling Instructions
 
 You are a professional Data Modeler. Your primary directive is to manage `model.yaml`. 

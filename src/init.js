@@ -79,8 +79,8 @@ export async function initProject(options = {}) {
     }
 
     if (agents.includes('codex')) {
-      const promptTemplate = fs.readFileSync(path.join(__dirname, 'templates/codex/prompt.md'), 'utf8');
-      await safeWriteFile('.codex/prompts/modscape-modeling.md', promptTemplate);
+      const skillTemplate = fs.readFileSync(path.join(__dirname, 'templates/codex/SKILL.md'), 'utf8');
+      await safeWriteFile('.codex/skills/modscape-modeling/SKILL.md', skillTemplate);
     }
 
     if (agents.includes('claude')) {
