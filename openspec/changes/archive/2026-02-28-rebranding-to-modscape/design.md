@@ -20,7 +20,7 @@ Renaming a project mid-development requires a careful global search-and-replace 
 - **Rationale:** Direct mapping to the new project name.
 
 ### 2. Hidden Directory
-- **Decision:** Rename `.modmod/` to `.modscape/`.
+- **Decision:** Rename `.modscape/` to `.modscape/`.
 - **Rationale:** Keeps project-specific configurations under the new brand.
 
 ### 3. Case Sensitivity
@@ -29,7 +29,7 @@ Renaming a project mid-development requires a careful global search-and-replace 
 
 ## Risks / Trade-offs
 
-- **[Risk] Broken AI Skills**: If agent skills hardcode `.modmod/rules.md`, they will break.
+- **[Risk] Broken AI Skills**: If agent skills hardcode `.modscape/rules.md`, they will break.
   - **Mitigation**: Update all template files in `src/templates/` simultaneously.
-- **[Risk] Existing user configurations**: Current users might have `.modmod/` folders.
+- **[Risk] Existing user configurations**: Current users might have `.modscape/` folders.
   - **Mitigation**: Add a legacy check or just document the migration (since it's early stage).

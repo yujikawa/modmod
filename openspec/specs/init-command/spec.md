@@ -3,8 +3,8 @@
 ### Requirement: Interactive Init Command
 The system SHALL provide an interactive CLI subcommand `init` to guide the project setup.
 
-#### Scenario: Running modmod init
-- **WHEN** the user runs `modmod init`
+#### Scenario: Running modscape init
+- **WHEN** the user runs `modscape init`
 - **THEN** the system prompts the user to select which AI agents they use (Gemini, Codex, Claude)
 
 ### Requirement: Safe Scaffolding

@@ -33,7 +33,7 @@ The system SHALL render table nodes at coordinates specified in the YAML model's
 The system SHALL allow the visualizer to load its data from an internal constant or an external JSON file in a CLI environment.
 
 #### Scenario: Running in CLI dev mode
-- **WHEN** the visualizer is launched by `modmod dev`
+- **WHEN** the visualizer is launched by `modscape dev`
 - **THEN** it fetches the initial YAML model from a local API endpoint instead of the manual input
 ## MODIFIED Requirements
 

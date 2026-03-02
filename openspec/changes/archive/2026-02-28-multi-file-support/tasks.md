@@ -1,6 +1,6 @@
 ## 1. CLI and Server Backbone
 
-- [x] 1.1 Update `src/index.js` to accept a directory or multiple file paths for `modmod dev`.
+- [x] 1.1 Update `src/index.js` to accept a directory or multiple file paths for `modscape dev`.
 - [x] 1.2 Implement a file scanner in `src/dev.js` to find all `.yaml`/`.yml` files.
 - [x] 1.3 Create an internal mapping of `slug -> absolutePath` in `src/dev.js`.
 - [x] 1.4 Add a new GET endpoint `/api/files` that returns the list of slugs and names.

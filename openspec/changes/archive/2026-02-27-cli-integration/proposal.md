@@ -1,12 +1,12 @@
 ## Why
 
-Currently, the `modmod-visualizer` is a standalone web application where users manually paste YAML. To provide a professional data engineering experience, we need to transition this into a CLI-driven tool that supports local development workflows (interactive editing with auto-save) and easy deployment of documentation (static site generation).
+Currently, the `modscape-visualizer` is a standalone web application where users manually paste YAML. To provide a professional data engineering experience, we need to transition this into a CLI-driven tool that supports local development workflows (interactive editing with auto-save) and easy deployment of documentation (static site generation).
 
 ## What Changes
 
-- **New CLI Interface**: Introduce `modmod dev` and `modmod build` commands.
-- **Interactive Development Mode**: `modmod dev` will watch a local YAML file, serve the visualizer, and automatically save layout changes back to the YAML.
-- **Static Site Generation**: `modmod build` will package the visualizer with a specific YAML model into a production-ready static site for hosting (e.g., GitHub Pages).
+- **New CLI Interface**: Introduce `modscape dev` and `modscape build` commands.
+- **Interactive Development Mode**: `modscape dev` will watch a local YAML file, serve the visualizer, and automatically save layout changes back to the YAML.
+- **Static Site Generation**: `modscape build` will package the visualizer with a specific YAML model into a production-ready static site for hosting (e.g., GitHub Pages).
 - **YAML Schema Extension**: Support for a `layout` section in the YAML to persist node coordinates.
 
 ## Capabilities
@@ -22,6 +22,6 @@ Currently, the `modmod-visualizer` is a standalone web application where users m
 
 ## Impact
 
-- **New CLI Tooling**: Implementation of the `modmod` command.
+- **New CLI Tooling**: Implementation of the `modscape` command.
 - **Visualizer Refactoring**: Minor changes to `App.tsx` and the Zustand store to support CLI-driven data loading.
-- **Build Pipeline**: Integration of the Vite build process into the `modmod build` command.
+- **Build Pipeline**: Integration of the Vite build process into the `modscape build` command.

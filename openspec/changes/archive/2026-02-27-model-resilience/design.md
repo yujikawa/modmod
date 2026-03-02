@@ -1,6 +1,6 @@
 ## Context
 
-The initial implementation of ModMod assumed that users would provide a complete YAML definition including logical and physical layers. In practice, data modeling often begins with a rough "box and line" conceptual sketch. The current codebase crashes when encountering incomplete tables, which hinders this creative process.
+The initial implementation of ModScape assumed that users would provide a complete YAML definition including logical and physical layers. In practice, data modeling often begins with a rough "box and line" conceptual sketch. The current codebase crashes when encountering incomplete tables, which hinders this creative process.
 
 ## Goals / Non-Goals
 

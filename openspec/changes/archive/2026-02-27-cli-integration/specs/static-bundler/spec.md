@@ -4,7 +4,7 @@
 The system SHALL generate a standalone version of the visualizer that requires no backend.
 
 #### Scenario: Running a build
-- **WHEN** the user executes `modmod build` for a specific model
+- **WHEN** the user executes `modscape build` for a specific model
 - **THEN** the visualizer sources all its data from an embedded constant or an internal JSON file
 
 ### Requirement: YAML Embedding

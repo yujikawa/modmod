@@ -5,7 +5,7 @@ The system SHALL use `Modscape` as the primary project name in all UI components
 
 #### Scenario: User opens the visualizer
 - **WHEN** the user views the sidebar header
-- **THEN** they see "Modscape" instead of "ModMod"
+- **THEN** they see "Modscape" instead of "ModScape"
 
 ### Requirement: CLI Entry Point
 The system SHALL provide a `modscape` command to interact with the toolkit.

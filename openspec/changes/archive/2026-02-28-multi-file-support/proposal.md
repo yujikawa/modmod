@@ -1,10 +1,10 @@
 ## Why
 
-Currently, the `modmod dev` command only supports a single YAML file. As projects grow, data models are often split across multiple files. Users need a way to browse and switch between multiple models within a single session without restarting the CLI. This change introduces multi-file support with a secure URL mapping to prevent path traversal and information leakage.
+Currently, the `modscape dev` command only supports a single YAML file. As projects grow, data models are often split across multiple files. Users need a way to browse and switch between multiple models within a single session without restarting the CLI. This change introduces multi-file support with a secure URL mapping to prevent path traversal and information leakage.
 
 ## What Changes
 
-- **CLI**: `modmod dev` now accepts a directory path or multiple file paths as arguments.
+- **CLI**: `modscape dev` now accepts a directory path or multiple file paths as arguments.
 - **Server**: 
   - Automatically scans for `.yaml` and `.yml` files in the specified directory.
   - Generates a secure "safe name" (slug) for each file to be used in URLs.
