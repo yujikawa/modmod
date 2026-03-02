@@ -84,9 +84,6 @@ export async function initProject(options = {}) {
     }
 
     if (agents.includes('claude')) {
-      const clauderules = fs.readFileSync(path.join(__dirname, 'templates/claude/clauderules'), 'utf8');
-      await safeWriteFile('.clauderules', clauderules);
-      
       const commandTemplate = fs.readFileSync(path.join(__dirname, 'templates/claude/command.md'), 'utf8');
       await safeWriteFile('.claude/commands/modscape/modeling.md', commandTemplate);
     }
