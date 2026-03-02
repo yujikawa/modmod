@@ -45,6 +45,7 @@ interface AppState {
   addDomain: (x: number, y: number) => void;
   addEdge: (source: string, target: string) => void;
   removeNode: (id: string) => void;
+  updateTable: (id: string, updates: Partial<Table>) => void;
   
   // Multi-file Actions
   fetchAvailableFiles: () => Promise<void>;
@@ -329,6 +330,22 @@ export const useStore = create<AppState>((set, get) => ({
     };
 
     set({ schema: normalizeSchema(newSchema), selectedTableId: null });
+    get().syncToYamlInput();
+  },
+
+  updateTable: (id, updates) => {
+    const { schema } = get();
+    if (!schema) return;
+
+    const newTables = schema.tables.map(table => {
+      if (table.id === id) {
+        return { ...table, ...updates };
+      }
+      return table;
+    });
+
+    const newSchema = { ...schema, tables: newTables };
+    set({ schema: normalizeSchema(newSchema) });
     get().syncToYamlInput();
   },
   
