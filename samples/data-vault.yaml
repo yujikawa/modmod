@@ -5,20 +5,13 @@ tables:
       type: hub
     conceptual:
       description: Business keys for customers (e.g., Customer Number).
+    sampleData: []
     columns:
-      - id: hk_customer
+      - id: col_1772492736912
         logical:
-          name: HK_CUSTOMER
-          type: Binary
-          isPrimaryKey: true
-      - id: customer_id
-        logical:
-          name: CUSTOMER_ID
+          name: New Column
           type: String
-      - id: record_source
-        logical:
-          name: RECORD_SOURCE
-          type: String
+          description: ''
   - id: sat_customer_crm
     name: SAT_CUSTOMER_CRM
     appearance:
@@ -53,6 +46,7 @@ tables:
         logical:
           name: EMAIL
           type: String
+    sampleData: []
   - id: hub_product
     name: HUB_PRODUCT
     appearance:
@@ -69,6 +63,7 @@ tables:
         logical:
           name: PRODUCT_CODE
           type: String
+    sampleData: []
   - id: link_sale
     name: LINK_SALE
     appearance:
@@ -91,6 +86,7 @@ tables:
           name: HK_PRODUCT
           type: Binary
           isForeignKey: true
+    sampleData: []
 relationships:
   - from:
       table: hub_customer
@@ -120,30 +116,30 @@ domains:
     name: Raw Vault
     tables:
       - hub_customer
-      - sat_customer_crm
       - hub_product
+      - sat_customer_crm
       - link_sale
     color: rgba(139, 92, 246, 0.05)
 layout:
   dv_raw:
-    x: 326
-    'y': 160
-    width: 1178
+    x: 366
+    'y': 175
+    width: 1416
     height: 733
   hub_customer:
     x: 385
     'y': 57
   sat_customer_crm:
-    x: 883
-    'y': 124
+    x: 841
+    'y': 163
   hub_product:
     x: 25
     'y': 158
     width: 293
     height: 189
   link_sale:
-    x: 306
-    'y': 438
+    x: 666
+    'y': 512
     width: 312
     height: 177
   new_table_1772429337792:
@@ -186,3 +182,6 @@ layout:
   new_table_1772443524541:
     x: 1016
     'y': -65
+  new_table_1772491180880:
+    x: 200
+    'y': 201

@@ -1,4 +1,4 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Sample Data Grid
 The system SHALL display a grid view for sample data "stories" within the detail panel's Sample Data tab. The grid SHALL be automatically driven by the table's logical columns by index.

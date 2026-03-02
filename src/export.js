@@ -18,12 +18,26 @@ function normalizeSchema(data) {
     layout: data.layout || {}
   };
 
-  schema.tables = schema.tables.map(table => ({
-    ...table,
-    id: table.id || 'unknown',
-    name: table.name || table.id || 'Unnamed Table',
-    columns: Array.isArray(table.columns) ? table.columns : []
-  }));
+  schema.tables = schema.tables.map(table => {
+    let sampleData = table.sampleData;
+    
+    // Migrate legacy format { columns: [...], rows: [[...]] } to new [[...]] format
+    if (sampleData && typeof sampleData === 'object' && !Array.isArray(sampleData)) {
+      if (Array.isArray(sampleData.rows)) {
+        sampleData = sampleData.rows;
+      } else {
+        sampleData = [];
+      }
+    }
+
+    return {
+      ...table,
+      id: table.id || 'unknown',
+      name: table.name || table.id || 'Unnamed Table',
+      columns: Array.isArray(table.columns) ? table.columns : [],
+      sampleData: Array.isArray(sampleData) ? sampleData : []
+    };
+  });
 
   return schema;
 }
@@ -128,15 +142,16 @@ export function generateMarkdown(schema, modelName) {
     }
 
     // Sample Data
-    if (table.sampleData && table.sampleData.rows && table.sampleData.rows.length > 0) {
+    if (table.sampleData && table.sampleData.length > 0) {
       md += '#### Sample Data\n\n';
-      md += '| ' + table.sampleData.columns.join(' | ') + ' |\n';
-      md += '| ' + table.sampleData.columns.map(() => '---').join(' | ') + ' |\n';
-      table.sampleData.rows.slice(0, 5).forEach(row => {
+      const headers = table.columns.map(c => c.logical?.name || c.id);
+      md += '| ' + headers.join(' | ') + ' |\n';
+      md += '| ' + headers.map(() => '---').join(' | ') + ' |\n';
+      table.sampleData.slice(0, 5).forEach(row => {
         md += '| ' + row.join(' | ') + ' |\n';
       });
-      if (table.sampleData.rows.length > 5) {
-        md += `\n*(Showing 5 of ${table.sampleData.rows.length} rows)*\n`;
+      if (table.sampleData.length > 5) {
+        md += `\n*(Showing 5 of ${table.sampleData.length} rows)*\n`;
       }
       md += '\n';
     }

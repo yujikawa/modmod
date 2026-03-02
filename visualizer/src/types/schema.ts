@@ -31,7 +31,7 @@ export interface Table {
     schema?: string;
   };
   columns?: Column[]; // Optional
-  sampleData?: SampleData;
+  sampleData?: any[][]; // New simplified format: 2D array
 }
 
 export interface Column {
@@ -49,12 +49,6 @@ export interface Column {
     type?: string;
     constraints?: string[];
   };
-}
-
-export interface SampleData {
-  name?: string;
-  columns: string[]; // List of column IDs
-  rows: any[][];
 }
 
 export interface Relationship {

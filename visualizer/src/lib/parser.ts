@@ -16,13 +16,39 @@ export function normalizeSchema(data: any): Schema {
   }
 
   // Further normalization for each table
-  schema.tables = schema.tables.map((table: any) => ({
-    ...table,
-    id: table.id || 'unknown',
-    name: table.name || table.id || 'Unnamed Table',
-    appearance: table.appearance || undefined,
-    columns: Array.isArray(table.columns) ? table.columns : []
-  }))
+  schema.tables = schema.tables.map((table: any) => {
+    let sampleData = table.sampleData;
+    
+    // Migrate legacy format { columns: [...], rows: [[...]] } to new [[...]] format
+    if (sampleData && typeof sampleData === 'object' && !Array.isArray(sampleData)) {
+      const legacyColumns = Array.isArray(sampleData.columns) ? sampleData.columns : [];
+      const legacyRows = Array.isArray(sampleData.rows) ? sampleData.rows : [];
+      
+      if (legacyColumns.length > 0 && legacyRows.length > 0) {
+        // Map legacy columns (ID list) to current table column order
+        const currentColumns = Array.isArray(table.columns) ? table.columns : [];
+        sampleData = legacyRows.map((row: any[]) => {
+          return currentColumns.map((col: any) => {
+            const colIndex = legacyColumns.indexOf(col.id);
+            return colIndex !== -1 ? row[colIndex] : null;
+          });
+        });
+      } else if (legacyRows.length > 0) {
+        sampleData = legacyRows;
+      } else {
+        sampleData = [];
+      }
+    }
+
+    return {
+      ...table,
+      id: table.id || 'unknown',
+      name: table.name || table.id || 'Unnamed Table',
+      appearance: table.appearance || undefined,
+      columns: Array.isArray(table.columns) ? table.columns : [],
+      sampleData: Array.isArray(sampleData) ? sampleData : []
+    }
+  })
 
   return schema
 }
