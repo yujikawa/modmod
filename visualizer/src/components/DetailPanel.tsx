@@ -41,6 +41,7 @@ const DetailPanel = () => {
     return (
       <div 
         className="bg-slate-900 border-t border-slate-800 shadow-2xl z-50 flex flex-col text-slate-100"
+        onClick={(e) => e.stopPropagation()}
         style={{ 
           height: '35vh', 
           maxHeight: '400px',
@@ -121,6 +122,7 @@ const DetailPanel = () => {
     return (
       <div 
         className="bg-slate-900 border-t border-slate-800 shadow-2xl z-50 flex flex-col text-slate-100"
+        onClick={(e) => e.stopPropagation()}
         style={{ 
           height: '35vh', 
           maxHeight: '400px',
@@ -232,7 +234,8 @@ const DetailPanel = () => {
     updateTable(table!.id, updates);
   };
 
-  const handleAddColumn = () => {
+  const handleAddColumn = (e: React.MouseEvent) => {
+    e.stopPropagation();
     const newCol: Column = {
       id: `col_${Date.now()}`,
       logical: { name: 'New Column', type: 'String', description: '' },
@@ -241,7 +244,8 @@ const DetailPanel = () => {
     handleUpdateTable({ columns: [...(table!.columns || []), newCol] });
   };
 
-  const handleRemoveColumn = (colId: string) => {
+  const handleRemoveColumn = (e: React.MouseEvent, colId: string) => {
+    e.stopPropagation();
     const newColumns = table!.columns?.filter(col => col.id !== colId) || [];
     handleUpdateTable({ columns: newColumns });
   };
@@ -295,7 +299,8 @@ const DetailPanel = () => {
     }
   };
 
-  const handleRemoveTag = (tagToRemove: string) => {
+  const handleRemoveTag = (e: React.MouseEvent, tagToRemove: string) => {
+    e.stopPropagation();
     const currentTags = table!.conceptual?.tags || [];
     handleUpdateTable({
       conceptual: {
@@ -309,14 +314,16 @@ const DetailPanel = () => {
     handleUpdateTable({ sampleData: newSample });
   };
 
-  const handleAddSampleRow = () => {
+  const handleAddSampleRow = (e: React.MouseEvent) => {
+    e.stopPropagation();
     const currentSample = table!.sampleData || [];
     const colCount = table!.columns?.length || 0;
     const newRow = new Array(colCount).fill('');
     handleUpdateSampleData([...currentSample, newRow]);
   };
 
-  const handleRemoveSampleRow = (index: number) => {
+  const handleRemoveSampleRow = (e: React.MouseEvent, index: number) => {
+    e.stopPropagation();
     const currentSample = table!.sampleData || [];
     const newRows = currentSample.filter((_, i) => i !== index);
     handleUpdateSampleData(newRows);
@@ -335,6 +342,7 @@ const DetailPanel = () => {
   return (
     <div 
       className="bg-slate-900 border-t border-slate-800 shadow-2xl z-50 flex flex-col text-slate-100"
+      onClick={(e) => e.stopPropagation()}
       style={{ 
         height: '45vh', 
         maxHeight: '600px',
@@ -407,7 +415,10 @@ const DetailPanel = () => {
         {tabs.map(tab => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveTab(tab.id);
+            }}
             style={{ 
               padding: '12px 0', 
               backgroundColor: 'transparent', 
@@ -462,7 +473,7 @@ const DetailPanel = () => {
                 {table!.conceptual?.tags?.map(tag => (
                   <span key={tag} className="flex items-center gap-2 px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full text-xs">
                     {tag}
-                    <button onClick={() => handleRemoveTag(tag)} className="hover:text-red-400"><X size={12} /></button>
+                    <button onClick={(e) => handleRemoveTag(e, tag)} className="hover:text-red-400"><X size={12} /></button>
                   </span>
                 ))}
                 <div style={{ position: 'relative' }}>
@@ -541,7 +552,7 @@ const DetailPanel = () => {
                         />
                       </td>
                       <td style={{ padding: '6px 16px', textAlign: 'right' }}>
-                        <button onClick={() => handleRemoveColumn(col.id)} className="text-red-500/50 hover:text-red-500 p-1 transition-colors">
+                        <button onClick={(e) => handleRemoveColumn(e, col.id)} className="text-red-500/50 hover:text-red-500 p-1 transition-colors">
                           <Trash2 size={14} />
                         </button>
                       </td>
@@ -669,7 +680,7 @@ const DetailPanel = () => {
                           </td>
                         ))}
                         <td className="p-2 text-center">
-                          <button onClick={() => handleRemoveSampleRow(rowIndex)} className="text-slate-600 hover:text-red-400"><Trash2 size={12} /></button>
+                          <button onClick={(e) => handleRemoveSampleRow(e, rowIndex)} className="text-slate-600 hover:text-red-400"><Trash2 size={12} /></button>
                         </td>
                       </tr>
                     ))}
