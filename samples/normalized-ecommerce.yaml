@@ -20,6 +20,12 @@ tables:
         logical:
           name: FULL_NAME
           type: String
+    sampleData:
+      columns: ["user_id", "email", "full_name"]
+      rows:
+        - ["u-101", "john.doe@example.com", "John Doe"]
+        - ["u-102", "jane.smith@example.com", "Jane Smith"]
+        - ["u-103", "bob.wilson@example.com", "Bob Wilson"]
   - id: products
     name: PRODUCTS
     appearance:
@@ -41,6 +47,12 @@ tables:
         logical:
           name: PRICE
           type: Decimal
+    sampleData:
+      columns: ["product_id", "name", "price"]
+      rows:
+        - ["p-001", "Wireless Mouse", 29.99]
+        - ["p-002", "Mechanical Keyboard", 149.50]
+        - ["p-003", "USB-C Cable (2m)", 15.00]
   - id: orders
     name: ORDERS
     appearance:
@@ -67,6 +79,12 @@ tables:
         logical:
           name: STATUS
           type: String
+    sampleData:
+      columns: ["order_id", "user_id", "status"]
+      rows:
+        - ["ord-1001", "u-101", "SHIPPED"]
+        - ["ord-1002", "u-102", "PENDING"]
+        - ["ord-1003", "u-101", "DELIVERED"]
   - id: order_items
     name: ORDER_ITEMS
     appearance:

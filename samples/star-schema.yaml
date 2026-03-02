@@ -34,6 +34,12 @@ tables:
         logical:
           name: AMOUNT
           type: Decimal
+    sampleData:
+      columns: ["sale_id", "product_id", "quantity", "amount"]
+      rows:
+        - [10001, 501, 2, 59.98]
+        - [10002, 502, 1, 149.50]
+        - [10003, 501, 5, 149.95]
   - id: dim_date
     name: DIM_DATE
     appearance:
@@ -78,6 +84,12 @@ tables:
         logical:
           name: CATEGORY
           type: String
+    sampleData:
+      columns: ["product_id", "product_name", "category"]
+      rows:
+        - [501, "Wireless Mouse", "Electronics"]
+        - [502, "Mechanical Keyboard", "Electronics"]
+        - [503, "Desk Lamp", "Home Office"]
   - id: dim_store
     name: DIM_STORE
     appearance:
