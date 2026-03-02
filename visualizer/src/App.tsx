@@ -6,7 +6,6 @@ import ReactFlow, {
   type Edge,
   useNodesState,
   useEdgesState,
-  addEdge,
   type Connection,
   useReactFlow,
   ReactFlowProvider
@@ -17,6 +16,7 @@ import TableNode from './components/TableNode'
 import DomainNode from './components/DomainNode'
 import DetailPanel from './components/DetailPanel'
 import Sidebar from './components/Sidebar/Sidebar'
+import CanvasToolbar from './components/CanvasToolbar'
 
 const nodeTypes = {
   table: TableNode,
@@ -35,7 +35,8 @@ function Flow() {
     saveLayout,
     isCliMode,
     focusNodeId,
-    setFocusNodeId
+    setFocusNodeId,
+    addEdge: createEdge
   } = useStore()
   
   const [nodes, setNodes, onNodesChange] = useNodesState([])
@@ -97,6 +98,7 @@ function Flow() {
           type: 'domain',
           position: { x, y },
           style: { width, height },
+          dragHandle: '.domain-drag-handle',
           data: { label: domain.name, color: domain.color },
         });
 
@@ -116,6 +118,8 @@ function Flow() {
             id: table.id,
             type: 'table',
             position: { x: tx, y: ty },
+            style: tableLayout?.width ? { width: tableLayout.width, height: tableLayout.height } : undefined,
+            dragHandle: '.table-drag-handle',
             data: { table },
             parentNode: domain.id,
             extent: 'parent',
@@ -135,6 +139,8 @@ function Flow() {
         id: table.id,
         type: 'table',
         position: { x: layout.x, y: layout.y },
+        style: layout?.width ? { width: layout.width, height: layout.height } : undefined,
+        dragHandle: '.table-drag-handle',
         data: { table },
       });
     });
@@ -166,18 +172,49 @@ function Flow() {
   }, [currentEdges, setEdges])
 
   const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges]
+    (params: Connection) => {
+      if (params.source && params.target) {
+        createEdge(params.source, params.target);
+      }
+    },
+    [createEdge]
   )
 
   const onNodeDragStop = useCallback((_: any, node: Node) => {
     if (!isCliMode) return;
-    updateNodePosition(node.id, node.position.x, node.position.y);
+
+    // Detect if this is a table dropped into a domain
+    let parentId = node.parentNode;
+    
+    if (node.type === 'table') {
+      // Find domains that contain this node's current center position
+      const nodeCenterX = node.position.x + (node.width || 0) / 2;
+      const nodeCenterY = node.position.y + (node.height || 0) / 2;
+
+      const domains = nodes.filter(n => n.type === 'domain' && n.id !== node.id);
+      const targetDomain = domains.find(d => {
+        const dx = d.position.x;
+        const dy = d.position.y;
+        const dw = d.width || 600;
+        const dh = d.height || 400;
+        return (
+          nodeCenterX >= dx && 
+          nodeCenterX <= dx + dw && 
+          nodeCenterY >= dy && 
+          nodeCenterY <= dy + dh
+        );
+      });
+
+      parentId = targetDomain ? targetDomain.id : undefined;
+    }
+
+    updateNodePosition(node.id, node.position.x, node.position.y, parentId);
     saveLayout();
-  }, [isCliMode, updateNodePosition, saveLayout]);
+  }, [isCliMode, updateNodePosition, saveLayout, nodes]);
 
   return (
     <div className="flex-1 relative h-full">
+      <CanvasToolbar />
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -246,18 +283,12 @@ function App() {
           } else {
             // Use first model by default
             setSchema(data.models[0].schema);
-            // also update currentModelSlug
-            // (directly update store because setCurrentModel is async and might fetch)
-            // But setCurrentModel already handles static data now.
-            // Let's just use it.
             setCurrentModel(data.models[0].slug);
           }
         });
       } else if (data && data.schema) {
-        // Single file (old format support or just .schema)
         setSchema(data.schema);
       } else {
-        // Just the schema object directly (legacy)
         setSchema(data);
       }
     }

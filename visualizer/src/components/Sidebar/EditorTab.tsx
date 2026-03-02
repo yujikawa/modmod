@@ -1,27 +1,16 @@
-import { useState, useEffect } from 'react'
 import { useStore } from '../../store/useStore'
 import { AlertCircle, Save, Play } from 'lucide-react'
 
 const EditorTab = () => {
   const { 
-    schema, 
     error, 
     isCliMode, 
     currentModelSlug,
+    yamlInput,
+    setYamlInput,
     parseAndSetSchema 
   } = useStore()
   
-  const [yamlInput, setYamlInput] = useState('')
-
-  // Load initial data
-  useEffect(() => {
-    if (schema) {
-      import('js-yaml').then(yaml => {
-        setYamlInput(yaml.dump(schema, { indent: 2 }));
-      });
-    }
-  }, [schema]);
-
   const handleParse = async () => {
     parseAndSetSchema(yamlInput);
     if (isCliMode) {
