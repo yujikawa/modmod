@@ -26,6 +26,10 @@ export interface Table {
     tags?: string[]; // BEAM* tags (WHO, WHAT, WHEN, etc.)
     businessDefinitions?: Record<string, string>;
   };
+  physical?: { // Optional Table-level physical info
+    name?: string;
+    schema?: string;
+  };
   columns?: Column[]; // Optional
   sampleData?: SampleData;
 }
