@@ -73,9 +73,6 @@ export async function initProject(options = {}) {
     if (agents.includes('gemini')) {
       const skillTemplate = fs.readFileSync(path.join(__dirname, 'templates/gemini/SKILL.md'), 'utf8');
       await safeWriteFile('.gemini/skills/modscape/SKILL.md', skillTemplate);
-      
-      const commandTemplate = fs.readFileSync(path.join(__dirname, 'templates/gemini/command.toml'), 'utf8');
-      await safeWriteFile('.gemini/commands/modscape/modeling.toml', commandTemplate);
     }
 
     if (agents.includes('codex')) {
