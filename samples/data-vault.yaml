@@ -91,30 +91,12 @@ tables:
           name: HK_PRODUCT
           type: Binary
           isForeignKey: true
-  - id: new_table_1772432782303
-    name: aaaaa
-    appearance:
-      type: fact
-    columns:
-      - id: id
-        logical:
-          name: ID
-          type: Integer
-          isPrimaryKey: true
-  - id: new_table_1772432785956
-    name: bbbbb
-    appearance:
-      type: fact
-    columns:
-      - id: id
-        logical:
-          name: ID
-          type: Integer
-          isPrimaryKey: true
 relationships:
   - from:
       table: hub_customer
-      column: hk_customer
+      column:
+        - hk_customer
+        - record_source
     to:
       table: sat_customer_crm
       column: hk_customer
@@ -133,13 +115,6 @@ relationships:
       table: link_sale
       column: hk_product
     type: one-to-many
-  - from:
-      table: new_table_1772432782303
-      column: id
-    to:
-      table: new_table_1772432785956
-      column: id
-    type: one-to-many
 domains:
   - id: dv_raw
     name: Raw Vault
@@ -149,33 +124,26 @@ domains:
       - hub_product
       - link_sale
     color: rgba(139, 92, 246, 0.05)
-  - id: new_domain_1772432796166
-    name: NEW_DOMAIN
-    description: Domain purpose
-    tables:
-      - new_table_1772432782303
-      - new_table_1772432785956
-    color: rgba(59, 130, 246, 0.05)
 layout:
   dv_raw:
-    x: 355
-    'y': 563
-    width: 982
-    height: 741
+    x: 326
+    'y': 160
+    width: 1178
+    height: 733
   hub_customer:
-    x: 97
-    'y': 81
+    x: 385
+    'y': 57
   sat_customer_crm:
-    x: 483
-    'y': 66
+    x: 883
+    'y': 124
   hub_product:
-    x: 131
-    'y': 400
+    x: 25
+    'y': 158
     width: 293
     height: 189
   link_sale:
-    x: 493
-    'y': 385
+    x: 306
+    'y': 438
     width: 312
     height: 177
   new_table_1772429337792:
@@ -209,3 +177,12 @@ layout:
   new_table_1772432152664:
     x: 335
     'y': 226
+  new_table_1772442335884:
+    x: 720
+    'y': -222
+  new_table_1772443522032:
+    x: 734
+    'y': -254
+  new_table_1772443524541:
+    x: 1016
+    'y': -65

@@ -2025,3 +2025,6 @@ layout:
   identity_table_7:
     x: 250
     'y': 0
+  analytics_table_0:
+    x: 30
+    'y': 30

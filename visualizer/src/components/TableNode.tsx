@@ -50,7 +50,6 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
         width: '100%',
         height: '100%',
         minWidth: '220px', 
-        minHeight: '100px',
         position: 'relative',
         cursor: 'default'
       }}
@@ -59,7 +58,7 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
         color="#3b82f6"
         isVisible={isActuallySelected}
         minWidth={220}
-        minHeight={100}
+        minHeight={40}
         onResizeEnd={onResizeEnd}
         handleStyle={{ 
           width: 12, 
@@ -103,7 +102,12 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
         </button>
       )}
       
-      <Handle type="target" position={Position.Top} style={{ background: '#94a3b8', width: '8px', height: '8px', zIndex: 10 }} />
+      <Handle 
+        type="target" 
+        position={Position.Top} 
+        id={`${id}-target`} 
+        style={{ background: '#94a3b8', width: '8px', height: '8px', zIndex: 10 }} 
+      />
       
       <div 
         style={{ 
@@ -185,9 +189,11 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
                 {table.columns!.map((col) => (
                   <tr 
                     key={col.id} 
+                    className="column-row"
                     style={{ 
                       borderBottom: '1px solid #334155',
-                      backgroundColor: hoveredColumnId === col.id ? 'rgba(30, 58, 138, 0.6)' : 'transparent'
+                      backgroundColor: hoveredColumnId === col.id ? 'rgba(30, 58, 138, 0.6)' : 'transparent',
+                      position: 'relative'
                     }}
                   >
                     <td style={{ 
@@ -197,8 +203,16 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
-                      maxWidth: '350px'
+                      maxWidth: '350px',
+                      position: 'relative'
                     }}>
+                      <Handle
+                        type="target"
+                        position={Position.Left}
+                        id={`${id}-${col.id}-target`}
+                        className="column-handle"
+                        style={{ left: '-4px', opacity: 0 }}
+                      />
                       <div style={{ display: 'flex', alignItems: 'center' }}>
                         {col.logical?.isPrimaryKey && <span style={{ color: '#eab308', marginRight: '4px' }}>🔑</span>}
                         {col.logical?.isForeignKey && <span style={{ marginRight: '4px' }}>🔩</span>}
@@ -216,9 +230,17 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
-                      maxWidth: '150px'
+                      maxWidth: '150px',
+                      position: 'relative'
                     }}>
                       {col.logical?.type || 'Unknown'}
+                      <Handle
+                        type="source"
+                        position={Position.Right}
+                        id={`${id}-${col.id}-source`}
+                        className="column-handle"
+                        style={{ right: '-4px', opacity: 0 }}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -228,7 +250,12 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
         )}
       </div>
 
-      <Handle type="source" position={Position.Bottom} style={{ background: '#94a3b8', width: '8px', height: '8px', zIndex: 10 }} />
+      <Handle 
+        type="source" 
+        position={Position.Bottom} 
+        id={`${id}-source`} 
+        style={{ background: '#94a3b8', width: '8px', height: '8px', zIndex: 10 }} 
+      />
     </div>
   )
 }

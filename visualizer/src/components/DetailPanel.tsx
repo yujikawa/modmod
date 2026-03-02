@@ -14,23 +14,109 @@ const TYPE_CONFIG: Record<string, { color: string; icon: string; label: string }
 const DetailPanel = () => {
   const { 
     selectedTableId, 
+    selectedEdgeId,
     getSelectedTable, 
     getSelectedDomain,
+    getSelectedRelationship,
     setSelectedTableId, 
+    setSelectedEdgeId,
     updateTable,
-    updateDomain 
+    updateDomain,
+    updateRelationship
   } = useStore()
   
   const table = getSelectedTable()
   const domain = getSelectedDomain()
+  const relationshipData = getSelectedRelationship()
   
   const [activeTab, setActiveTab] = useState('conceptual')
   const [tagInput, setTagInput] = useState('')
 
-  if (!selectedTableId) return null
-  if (!table && !domain) return null
+  if (!selectedTableId && !selectedEdgeId) return null
+  if (!table && !domain && !relationshipData) return null
 
-  // --- Domain Editor Rendering ---
+  // --- Relationship Editor Rendering ---
+  if (relationshipData) {
+    const { relationship, index } = relationshipData;
+    return (
+      <div 
+        className="bg-slate-900 border-t border-slate-800 shadow-2xl z-50 flex flex-col text-slate-100"
+        style={{ 
+          height: '35vh', 
+          maxHeight: '400px',
+          minHeight: '200px',
+          backgroundColor: '#0f172a', 
+          borderTop: '2px solid #3b82f6',
+          display: 'flex', 
+          flexDirection: 'column',
+          color: '#f1f5f9',
+          boxShadow: '0 -10px 25px -5px rgba(0, 0, 0, 0.4)',
+          fontFamily: 'sans-serif'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 20px', borderBottom: '1px solid #1e293b', backgroundColor: '#020617' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+            <Database size={18} style={{ color: '#3b82f6' }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Relationship</span>
+                <span style={{ fontSize: '9px', fontWeight: 800, padding: '1px 5px', borderRadius: '3px', backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.2)', textTransform: 'uppercase' }}>
+                  EDGE
+                </span>
+              </div>
+              <p style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', margin: 0 }}>
+                {relationship.from.table}{relationship.from.column ? `.${relationship.from.column}` : ''} → {relationship.to.table}{relationship.to.column ? `.${relationship.to.column}` : ''}
+              </p>
+            </div>
+          </div>
+          <button onClick={() => setSelectedEdgeId(null)} style={{ padding: '6px', backgroundColor: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><X size={18} /></button>
+        </div>
+
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div className="grid grid-cols-2 gap-8">
+              <section>
+                <h3 style={{ fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Relationship Type</h3>
+                <select 
+                  value={relationship.type || 'one-to-many'}
+                  onChange={(e) => updateRelationship(index, { type: e.target.value as any })}
+                  className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm p-2.5 rounded focus:ring-1 focus:ring-blue-500 outline-none"
+                >
+                  <option value="one-to-one">One-to-One</option>
+                  <option value="one-to-many">One-to-Many</option>
+                  <option value="many-to-many">Many-to-Many</option>
+                </select>
+              </section>
+
+              <section>
+                <h3 style={{ fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Cardinality (Metadata)</h3>
+                <div style={{ color: '#94a3b8', fontSize: '12px' }}>
+                  Mapping established from <strong>{relationship.from.table}</strong> to <strong>{relationship.to.table}</strong>.
+                </div>
+              </section>
+            </div>
+            
+            <section>
+              <h3 style={{ fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Source/Target Details</h3>
+              <div className="flex gap-4 items-center bg-slate-800/50 p-3 rounded border border-slate-800">
+                <div className="flex-1">
+                  <div className="text-[10px] text-slate-500 uppercase">From Table</div>
+                  <div className="text-sm font-bold text-blue-400">{relationship.from.table}</div>
+                  <div className="text-[10px] text-slate-500">Column: {relationship.from.column || '(Table level)'}</div>
+                </div>
+                <div className="text-slate-600">→</div>
+                <div className="flex-1">
+                  <div className="text-[10px] text-slate-500 uppercase">To Table</div>
+                  <div className="text-sm font-bold text-blue-400">{relationship.to.table}</div>
+                  <div className="text-[10px] text-slate-500">Column: {relationship.to.column || '(Table level)'}</div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    );
+  }
   if (domain) {
     return (
       <div 

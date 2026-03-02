@@ -17,10 +17,15 @@ import DomainNode from './components/DomainNode'
 import DetailPanel from './components/DetailPanel'
 import Sidebar from './components/Sidebar/Sidebar'
 import CanvasToolbar from './components/CanvasToolbar'
+import ButtonEdge from './components/ButtonEdge'
 
 const nodeTypes = {
   table: TableNode,
   domain: DomainNode,
+}
+
+const edgeTypes = {
+  button: ButtonEdge,
 }
 
 const HIGHLIGHT_STYLE = { stroke: '#4ade80', strokeWidth: 3 };
@@ -31,12 +36,14 @@ function Flow() {
     schema, 
     setSelectedTableId, 
     selectedTableId,
+    selectedEdgeId,
+    setSelectedEdgeId,
     updateNodePosition,
     saveLayout,
     isCliMode,
     focusNodeId,
     setFocusNodeId,
-    addEdge: createEdge,
+    addRelationship,
     removeNode
   } = useStore()
   
@@ -114,12 +121,19 @@ function Flow() {
           const tableLayout = schema.layout?.[table.id];
           const tx = tableLayout?.x ?? (localCol * TABLE_WIDTH + DOMAIN_PADDING / 2);
           const ty = tableLayout?.y ?? (localRow * TABLE_HEIGHT + DOMAIN_PADDING / 2);
+          
+          // Apply default height if many columns and no manual resize
+          const defaultHeight = (table.columns && table.columns.length > 10) ? 350 : undefined;
+          const nodeHeight = tableLayout?.height ?? defaultHeight;
 
           newNodes.push({
             id: table.id,
             type: 'table',
             position: { x: tx, y: ty },
-            style: tableLayout?.width ? { width: tableLayout.width, height: tableLayout.height } : undefined,
+            style: { 
+              ...(tableLayout?.width ? { width: tableLayout.width } : {}),
+              ...(nodeHeight ? { height: nodeHeight } : {})
+            },
             dragHandle: '.table-drag-handle',
             data: { table },
             parentNode: domain.id,
@@ -134,13 +148,22 @@ function Flow() {
     const topLevelTables = schema.tables.filter(t => !domainTableIds.has(t.id));
 
     topLevelTables.forEach((table, index) => {
-      const layout = schema.layout?.[table.id] || { x: index * 300, y: 100 };
+      const tableLayout = schema.layout?.[table.id];
+      const lx = tableLayout?.x ?? (index * 300);
+      const ly = tableLayout?.y ?? 100;
       
+      // Apply default height if many columns and no manual resize
+      const defaultHeight = (table.columns && table.columns.length > 10) ? 350 : undefined;
+      const nodeHeight = tableLayout?.height ?? defaultHeight;
+
       newNodes.push({
         id: table.id,
         type: 'table',
-        position: { x: layout.x, y: layout.y },
-        style: layout?.width ? { width: layout.width, height: layout.height } : undefined,
+        position: { x: lx, y: ly },
+        style: { 
+          ...(tableLayout?.width ? { width: tableLayout.width } : {}),
+          ...(nodeHeight ? { height: nodeHeight } : {})
+        },
         dragHandle: '.table-drag-handle',
         data: { table },
       });
@@ -154,19 +177,28 @@ function Flow() {
     if (!schema || !schema.relationships) return []
     
     return schema.relationships.map((rel, index) => {
-      const isHighlighted = selectedTableId === rel.from.table || selectedTableId === rel.to.table;
+      const edgeId = `e-${index}`;
+      const isConnectedToSelectedTable = selectedTableId === rel.from.table || selectedTableId === rel.to.table;
+      const isDirectlySelected = selectedEdgeId === edgeId;
+      const isHighlighted = isConnectedToSelectedTable || isDirectlySelected;
       
       return {
-        id: `e-${index}`,
+        id: edgeId,
         source: rel.from.table,
         target: rel.to.table,
-        label: isHighlighted ? rel.type : undefined,
+        type: 'button',
+        data: { 
+          isConnectedToSelectedTable,
+          isDirectlySelected,
+          label: rel.type 
+        },
+        selected: isDirectlySelected,
         animated: isHighlighted,
         style: isHighlighted ? HIGHLIGHT_STYLE : NORMAL_STYLE,
         zIndex: isHighlighted ? 10 : 1,
       }
     }) as Edge[]
-  }, [schema, selectedTableId])
+  }, [schema, selectedTableId, selectedEdgeId])
 
   useEffect(() => {
     setEdges(currentEdges)
@@ -175,16 +207,29 @@ function Flow() {
   const onConnect = useCallback(
     (params: Connection) => {
       if (params.source && params.target) {
-        createEdge(params.source, params.target);
+        addRelationship(params.source, params.target, params.sourceHandle, params.targetHandle);
       }
     },
-    [createEdge]
+    [addRelationship]
   )
 
   const onNodesDelete = useCallback((deletedNodes: Node[]) => {
     deletedNodes.forEach(node => removeNode(node.id));
     saveLayout();
   }, [removeNode, saveLayout]);
+
+  const onSelectionChange = useCallback(({ nodes: selectedNodes, edges: selectedEdges }: { nodes: Node[], edges: Edge[] }) => {
+    if (selectedNodes.length > 0) {
+      setSelectedTableId(selectedNodes[0].id);
+      setSelectedEdgeId(null);
+    } else if (selectedEdges.length > 0) {
+      setSelectedEdgeId(selectedEdges[0].id);
+      setSelectedTableId(null);
+    } else {
+      setSelectedTableId(null);
+      setSelectedEdgeId(null);
+    }
+  }, [setSelectedTableId, setSelectedEdgeId]);
 
   const onNodeDragStop = useCallback((_: any, node: Node) => {
     if (!isCliMode) return;
@@ -229,9 +274,9 @@ function Flow() {
         onNodesDelete={onNodesDelete}
         onNodeDragStop={onNodeDragStop}
         onConnect={onConnect}
+        onSelectionChange={onSelectionChange}
         nodeTypes={nodeTypes}
-        onNodeClick={(_, node) => setSelectedTableId(node.id)}
-        onPaneClick={() => setSelectedTableId(null)}
+        edgeTypes={edgeTypes}
         fitView
       >
         <Background color="#334155" gap={20} />
