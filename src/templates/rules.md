@@ -42,10 +42,9 @@ tables:
           name: "physical_name"
           type: "DB_TYPE"
           constraints: ["NOT NULL", "UNIQUE"]
-    sampleData: # Optional
-      columns: ["column_id_1", "column_id_2"]
-      rows:
-        - ["value1", "value2"]
+    sampleData: # Optional: 2D array mapped to columns by index
+      - ["value1", "value2"] # Corresponds to first and second column
+      - ["value3", "value4"]
 
 domains: # Optional: Group tables into visual containers
   - id: domain_id

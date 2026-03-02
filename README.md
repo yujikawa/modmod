@@ -120,11 +120,10 @@ tables:
           isForeignKey: true
 
     # 3. Sample Data: Realistic data for storytelling
+    # (Direct 2D array, mapped to logical columns by index)
     sampleData:
-      columns: [order_id, customer_id]
-      rows:
-        - [1001, 501]
-        - [1002, 502]
+      - [1001, 501]
+      - [1002, 502]
 
 # 4. Relationships: Connections between tables
 relationships:
@@ -148,7 +147,7 @@ layout:
 | **`physical`** | `name`/`schema` | Maps the logical entity to your real database objects. |
 | **`columns`** | `isPrimaryKey` | Adds a 🔑 icon and marks the grain of the table. |
 | | `isForeignKey` | Adds a 🔩 icon to indicate a downstream connection. |
-| **`sampleData`**| `rows` | A 2D array. This is what makes your model "alive" in the Detail Panel. |
+| **`sampleData`**| - | A direct 2D array of rows. Values are mapped to logical columns by index. |
 | **`relationships`**| `type` | Controls the arrowheads and visual style of the connection lines. |
 
 ---

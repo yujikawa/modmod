@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../store/useStore'
 import { X, Plus, Trash2, Tag as TagIcon, Table as TableIcon, Layers, Database } from 'lucide-react'
-import type { Table, Column, SampleData } from '../types/schema'
+import type { Table, Column } from '../types/schema'
 
 const TYPE_CONFIG: Record<string, { color: string; icon: string; label: string }> = {
   fact: { color: '#f87171', icon: '📊', label: 'FACT' },
@@ -305,50 +305,31 @@ const DetailPanel = () => {
     });
   };
 
-  const handleUpdateSampleData = (updates: Partial<SampleData>) => {
-    const currentSample = table!.sampleData || { columns: [], rows: [] };
-    handleUpdateTable({ 
-      sampleData: { ...currentSample, ...updates } 
-    });
+  const handleUpdateSampleData = (newSample: any[][]) => {
+    handleUpdateTable({ sampleData: newSample });
   };
 
   const handleAddSampleRow = () => {
-    const currentSample = table!.sampleData || { columns: [], rows: [] };
-    const newRow = new Array(currentSample.columns.length).fill('');
-    handleUpdateSampleData({ rows: [...currentSample.rows, newRow] });
+    const currentSample = table!.sampleData || [];
+    const colCount = table!.columns?.length || 0;
+    const newRow = new Array(colCount).fill('');
+    handleUpdateSampleData([...currentSample, newRow]);
   };
 
   const handleRemoveSampleRow = (index: number) => {
-    const currentSample = table!.sampleData || { columns: [], rows: [] };
-    const newRows = currentSample.rows.filter((_, i) => i !== index);
-    handleUpdateSampleData({ rows: newRows });
+    const currentSample = table!.sampleData || [];
+    const newRows = currentSample.filter((_, i) => i !== index);
+    handleUpdateSampleData(newRows);
   };
 
   const handleUpdateSampleCell = (rowIndex: number, colIndex: number, value: any) => {
-    const currentSample = table!.sampleData || { columns: [], rows: [] };
-    const newRows = [...currentSample.rows];
-    newRows[rowIndex] = [...newRows[rowIndex]];
-    newRows[rowIndex][colIndex] = value;
-    handleUpdateSampleData({ rows: newRows });
-  };
-
-  const handleAddSampleColumn = (colId: string) => {
-    const currentSample = table!.sampleData || { columns: [], rows: [] };
-    if (currentSample.columns.includes(colId)) return;
+    const currentSample = [...(table!.sampleData || [])];
+    if (!currentSample[rowIndex]) return;
     
-    const newCols = [...currentSample.columns, colId];
-    const newRows = currentSample.rows.map(row => [...row, '']);
-    handleUpdateSampleData({ columns: newCols, rows: newRows });
-  };
-
-  const handleRemoveSampleColumn = (colId: string) => {
-    const currentSample = table!.sampleData || { columns: [], rows: [] };
-    const colIndex = currentSample.columns.indexOf(colId);
-    if (colIndex === -1) return;
-
-    const newCols = currentSample.columns.filter(c => c !== colId);
-    const newRows = currentSample.rows.map(row => row.filter((_, i) => i !== colIndex));
-    handleUpdateSampleData({ columns: newCols, rows: newRows });
+    const newRow = [...currentSample[rowIndex]];
+    newRow[colIndex] = value;
+    currentSample[rowIndex] = newRow;
+    handleUpdateSampleData(currentSample);
   };
 
   return (
@@ -635,50 +616,39 @@ const DetailPanel = () => {
             <div className="flex justify-between items-center mb-4">
               <h3 style={{ fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Sample Data Editor</h3>
               <div className="flex gap-2">
-                <select 
-                  className="bg-slate-800 border border-slate-700 text-xs rounded px-2 outline-none focus:ring-1 focus:ring-blue-500"
-                  onChange={(e) => {
-                    if (e.target.value) handleAddSampleColumn(e.target.value);
-                    e.target.value = '';
-                  }}
-                  value=""
+                <button 
+                  onClick={handleAddSampleRow} 
+                  disabled={!table!.columns || table!.columns.length === 0}
+                  className={`flex items-center gap-2 px-3 py-1.5 text-white rounded text-xs transition-colors ${
+                    (!table!.columns || table!.columns.length === 0) 
+                      ? 'bg-slate-700 cursor-not-allowed opacity-50' 
+                      : 'bg-emerald-600 hover:bg-emerald-700'
+                  }`}
                 >
-                  <option value="">+ Add Column</option>
-                  {(table!.columns || []).filter(c => !table!.sampleData?.columns.includes(c.id)).map(c => (
-                    <option key={c.id} value={c.id}>{c.logical?.name || c.id}</option>
-                  ))}
-                </select>
-                <button onClick={handleAddSampleRow} className="flex items-center gap-2 px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs transition-colors">
                   <Plus size={14} /> Add Row
                 </button>
               </div>
             </div>
 
-            {!table!.sampleData || table!.sampleData.columns.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center p-8 bg-slate-900/50 rounded-lg border border-dashed border-slate-700">
-                <p className="text-sm text-slate-500 italic mb-4">No sample data structure defined.</p>
-                <button 
-                  onClick={() => handleUpdateTable({ sampleData: { columns: (table!.columns || []).slice(0,3).map(c => c.id), rows: [['Sample 1', 'Sample 2', 'Sample 3']] } })}
-                  className="text-blue-500 hover:underline text-xs"
-                >Auto-generate from first 3 columns</button>
+            {!table!.columns || table!.columns.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center p-8 bg-slate-900/50 rounded-lg border border-dashed border-slate-800">
+                <Layers size={32} className="text-slate-700 mb-4" />
+                <p className="text-sm text-slate-400 mb-1">No columns defined yet.</p>
+                <p className="text-xs text-slate-500 italic">Add columns in the "Logical" tab first to enable sample data.</p>
               </div>
             ) : (
               <div className="flex-1 overflow-auto border border-slate-800 rounded-lg">
                 <table className="w-full border-collapse text-xs">
                   <thead className="sticky top-0 bg-slate-950 z-10 border-bottom border-slate-800">
                     <tr>
-                      {table!.sampleData.columns.map((colId) => {
-                        const col = table!.columns?.find(c => c.id === colId);
+                      {(table!.columns || []).map((col) => {
                         return (
-                          <th key={colId} className="p-3 text-left border-r border-slate-800 min-w-[140px]">
-                            <div className="flex justify-between items-start">
-                              <div className="flex flex-col gap-0.5">
-                                <span className="font-bold text-slate-200">{col?.logical?.name || colId}</span>
-                                <span className="text-[10px] text-blue-400 font-mono italic">
-                                  {col?.physical?.name || col?.logical?.name?.toLowerCase().replace(/ /g, '_') || colId}
-                                </span>
-                              </div>
-                              <button onClick={() => handleRemoveSampleColumn(colId)} className="text-slate-600 hover:text-red-400 p-0.5"><X size={10} /></button>
+                          <th key={col.id} className="p-3 text-left border-r border-slate-800 min-w-[140px]">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="font-bold text-slate-200">{col?.logical?.name || col.id}</span>
+                              <span className="text-[10px] text-blue-400 font-mono italic">
+                                {col?.physical?.name || col?.logical?.name?.toLowerCase().replace(/ /g, '_') || col.id}
+                              </span>
                             </div>
                           </th>
                         );
@@ -687,12 +657,12 @@ const DetailPanel = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {table!.sampleData.rows.map((row, rowIndex) => (
+                    {(table!.sampleData || []).map((row, rowIndex) => (
                       <tr key={rowIndex} className="border-b border-slate-800 hover:bg-slate-800/30">
-                        {row.map((cell, colIndex) => (
-                          <td key={colIndex} className="p-0 border-r border-slate-800">
+                        {(table!.columns || []).map((col, colIndex) => (
+                          <td key={col.id} className="p-0 border-r border-slate-800">
                             <input 
-                              value={String(cell)}
+                              value={String(row[colIndex] ?? '')}
                               onChange={(e) => handleUpdateSampleCell(rowIndex, colIndex, e.target.value)}
                               className="w-full bg-transparent border-none p-3 outline-none focus:bg-slate-800 text-slate-300 font-mono"
                             />
@@ -703,6 +673,16 @@ const DetailPanel = () => {
                         </td>
                       </tr>
                     ))}
+                    {(!table!.sampleData || table!.sampleData.length === 0) && (
+                      <tr>
+                        <td 
+                          colSpan={(table!.columns?.length || 0) + 1} 
+                          className="p-8 text-center text-slate-500 italic bg-slate-900/20"
+                        >
+                          No rows defined. Click "Add Row" to start.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>

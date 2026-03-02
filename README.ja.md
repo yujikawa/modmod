@@ -119,11 +119,10 @@ tables:
           isForeignKey: true # 外部キーであることを示す
 
     # 3. Sample Data: ストーリーを伝えるための現実的なデータ
+    # (2次元配列を直接記述。論理カラムの定義順にマッピングされます)
     sampleData:
-      columns: [order_id, customer_id]
-      rows:
-        - [1001, 501]
-        - [1002, 502]
+      - [1001, 501]
+      - [1002, 502]
 
 # 4. Relationships: テーブル間の接続
 relationships:
@@ -147,7 +146,7 @@ layout:
 | **`physical`** | `name`/`schema` | 論理エンティティを実際のデータベースオブジェクトにマッピングします。 |
 | **`columns`** | `isPrimaryKey` | 🔑 アイコンを表示し、テーブルの粒度を明示します。 |
 | | `isForeignKey` | 🔩 アイコンを表示し、下流への接続を示します。 |
-| **`sampleData`**| `rows` | 2次元配列。これを入れることで、詳細パネルに「生きたデータ」が表示されます。 |
+| **`sampleData`**| - | 2次元配列。論理カラムの定義順に値がマッピングされます。 |
 | **`relationships`**| `type` | 接続線の矢印の形や視覚的なスタイルを制御します。 |
 
 ---
