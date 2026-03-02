@@ -2,6 +2,7 @@ import { memo } from 'react'
 import { Handle, Position, type NodeProps, NodeResizer } from 'reactflow'
 import type { Table } from '../types/schema'
 import { useStore } from '../store/useStore'
+import { X } from 'lucide-react'
 
 const TYPE_CONFIG: Record<string, { color: string; icon: string; label: string }> = {
   fact: { color: '#f87171', icon: '📊', label: 'FACT' },
@@ -13,8 +14,16 @@ const TYPE_CONFIG: Record<string, { color: string; icon: string; label: string }
 
 const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
   const { table } = data
-  const { updateNodeDimensions, saveLayout, hoveredColumnId } = useStore()
+  const { 
+    updateNodeDimensions, 
+    saveLayout, 
+    hoveredColumnId, 
+    removeNode,
+    selectedTableId,
+    setSelectedTableId
+  } = useStore()
 
+  const isActuallySelected = selected || selectedTableId === id;
   const hasColumns = table.columns && table.columns.length > 0;
   
   // Resolve appearance
@@ -28,8 +37,15 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
     saveLayout()
   }
 
+  // Handle manual selection on click
+  const handleNodeClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedTableId(id);
+  };
+
   return (
     <div 
+      onClick={handleNodeClick}
       style={{ 
         width: '100%',
         height: '100%',
@@ -41,20 +57,51 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
     >
       <NodeResizer
         color="#3b82f6"
-        isVisible={true}
+        isVisible={isActuallySelected}
         minWidth={220}
         minHeight={100}
         onResizeEnd={onResizeEnd}
         handleStyle={{ 
-          width: 10, 
-          height: 10, 
+          width: 12, 
+          height: 12, 
           borderRadius: '50%', 
           backgroundColor: '#3b82f6', 
-          border: '1px solid #ffffff',
-          zIndex: 100,
-          opacity: selected ? 1 : 0.3
+          border: '2px solid #ffffff',
+          zIndex: 100
         }}
       />
+      
+      {isActuallySelected && (
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            removeNode(id);
+          }}
+          style={{
+            position: 'absolute',
+            top: '-15px',
+            right: '-15px',
+            width: '28px',
+            height: '28px',
+            backgroundColor: '#ef4444',
+            color: 'white',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '2px solid #ffffff',
+            cursor: 'pointer',
+            zIndex: 1001,
+            boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
+            transition: 'transform 0.1s ease',
+          }}
+          onMouseDown={(e) => e.stopPropagation()} // Prevent drag start when clicking delete
+          title="Delete Table"
+        >
+          <X size={16} />
+        </button>
+      )}
       
       <Handle type="target" position={Position.Top} style={{ background: '#94a3b8', width: '8px', height: '8px', zIndex: 10 }} />
       
@@ -63,14 +110,14 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
           width: '100%',
           height: '100%',
           backgroundColor: '#1e293b', 
-          borderLeft: `2px solid ${selected ? '#3b82f6' : '#334155'}`,
-          borderRight: `2px solid ${selected ? '#3b82f6' : '#334155'}`,
-          borderBottom: `2px solid ${selected ? '#3b82f6' : '#334155'}`,
+          borderLeft: `2px solid ${isActuallySelected ? '#3b82f6' : '#334155'}`,
+          borderRight: `2px solid ${isActuallySelected ? '#3b82f6' : '#334155'}`,
+          borderBottom: `2px solid ${isActuallySelected ? '#3b82f6' : '#334155'}`,
           borderTop: `4px solid ${themeColor}`,
           borderRadius: '8px',
           overflow: 'hidden',
           color: '#f1f5f9',
-          boxShadow: selected ? '0 0 0 4px rgba(59, 130, 246, 0.2)' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+          boxShadow: isActuallySelected ? '0 0 0 4px rgba(59, 130, 246, 0.2)' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
           fontFamily: 'sans-serif',
           display: 'flex',
           flexDirection: 'column'

@@ -36,7 +36,8 @@ function Flow() {
     isCliMode,
     focusNodeId,
     setFocusNodeId,
-    addEdge: createEdge
+    addEdge: createEdge,
+    removeNode
   } = useStore()
   
   const [nodes, setNodes, onNodesChange] = useNodesState([])
@@ -180,6 +181,11 @@ function Flow() {
     [createEdge]
   )
 
+  const onNodesDelete = useCallback((deletedNodes: Node[]) => {
+    deletedNodes.forEach(node => removeNode(node.id));
+    saveLayout();
+  }, [removeNode, saveLayout]);
+
   const onNodeDragStop = useCallback((_: any, node: Node) => {
     if (!isCliMode) return;
 
@@ -220,6 +226,7 @@ function Flow() {
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onNodesDelete={onNodesDelete}
         onNodeDragStop={onNodeDragStop}
         onConnect={onConnect}
         nodeTypes={nodeTypes}

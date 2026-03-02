@@ -44,6 +44,7 @@ interface AppState {
   addTable: (x: number, y: number) => void;
   addDomain: (x: number, y: number) => void;
   addEdge: (source: string, target: string) => void;
+  removeNode: (id: string) => void;
   
   // Multi-file Actions
   fetchAvailableFiles: () => Promise<void>;
@@ -181,15 +182,12 @@ export const useStore = create<AppState>((set, get) => ({
 
     let newDomains = schema.domains || [];
 
-    // If a parentId is provided (dropped into a domain), update domain membership
     if (parentId !== undefined) {
-      // 1. Remove from all existing domains
       newDomains = newDomains.map(d => ({
         ...d,
         tables: d.tables.filter(tid => tid !== id)
       }));
 
-      // 2. Add to the new domain if parentId is set
       if (parentId) {
         newDomains = newDomains.map(d => {
           if (d.id === parentId) {
@@ -305,6 +303,32 @@ export const useStore = create<AppState>((set, get) => ({
     };
 
     set({ schema: normalizeSchema(newSchema) });
+    get().syncToYamlInput();
+  },
+
+  removeNode: (id) => {
+    const { schema } = get();
+    if (!schema) return;
+
+    const newTables = schema.tables.filter(t => t.id !== id);
+    const newDomains = (schema.domains || []).filter(d => d.id !== id).map(d => ({
+      ...d,
+      tables: d.tables.filter(tid => tid !== id)
+    }));
+    const newRelationships = (schema.relationships || []).filter(r => r.from.table !== id && r.to.table !== id);
+    
+    const newLayout = { ...(schema.layout || {}) };
+    delete newLayout[id];
+
+    const newSchema = {
+      ...schema,
+      tables: newTables,
+      domains: newDomains,
+      relationships: newRelationships,
+      layout: newLayout
+    };
+
+    set({ schema: normalizeSchema(newSchema), selectedTableId: null });
     get().syncToYamlInput();
   },
   

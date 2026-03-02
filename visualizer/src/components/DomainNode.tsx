@@ -1,10 +1,18 @@
 import { memo } from 'react'
 import { type NodeProps, NodeResizer } from 'reactflow'
 import { useStore } from '../store/useStore'
+import { X } from 'lucide-react'
 
 const DomainNode = ({ id, data, selected }: NodeProps) => {
-  const { updateNodeDimensions, saveLayout } = useStore()
+  const { 
+    updateNodeDimensions, 
+    saveLayout, 
+    removeNode,
+    selectedTableId,
+    setSelectedTableId
+  } = useStore()
 
+  const isActuallySelected = selected || selectedTableId === id;
   const color = data.color || '#1e293b';
   const hasAlpha = color.startsWith('rgba') || color.startsWith('hsla') || (color.startsWith('#') && color.length > 7);
   const opacity = hasAlpha ? 1 : 0.5;
@@ -14,12 +22,18 @@ const DomainNode = ({ id, data, selected }: NodeProps) => {
     saveLayout()
   }
 
+  const handleNodeClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedTableId(id);
+  };
+
   return (
     <div
+      onClick={handleNodeClick}
       style={{
         width: '100%',
         height: '100%',
-        border: `2px dashed ${selected ? '#3b82f6' : '#334155'}`,
+        border: `2px dashed ${isActuallySelected ? '#3b82f6' : '#334155'}`,
         borderRadius: '12px',
         padding: '10px',
         position: 'relative',
@@ -30,20 +44,50 @@ const DomainNode = ({ id, data, selected }: NodeProps) => {
     >
       <NodeResizer
         color="#3b82f6"
-        isVisible={true}
+        isVisible={isActuallySelected}
         minWidth={200}
         minHeight={150}
         onResizeEnd={onResizeEnd}
         handleStyle={{ 
-          width: 12, 
-          height: 12, 
+          width: 14, 
+          height: 14, 
           borderRadius: '50%', 
           backgroundColor: '#3b82f6', 
-          border: '1px solid #ffffff',
-          zIndex: 100,
-          opacity: selected ? 1 : 0.3
+          border: '2px solid #ffffff',
+          zIndex: 100
         }}
       />
+      
+      {isActuallySelected && (
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            removeNode(id);
+          }}
+          style={{
+            position: 'absolute',
+            top: '-15px',
+            right: '-15px',
+            width: '28px',
+            height: '28px',
+            backgroundColor: '#ef4444',
+            color: 'white',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '2px solid #ffffff',
+            cursor: 'pointer',
+            zIndex: 1001,
+            boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+          title="Delete Domain"
+        >
+          <X size={16} />
+        </button>
+      )}
       
       <div
         className="nodrag"
