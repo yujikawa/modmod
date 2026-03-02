@@ -475,14 +475,22 @@ const DetailPanel = () => {
                 <table className="w-full border-collapse text-xs">
                   <thead className="sticky top-0 bg-slate-950 z-10 border-bottom border-slate-800">
                     <tr>
-                      {table.sampleData.columns.map((colId) => (
-                        <th key={colId} className="p-3 text-left font-bold text-slate-400 border-r border-slate-800 min-w-[120px]">
-                          <div className="flex justify-between items-center">
-                            <span>{(table.columns?.find(c => c.id === colId)?.logical?.name) || colId}</span>
-                            <button onClick={() => handleRemoveSampleColumn(colId)} className="text-slate-600 hover:text-red-400 p-0.5"><X size={10} /></button>
-                          </div>
-                        </th>
-                      ))}
+                      {table.sampleData.columns.map((colId) => {
+                        const col = table.columns?.find(c => c.id === colId);
+                        return (
+                          <th key={colId} className="p-3 text-left border-r border-slate-800 min-w-[140px]">
+                            <div className="flex justify-between items-start">
+                              <div className="flex flex-col gap-0.5">
+                                <span className="font-bold text-slate-200">{col?.logical?.name || colId}</span>
+                                <span className="text-[10px] text-blue-400 font-mono italic">
+                                  {col?.physical?.name || col?.logical?.name?.toLowerCase().replace(/ /g, '_') || colId}
+                                </span>
+                              </div>
+                              <button onClick={() => handleRemoveSampleColumn(colId)} className="text-slate-600 hover:text-red-400 p-0.5"><X size={10} /></button>
+                            </div>
+                          </th>
+                        );
+                      })}
                       <th className="w-10 bg-slate-950"></th>
                     </tr>
                   </thead>
