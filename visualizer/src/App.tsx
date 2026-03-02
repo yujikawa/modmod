@@ -17,10 +17,15 @@ import DomainNode from './components/DomainNode'
 import DetailPanel from './components/DetailPanel'
 import Sidebar from './components/Sidebar/Sidebar'
 import CanvasToolbar from './components/CanvasToolbar'
+import ButtonEdge from './components/ButtonEdge'
 
 const nodeTypes = {
   table: TableNode,
   domain: DomainNode,
+}
+
+const edgeTypes = {
+  button: ButtonEdge,
 }
 
 const HIGHLIGHT_STYLE = { stroke: '#4ade80', strokeWidth: 3 };
@@ -31,6 +36,8 @@ function Flow() {
     schema, 
     setSelectedTableId, 
     selectedTableId,
+    selectedEdgeId,
+    setSelectedEdgeId,
     updateNodePosition,
     saveLayout,
     isCliMode,
@@ -154,19 +161,28 @@ function Flow() {
     if (!schema || !schema.relationships) return []
     
     return schema.relationships.map((rel, index) => {
-      const isHighlighted = selectedTableId === rel.from.table || selectedTableId === rel.to.table;
+      const edgeId = `e-${index}`;
+      const isConnectedToSelectedTable = selectedTableId === rel.from.table || selectedTableId === rel.to.table;
+      const isDirectlySelected = selectedEdgeId === edgeId;
+      const isHighlighted = isConnectedToSelectedTable || isDirectlySelected;
       
       return {
-        id: `e-${index}`,
+        id: edgeId,
         source: rel.from.table,
         target: rel.to.table,
-        label: isHighlighted ? rel.type : undefined,
+        type: 'button',
+        data: { 
+          isConnectedToSelectedTable,
+          isDirectlySelected,
+          label: rel.type 
+        },
+        selected: isDirectlySelected,
         animated: isHighlighted,
         style: isHighlighted ? HIGHLIGHT_STYLE : NORMAL_STYLE,
         zIndex: isHighlighted ? 10 : 1,
       }
     }) as Edge[]
-  }, [schema, selectedTableId])
+  }, [schema, selectedTableId, selectedEdgeId])
 
   useEffect(() => {
     setEdges(currentEdges)
@@ -185,6 +201,19 @@ function Flow() {
     deletedNodes.forEach(node => removeNode(node.id));
     saveLayout();
   }, [removeNode, saveLayout]);
+
+  const onSelectionChange = useCallback(({ nodes: selectedNodes, edges: selectedEdges }: { nodes: Node[], edges: Edge[] }) => {
+    if (selectedNodes.length > 0) {
+      setSelectedTableId(selectedNodes[0].id);
+      setSelectedEdgeId(null);
+    } else if (selectedEdges.length > 0) {
+      setSelectedEdgeId(selectedEdges[0].id);
+      setSelectedTableId(null);
+    } else {
+      setSelectedTableId(null);
+      setSelectedEdgeId(null);
+    }
+  }, [setSelectedTableId, setSelectedEdgeId]);
 
   const onNodeDragStop = useCallback((_: any, node: Node) => {
     if (!isCliMode) return;
@@ -229,9 +258,9 @@ function Flow() {
         onNodesDelete={onNodesDelete}
         onNodeDragStop={onNodeDragStop}
         onConnect={onConnect}
+        onSelectionChange={onSelectionChange}
         nodeTypes={nodeTypes}
-        onNodeClick={(_, node) => setSelectedTableId(node.id)}
-        onPaneClick={() => setSelectedTableId(null)}
+        edgeTypes={edgeTypes}
         fitView
       >
         <Background color="#334155" gap={20} />

@@ -12,6 +12,7 @@ export interface ModelFile {
 interface AppState {
   schema: Schema | null;
   selectedTableId: string | null;
+  selectedEdgeId: string | null;
   hoveredColumnId: string | null;
   error: string | null;
   isCliMode: boolean;
@@ -33,6 +34,7 @@ interface AppState {
   // Actions
   setSchema: (schema: any) => void;
   setSelectedTableId: (id: string | null) => void;
+  setSelectedEdgeId: (id: string | null) => void;
   setHoveredColumnId: (id: string | null) => void;
   setIsCliMode: (isCli: boolean) => void;
   parseAndSetSchema: (yaml: string) => void;
@@ -44,6 +46,7 @@ interface AppState {
   addTable: (x: number, y: number) => void;
   addDomain: (x: number, y: number) => void;
   addEdge: (source: string, target: string) => void;
+  removeEdge: (sourceId: string, targetId: string) => void;
   removeNode: (id: string) => void;
   updateTable: (id: string, updates: Partial<Table>) => void;
   updateDomain: (id: string, updates: Partial<Domain>) => void;
@@ -65,6 +68,7 @@ interface AppState {
 export const useStore = create<AppState>((set, get) => ({
   schema: null,
   selectedTableId: null,
+  selectedEdgeId: null,
   hoveredColumnId: null,
   error: null,
   isCliMode: (typeof window !== 'undefined' && (window as any).MODSCAPE_CLI_MODE === true),
@@ -100,6 +104,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
   
   setSelectedTableId: (id) => set({ selectedTableId: id }),
+  setSelectedEdgeId: (id) => set({ selectedEdgeId: id }),
   setHoveredColumnId: (id) => set({ hoveredColumnId: id }),
   setIsCliMode: (isCli) => set({ isCliMode: isCli }),
   setIsSidebarOpen: (isOpen) => set({ isSidebarOpen: isOpen }),
@@ -305,6 +310,23 @@ export const useStore = create<AppState>((set, get) => ({
       relationships: [...(schema.relationships || []), newRelationship]
     };
 
+    set({ schema: normalizeSchema(newSchema) });
+    get().syncToYamlInput();
+  },
+
+  removeEdge: (source, target) => {
+    const { schema } = get();
+    if (!schema) return;
+
+    const newRelationships = (schema.relationships || []).filter(
+      r => {
+        const isMatch = (r.from.table === source && r.to.table === target) ||
+                        (r.from.table === target && r.to.table === source);
+        return !isMatch;
+      }
+    );
+
+    const newSchema = { ...schema, relationships: newRelationships };
     set({ schema: normalizeSchema(newSchema) });
     get().syncToYamlInput();
   },
