@@ -35,13 +35,20 @@ const DetailPanel = () => {
   if (!selectedTableId && !selectedEdgeId) return null
   if (!table && !domain && !relationshipData) return null
 
+  // Helper to prevent event propagation to React Flow canvas
+  const stopPropagation = (e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
+    e.stopPropagation();
+  };
+
   // --- Relationship Editor Rendering ---
   if (relationshipData) {
     const { relationship, index } = relationshipData;
     return (
       <div 
         className="bg-slate-900 border-t border-slate-800 shadow-2xl z-50 flex flex-col text-slate-100"
-        onClick={(e) => e.stopPropagation()}
+        onClick={stopPropagation}
+        onMouseDown={stopPropagation}
+        onPointerDown={stopPropagation}
         style={{ 
           height: '35vh', 
           maxHeight: '400px',
@@ -122,7 +129,9 @@ const DetailPanel = () => {
     return (
       <div 
         className="bg-slate-900 border-t border-slate-800 shadow-2xl z-50 flex flex-col text-slate-100"
-        onClick={(e) => e.stopPropagation()}
+        onClick={stopPropagation}
+        onMouseDown={stopPropagation}
+        onPointerDown={stopPropagation}
         style={{ 
           height: '35vh', 
           maxHeight: '400px',
@@ -342,7 +351,9 @@ const DetailPanel = () => {
   return (
     <div 
       className="bg-slate-900 border-t border-slate-800 shadow-2xl z-50 flex flex-col text-slate-100"
-      onClick={(e) => e.stopPropagation()}
+      onClick={stopPropagation}
+      onMouseDown={stopPropagation}
+      onPointerDown={stopPropagation}
       style={{ 
         height: '45vh', 
         maxHeight: '600px',
