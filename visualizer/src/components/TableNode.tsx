@@ -19,8 +19,7 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
     saveLayout, 
     hoveredColumnId, 
     removeNode,
-    selectedTableId,
-    setSelectedTableId
+    selectedTableId
   } = useStore()
 
   const isActuallySelected = selected || selectedTableId === id;
@@ -37,15 +36,8 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
     saveLayout()
   }
 
-  // Handle manual selection on click
-  const handleNodeClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSelectedTableId(id);
-  };
-
   return (
     <div 
-      onClick={handleNodeClick}
       style={{ 
         width: '100%',
         height: '100%',

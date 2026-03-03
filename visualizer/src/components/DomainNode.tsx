@@ -8,8 +8,7 @@ const DomainNode = ({ id, data, selected }: NodeProps) => {
     updateNodeDimensions, 
     saveLayout, 
     removeNode,
-    selectedTableId,
-    setSelectedTableId
+    selectedTableId
   } = useStore()
 
   const isActuallySelected = selected || selectedTableId === id;
@@ -22,14 +21,8 @@ const DomainNode = ({ id, data, selected }: NodeProps) => {
     saveLayout()
   }
 
-  const handleNodeClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSelectedTableId(id);
-  };
-
   return (
     <div
-      onClick={handleNodeClick}
       style={{
         width: '100%',
         height: '100%',

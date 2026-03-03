@@ -15,12 +15,19 @@ The system SHALL render an interactive ER-style diagram on a canvas showing tabl
 - **THEN** the canvas displays all tables as nodes and relationships as lines
 
 ### Requirement: Table Selection
-The system SHALL allow users to select a table on the canvas to view its details.
+The system SHALL allow users to select a table on the canvas to view its details. Selection SHALL only be triggered by an explicit click event, not during or after a drag operation. Selection SHALL be cleared when the user clicks on the canvas background or finishes dragging a node.
 
 #### Scenario: User clicks a table
-- **WHEN** the user clicks on a table node in the diagram
+- **WHEN** the user clicks on a table node without moving it
 - **THEN** the table is highlighted and the detail panel is opened
-## ADDED Requirements
+
+#### Scenario: User clicks the background
+- **WHEN** the user clicks on an empty area of the canvas
+- **THEN** all selections are cleared and the detail panel is closed
+
+#### Scenario: User stops dragging a node
+- **WHEN** the user releases a node after dragging it
+- **THEN** the node selection is cleared to keep the canvas focused on layout
 
 ### Requirement: Layout Rendering
 The system SHALL render table nodes at coordinates specified in the YAML model's `layout` section.
@@ -35,6 +42,7 @@ The system SHALL allow the visualizer to load its data from an internal constant
 #### Scenario: Running in CLI dev mode
 - **WHEN** the visualizer is launched by `modscape dev`
 - **THEN** it fetches the initial YAML model from a local API endpoint instead of the manual input
+
 ## MODIFIED Requirements
 
 ### Requirement: Diagram Rendering
@@ -50,6 +58,7 @@ The system SHALL support drawing edges between nodes when specific column refere
 #### Scenario: Relationship without columns
 - **WHEN** a relationship is defined only with `from.table` and `to.table`
 - **THEN** an edge is rendered between the default Top/Bottom handles of the respective nodes
+
 ## MODIFIED Requirements
 
 ### Requirement: Diagram Rendering
@@ -58,6 +67,7 @@ The system SHALL render an interactive ER-style diagram on a canvas showing tabl
 #### Scenario: Initial Load
 - **WHEN** the application starts and a model is loaded
 - **THEN** the canvas displays all tables as nodes with type-specific icons and colors, relationships as lines, and domains as enclosing containers where defined
+
 ## MODIFIED Requirements
 
 ### Requirement: Diagram Rendering
@@ -74,6 +84,7 @@ The system SHALL render an interactive ER-style diagram on a canvas showing tabl
 #### Scenario: Handle Rendering
 - **WHEN** a table column is rendered in a node
 - **THEN** it includes an invisible handle that becomes visible on hover to initiate a connection
+
 ## MODIFIED Requirements
 
 ### Requirement: Diagram Container Structure
