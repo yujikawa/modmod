@@ -237,7 +237,22 @@ const DetailPanel = () => {
   const typeConfig = table!.appearance?.type ? TYPE_CONFIG[table!.appearance.type] : null;
   const themeColor = table!.appearance?.color || typeConfig?.color || '#334155';
   const icon = table!.appearance?.icon || typeConfig?.icon || '';
-  const typeLabel = typeConfig?.label || '';
+  
+  // Advanced Labels
+  let typeLabel = typeConfig?.label || '';
+  if (table!.appearance?.type === 'fact' && table!.appearance.sub_type) {
+    const strategyMap: Record<string, string> = {
+      transaction: 'Trans.',
+      periodic: 'Periodic',
+      accumulating: 'Accum.',
+      factless: 'Factless'
+    };
+    typeLabel = `FACT (${strategyMap[table!.appearance.sub_type] || table!.appearance.sub_type})`;
+  } else if (table!.appearance?.type === 'dimension' && table!.appearance.sub_type) {
+    typeLabel = `DIM (SCD ${table!.appearance.sub_type.replace('type', 'T')})`;
+  } else if (table!.appearance?.type) {
+    typeLabel = table!.appearance.type.toUpperCase();
+  }
 
   const handleUpdateTable = (updates: Partial<Table>) => {
     updateTable(table!.id, updates);
@@ -426,11 +441,12 @@ const DetailPanel = () => {
         <div style={{ display: 'flex', gap: '8px', marginRight: '16px' }}>
           {table!.appearance?.type === 'fact' && (
             <select 
-              value={table!.appearance?.strategy || 'transaction'}
-              onChange={(e) => handleUpdateTable({ appearance: { ...table!.appearance, strategy: e.target.value as any } })}
+              value={table!.appearance?.sub_type || ''}
+              onChange={(e) => handleUpdateTable({ appearance: { ...table!.appearance, sub_type: (e.target.value || undefined) as any } })}
               className="bg-slate-800 border border-slate-700 text-slate-300 text-[10px] px-2 py-1 rounded outline-none"
-              title="Fact Strategy"
+              title="Fact Table Type"
             >
+              <option value="">- Fact Table Type -</option>
               <option value="transaction">Transaction</option>
               <option value="periodic">Periodic Snapshot</option>
               <option value="accumulating">Accumulating Snapshot</option>
@@ -439,16 +455,20 @@ const DetailPanel = () => {
           )}
           {table!.appearance?.type === 'dimension' && (
             <select 
-              value={table!.appearance?.scd || 'type1'}
-              onChange={(e) => handleUpdateTable({ appearance: { ...table!.appearance, scd: e.target.value as any } })}
+              value={table!.appearance?.sub_type || ''}
+              onChange={(e) => handleUpdateTable({ appearance: { ...table!.appearance, sub_type: (e.target.value || undefined) as any } })}
               className="bg-slate-800 border border-slate-700 text-slate-300 text-[10px] px-2 py-1 rounded outline-none"
-              title="SCD Type"
+              title="Dim Table Type"
             >
+              <option value="">- Dim Table Type -</option>
               <option value="type0">SCD Type 0</option>
               <option value="type1">SCD Type 1</option>
               <option value="type2">SCD Type 2</option>
               <option value="type3">SCD Type 3</option>
+              <option value="type4">SCD Type 4</option>
+              <option value="type5">SCD Type 5</option>
               <option value="type6">SCD Type 6</option>
+              <option value="type7">SCD Type 7</option>
             </select>
           )}
         </div>

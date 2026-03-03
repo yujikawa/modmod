@@ -40,11 +40,13 @@ export function normalizeSchema(data: any): Schema {
       }
     }
 
+    const appearance = table.appearance ? { ...table.appearance } : undefined;
+
     return {
       ...table,
       id: table.id || 'unknown',
       name: table.name || table.id || 'Unnamed Table',
-      appearance: table.appearance ? { ...table.appearance } : undefined,
+      appearance,
       columns: Array.isArray(table.columns) ? table.columns.map((col: any) => ({
         ...col,
         logical: col.logical ? { ...col.logical } : undefined,

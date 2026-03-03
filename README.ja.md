@@ -29,7 +29,7 @@
   - **自動レイアウト永続化**: キャンバス上の配置は、即座に元のYAMLファイルの座標情報として保存。
   - **ドメイン・グルーピング**: テーブルをビジネスドメインごとに整理。
 - **分析メタデータ**: 
-  - **ファクト・ストラテジー**: `transaction`, `periodic`, `accumulating`, `factless` といったデータの「粒度」を定義。
+  - **ファクトテーブル・タイプ**: `transaction`, `periodic`, `accumulating`, `factless` といったデータの性質を定義。
   - **SCD（徐変ディメンション）管理**: `SCD Type 2` などの履歴管理方式を可視化。
   - **加算規則（Additivity）**: カラムが合計可能か（`fully`, `semi`, `non`）を明示し、BI開発をガイド。
   - **メタデータ/監査追跡**: 監査用カラムを専用アイコンで識別。
@@ -103,8 +103,8 @@ tables:
     appearance:
       type: fact    # fact | dimension | hub | link | satellite
       # --- 分析メタデータ ---
-      strategy: transaction # transaction | periodic | accumulating | factless
-      scd: null             # type0 | type1 | type2 | type3 | type6 (Dimension用)
+      sub_type: transaction # transaction | periodic | accumulating | factless
+      # (Dimension用SCDタイプ: type0 | type1 | type2 | type3 | type4 | type5 | type6 | type7)
       icon: 📦      # カスタム絵文字や文字
       color: "#f87171" # エンティティのテーマカラー
     

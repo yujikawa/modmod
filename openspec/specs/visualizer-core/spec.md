@@ -66,15 +66,30 @@ The system SHALL provide a centralized toolbar that displays information and act
 - **THEN** the toolbar displays the element's name/type and a "Delete" action button.
 
 ### Requirement: Advanced Table Metadata Rendering
-The system SHALL display specialized badges for Fact strategies and Dimension SCD types in the table header.
+The system SHALL display specialized badges for Fact types and Dimension SCD types in the table header if defined. If undefined, the system SHALL only display the base type label.
 
-#### Scenario: Fact table with strategy
-- **WHEN** a table has `appearance.type: fact` and `appearance.strategy: periodic`
+#### Scenario: Fact table with grain
+- **WHEN** a table has `appearance.type: fact` and `appearance.sub_type: periodic`
 - **THEN** the visualizer shows a badge labeled "FACT (Periodic)"
 
+#### Scenario: Fact table without grain
+- **WHEN** a table has `appearance.type: fact` and `appearance.sub_type` is undefined
+- **THEN** the visualizer shows a badge labeled "FACT"
+
 #### Scenario: Dimension table with SCD type
-- **WHEN** a table has `appearance.type: dimension` and `appearance.scd: type2`
+- **WHEN** a table has `appearance.type: dimension` and `appearance.sub_type: type2`
 - **THEN** the visualizer shows a badge labeled "DIM (SCD T2)"
+
+#### Scenario: Dimension table without SCD type
+- **WHEN** a table has `appearance.type: dimension` and `appearance.sub_type` is undefined
+- **THEN** the visualizer shows a badge labeled "DIM"
+
+### Requirement: Optional Metadata Selection
+The system SHALL allow users to explicitly deselect or leave analytics metadata (sub_type, additivity) as undefined via the UI.
+
+#### Scenario: Deselecting Table Type
+- **WHEN** the user selects the "-" option in the Table Type dropdown
+- **THEN** the `sub_type` property is removed or set to undefined in the model
 
 ### Requirement: Column Additivity Indicators
 The system SHALL display visual indicators for column additivity rules.
