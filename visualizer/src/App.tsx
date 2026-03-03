@@ -188,8 +188,8 @@ function Flow() {
   useEffect(() => {
     if (!schema || !schema.relationships) return
     
-    const HIGHLIGHT_STYLE = { stroke: '#4ade80', strokeWidth: 3 };
-    const NORMAL_STYLE = { stroke: '#334155', strokeWidth: 1 };
+    const HIGHLIGHT_STYLE = { stroke: '#4ade80', strokeWidth: 5 };
+    const NORMAL_STYLE = { stroke: '#334155', strokeWidth: 3 };
 
     const newEdges = schema.relationships.map((rel, index) => {
       const edgeId = `e-${index}`;
