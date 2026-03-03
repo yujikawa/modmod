@@ -30,6 +30,8 @@ interface AppState {
   isSidebarOpen: boolean;
   activeTab: 'editor' | 'entities';
   focusNodeId: string | null;
+  showER: boolean;
+  showLineage: boolean;
   
   // Actions
   setSchema: (schema: any) => void;
@@ -37,6 +39,8 @@ interface AppState {
   setSelectedEdgeId: (id: string | null) => void;
   setHoveredColumnId: (id: string | null) => void;
   setIsCliMode: (isCli: boolean) => void;
+  setShowER: (show: boolean) => void;
+  setShowLineage: (show: boolean) => void;
   parseAndSetSchema: (yaml: string) => void;
   updateNodePosition: (id: string, x: number, y: number, parentId?: string | null) => void;
   updateNodeDimensions: (id: string, width: number, height: number) => void;
@@ -46,6 +50,7 @@ interface AppState {
   addTable: (x: number, y: number) => void;
   addDomain: (x: number, y: number) => void;
   addRelationship: (source: string, target: string, sourceHandle?: string | null, targetHandle?: string | null) => void;
+  addLineage: (source: string, target: string) => void;
   updateRelationship: (index: number, updates: Partial<Relationship>) => void;
   removeEdge: (sourceId: string, targetId: string) => void;
   removeNode: (id: string) => void;
@@ -96,6 +101,8 @@ export const useStore = create<AppState>((set, get) => ({
   isSidebarOpen: true,
   activeTab: 'editor',
   focusNodeId: null,
+  showER: true,
+  showLineage: true,
 
   setSchema: (data) => {
     try {
@@ -106,6 +113,9 @@ export const useStore = create<AppState>((set, get) => ({
       set({ error: e.message });
     }
   },
+
+  setShowER: (show) => set({ showER: show }),
+  setShowLineage: (show) => set({ showLineage: show }),
   
   setSelectedTableId: (id) => set({ selectedTableId: id }),
   setSelectedEdgeId: (id) => set({ selectedEdgeId: id }),
@@ -332,6 +342,31 @@ addRelationship: (source, target, sourceHandle, targetHandle) => {
     get().syncToYamlInput();
   },
 
+  addLineage: (source, target) => {
+    const { schema } = get();
+    if (!schema) return;
+
+    const newTables = schema.tables.map(table => {
+      if (table.id === target) {
+        const currentUpstream = table.lineage?.upstream || [];
+        if (!currentUpstream.includes(source)) {
+          return {
+            ...table,
+            lineage: {
+              ...table.lineage,
+              upstream: [...currentUpstream, source]
+            }
+          };
+        }
+      }
+      return table;
+    });
+
+    const newSchema = { ...schema, tables: newTables };
+    set({ schema: normalizeSchema(newSchema) });
+    get().syncToYamlInput();
+  },
+
   updateRelationship: (index, updates) => {
     const { schema } = get();
     if (!schema || !schema.relationships) return;
@@ -351,6 +386,7 @@ addRelationship: (source, target, sourceHandle, targetHandle) => {
     const { schema } = get();
     if (!schema) return;
 
+    // 1. Remove ER Relationship
     const newRelationships = (schema.relationships || []).filter(
       r => {
         const isMatch = (r.from.table === source && r.to.table === target) ||
@@ -359,8 +395,22 @@ addRelationship: (source, target, sourceHandle, targetHandle) => {
       }
     );
 
-    const newSchema = { ...schema, relationships: newRelationships };
-    set({ schema: normalizeSchema(newSchema) });
+    // 2. Remove Lineage Dependency
+    const newTables = schema.tables.map(table => {
+      if (table.id === target && table.lineage?.upstream) {
+        return {
+          ...table,
+          lineage: {
+            ...table.lineage,
+            upstream: table.lineage.upstream.filter(id => id !== source)
+          }
+        };
+      }
+      return table;
+    });
+
+    const newSchema = { ...schema, relationships: newRelationships, tables: newTables };
+    set({ schema: normalizeSchema(newSchema), selectedEdgeId: null });
     get().syncToYamlInput();
   },
 
@@ -454,10 +504,23 @@ addRelationship: (source, target, sourceHandle, targetHandle) => {
 
   getSelectedRelationship: () => {
     const { schema, selectedEdgeId } = get();
-    if (!schema || !schema.relationships || !selectedEdgeId || !selectedEdgeId.startsWith('e-')) return null;
+    if (!schema || !selectedEdgeId) return null;
+
+    if (selectedEdgeId.startsWith('lin-')) {
+      // Lineage Edge Format: lin-SOURCE-TARGET-INDEX
+      const parts = selectedEdgeId.split('-');
+      const source = parts[1];
+      const target = parts[2];
+      return { 
+        relationship: { from: { table: source }, to: { table: target }, type: 'lineage' as any }, 
+        index: -1 
+      };
+    }
+
+    if (!selectedEdgeId.startsWith('e-')) return null;
     const index = parseInt(selectedEdgeId.split('-')[1]);
     const relationship = schema.relationships[index];
     if (!relationship) return null;
     return { relationship, index };
   }
-}));
+  }));

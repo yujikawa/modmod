@@ -14,6 +14,7 @@ export default function ButtonEdge({
   targetPosition,
   style = {},
   markerEnd,
+  markerStart,
   label,
   data
 }: EdgeProps) {
@@ -33,7 +34,7 @@ export default function ButtonEdge({
 
   return (
     <>
-      <BaseEdge path={edgePath} markerEnd={markerEnd} style={style} />
+      <BaseEdge path={edgePath} markerEnd={markerEnd} markerStart={markerStart} style={style} />
       {showLabel && (
         <EdgeLabelRenderer>
           <div

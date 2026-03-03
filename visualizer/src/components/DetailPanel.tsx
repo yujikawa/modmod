@@ -92,6 +92,7 @@ const DetailPanel = () => {
                 >
                   <option value="one-to-one">One-to-One</option>
                   <option value="one-to-many">One-to-Many</option>
+                  <option value="many-to-one">Many-to-One</option>
                   <option value="many-to-many">Many-to-Many</option>
                 </select>
               </section>

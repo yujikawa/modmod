@@ -1,4 +1,4 @@
-import { Layout, Grid, Trash2, Tag, Layers, Database, Plus } from 'lucide-react'
+import { Layout, Grid, Trash2, Tag, Layers, Database, Plus, GitGraph, Network } from 'lucide-react'
 import { useStore } from '../store/useStore'
 
 const CanvasToolbar = () => {
@@ -10,7 +10,11 @@ const CanvasToolbar = () => {
     getSelectedRelationship,
     removeNode,
     removeEdge,
-    saveLayout
+    saveLayout,
+    showER,
+    showLineage,
+    setShowER,
+    setShowLineage
   } = useStore()
 
   const table = getSelectedTable()
@@ -32,16 +36,48 @@ const CanvasToolbar = () => {
 
   return (
     <div className="absolute top-4 right-4 flex gap-2 z-10 items-center">
+      {/* View Mode Toggle (Independent) */}
+      <div className="flex bg-slate-900/80 backdrop-blur-md border border-slate-700 rounded-lg shadow-2xl p-1 overflow-hidden mr-2">
+        <button
+          onClick={() => setShowER(!showER)}
+          className={`flex items-center gap-2 px-3 py-1.5 text-[10px] font-bold uppercase tracking-tight rounded-md transition-all ${
+            showER 
+              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+              : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'
+          }`}
+          title="Toggle ER (Relationships)"
+        >
+          <Network size={14} />
+          <span>ER</span>
+        </button>
+        <button
+          onClick={() => setShowLineage(!showLineage)}
+          className={`flex items-center gap-2 px-3 py-1.5 text-[10px] font-bold uppercase tracking-tight rounded-md transition-all ${
+            showLineage 
+              ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
+              : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'
+          }`}
+          title="Toggle Lineage (Data Flow)"
+        >
+          <GitGraph size={14} />
+          <span>Lineage</span>
+        </button>
+      </div>
+
       {/* Contextual Selection Bar */}
       {activeSelection && (
         <div className="flex items-center gap-3 bg-slate-900/90 backdrop-blur-md border border-blue-500/30 rounded-lg shadow-2xl p-1 px-3 animate-in fade-in slide-in-from-right-4 duration-200">
           <div className="flex items-center gap-2 border-r border-slate-700 pr-3 mr-1">
             {table && <Database size={14} className="text-emerald-400" />}
             {domain && <Layers size={14} className="text-blue-400" />}
-            {relationshipData && <Tag size={14} className="text-amber-400" />}
+            {relationshipData && (
+              (relationshipData.relationship.type as any) === 'lineage' 
+                ? <GitGraph size={14} className="text-blue-400" />
+                : <Tag size={14} className="text-amber-400" />
+            )}
             
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              {table ? 'Table' : domain ? 'Domain' : 'Relationship'}
+              {table ? 'Table' : domain ? 'Domain' : ((relationshipData?.relationship.type as any) === 'lineage' ? 'Lineage' : 'Relationship')}
             </span>
           </div>
 

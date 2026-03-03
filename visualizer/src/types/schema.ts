@@ -19,6 +19,7 @@ export interface Table {
   appearance?: {
     type?: 'fact' | 'dimension' | 'hub' | 'link' | 'satellite';
     sub_type?: string; // Generic sub-classification (e.g. transaction, type2, type4, etc.)
+    layer?: 'source' | 'staging' | 'intermediate' | 'mart' | string;
     icon?: string;
     color?: string;
   };
@@ -26,6 +27,9 @@ export interface Table {
     description?: string;
     tags?: string[]; // BEAM* tags (WHO, WHAT, WHEN, etc.)
     businessDefinitions?: Record<string, string>;
+  };
+  lineage?: {
+    upstream?: string[]; // IDs of upstream tables
   };
   physical?: { // Optional Table-level physical info
     name?: string;
@@ -63,5 +67,5 @@ export interface Relationship {
     table: string;
     column?: string; // Optional
   };
-  type?: 'one-to-one' | 'one-to-many' | 'many-to-many';
+  type?: 'one-to-one' | 'one-to-many' | 'many-to-one' | 'many-to-many';
 }

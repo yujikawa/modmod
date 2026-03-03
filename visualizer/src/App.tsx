@@ -8,7 +8,8 @@ import ReactFlow, {
   useEdgesState,
   type Connection,
   useReactFlow,
-  ReactFlowProvider
+  ReactFlowProvider,
+  MarkerType
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { useStore } from './store/useStore'
@@ -18,6 +19,7 @@ import DetailPanel from './components/DetailPanel'
 import Sidebar from './components/Sidebar/Sidebar'
 import CanvasToolbar from './components/CanvasToolbar'
 import ButtonEdge from './components/ButtonEdge'
+import LineageEdge from './components/LineageEdge'
 
 const nodeTypes = {
   table: TableNode,
@@ -26,6 +28,7 @@ const nodeTypes = {
 
 const edgeTypes = {
   button: ButtonEdge,
+  lineage: LineageEdge,
 }
 
 function Flow() {
@@ -44,7 +47,10 @@ function Flow() {
     removeNode,
     removeEdge,
     toggleTableSelection,
-    toggleEdgeSelection
+    toggleEdgeSelection,
+    showER,
+    showLineage,
+    addLineage
   } = useStore()
   
   const [nodes, setNodes, onNodesChange] = useNodesState([])
@@ -186,44 +192,105 @@ function Flow() {
 
   // Sync Edges with dynamic highlighting
   useEffect(() => {
-    if (!schema || !schema.relationships) return
+    if (!schema) return
     
-    const HIGHLIGHT_STYLE = { stroke: '#4ade80', strokeWidth: 5 };
-    const NORMAL_STYLE = { stroke: '#334155', strokeWidth: 3 };
+    const newEdges: Edge[] = [];
 
-    const newEdges = schema.relationships.map((rel, index) => {
-      const edgeId = `e-${index}`;
-      const isConnectedToSelectedTable = selectedTableId === rel.from.table || selectedTableId === rel.to.table;
-      const isDirectlySelected = selectedEdgeId === edgeId;
-      const isHighlighted = isConnectedToSelectedTable || isDirectlySelected;
-      
-      return {
-        id: edgeId,
-        source: rel.from.table,
-        target: rel.to.table,
-        type: 'button',
-        data: { 
-          isConnectedToSelectedTable,
-          isDirectlySelected,
-          label: rel.type 
-        },
-        selected: isDirectlySelected,
-        animated: isHighlighted,
-        style: isHighlighted ? HIGHLIGHT_STYLE : NORMAL_STYLE,
-        zIndex: isHighlighted ? 10 : 1,
-      }
-    }) as Edge[]
+    // 1. Generate ER Edges
+    if (showER && schema.relationships) {
+      const HIGHLIGHT_STYLE = { stroke: '#4ade80', strokeWidth: 5 };
+      const NORMAL_STYLE = { stroke: '#334155', strokeWidth: 3 };
 
-    setEdges(newEdges)
-  }, [schema, selectedTableId, selectedEdgeId, setEdges])
+      const erEdges = schema.relationships.map((rel, index) => {
+        const edgeId = `e-${index}`;
+        const isConnectedToSelectedTable = selectedTableId === rel.from.table || selectedTableId === rel.to.table;
+        const isDirectlySelected = selectedEdgeId === edgeId;
+        const isHighlighted = isConnectedToSelectedTable || isDirectlySelected;
+        
+        return {
+          id: edgeId,
+          source: rel.from.table,
+          target: rel.to.table,
+          type: 'button',
+          data: { 
+            isConnectedToSelectedTable,
+            isDirectlySelected,
+            label: rel.type 
+          },
+          selected: isDirectlySelected,
+          animated: false,
+          style: isHighlighted ? HIGHLIGHT_STYLE : NORMAL_STYLE,
+          zIndex: isHighlighted ? 10 : 1,
+        }
+      });
+      newEdges.push(...erEdges);
+    }
+
+    // 2. Generate Lineage Edges
+    if (showLineage) {
+      schema.tables.forEach(table => {
+        if (table.lineage?.upstream) {
+          table.lineage.upstream.forEach((upstreamId, index) => {
+            const edgeId = `lin-${upstreamId}-${table.id}-${index}`;
+            const isConnectedToSelected = selectedTableId === table.id || selectedTableId === upstreamId;
+            const isDirectlySelected = selectedEdgeId === edgeId;
+            const isHighlighted = isConnectedToSelected || isDirectlySelected;
+
+            newEdges.push({
+              id: edgeId,
+              source: upstreamId,
+              target: table.id,
+              sourceHandle: `${upstreamId}-lineage-source`,
+              targetHandle: `${table.id}-lineage-target`,
+              type: 'lineage',
+              data: { isHighlighted },
+              selected: isDirectlySelected,
+              animated: true, // Lineage always flows
+              markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6', width: 20, height: 20 },
+              zIndex: isHighlighted ? 15 : 2, 
+            });
+          });
+        }
+      });
+    }
+
+    setEdges(newEdges);
+  }, [schema, selectedTableId, selectedEdgeId, setEdges, showER, showLineage])
 
   const onConnect = useCallback(
     (params: Connection) => {
       if (params.source && params.target) {
-        addRelationship(params.source, params.target, params.sourceHandle, params.targetHandle);
+        // 1. Handle Lineage
+        const isLineage = params.sourceHandle?.includes('lineage') || params.targetHandle?.includes('lineage');
+        
+        if (isLineage) {
+          // For lineage, we assume source -> target is the flow
+          addLineage(params.source, params.target);
+          return;
+        }
+
+        // 2. Handle ER (Bidirectional Support)
+        // If user connects from a 'target' handle to a 'source' handle, swap them
+        let finalSource = params.source;
+        let finalTarget = params.target;
+        let finalSourceHandle = params.sourceHandle;
+        let finalTargetHandle = params.targetHandle;
+
+        const isSourceTargetRole = params.sourceHandle?.includes('target');
+        const isTargetSourceRole = params.targetHandle?.includes('source');
+
+        if (isSourceTargetRole || isTargetSourceRole) {
+          // Swap logic
+          finalSource = params.target;
+          finalTarget = params.source;
+          finalSourceHandle = params.targetHandle;
+          finalTargetHandle = params.sourceHandle;
+        }
+
+        addRelationship(finalSource, finalTarget, finalSourceHandle, finalTargetHandle);
       }
     },
-    [addRelationship]
+    [addRelationship, addLineage]
   )
 
   const onNodesDelete = useCallback((deletedNodes: Node[]) => {
@@ -288,6 +355,11 @@ function Flow() {
     // We handle selection via onNodeClick and onEdgeClick to support toggle behavior.
   }, []);
 
+  const isValidConnection = useCallback((connection: Connection) => {
+    // Allow any connection as long as it's between different nodes
+    return connection.source !== connection.target;
+  }, []);
+
   return (
     <div className="flex-1 relative h-full">
       <CanvasToolbar />
@@ -304,6 +376,7 @@ function Flow() {
         onPaneClick={onPaneClick}
         onConnect={onConnect}
         onSelectionChange={onSelectionChange}
+        isValidConnection={isValidConnection}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         deleteKeyCode={['Backspace', 'Delete']}
