@@ -8,18 +8,26 @@ The system SHALL parse a YAML definition to extract table metadata and relations
 - **THEN** the system generates a internal representation of the data model
 
 ### Requirement: Diagram Rendering
-The system SHALL render an interactive ER-style diagram on a canvas showing tables and their relationships.
+The system SHALL render an interactive ER-style diagram on a canvas showing tables, their relationships, and optional domain containers, with visual cues for entity types and handles for relationship creation. Direct on-canvas delete buttons SHALL NOT be displayed on nodes or edges to maintain visual clarity.
 
-#### Scenario: Initial Load
-- **WHEN** the application starts and a model is loaded
-- **THEN** the canvas displays all tables as nodes and relationships as lines
+#### Scenario: Visualizing Selection
+- **WHEN** a user selects a table node
+- **THEN** the diagram updates the visual style of connected edges to reflect the current focus, and no delete button is shown on the node.
+
+#### Scenario: Edge Interaction
+- **WHEN** an edge is rendered
+- **THEN** it utilizes a custom edge component that focuses on relationship representation without on-canvas interactive buttons.
 
 ### Requirement: Table Selection
-The system SHALL allow users to select a table on the canvas to view its details. Selection SHALL only be triggered by an explicit click event, not during or after a drag operation. Selection SHALL be cleared when the user clicks on the canvas background or finishes dragging a node.
+The system SHALL allow users to select a table on the canvas to view its details and perform contextual actions. Selection SHALL only be triggered by an explicit click event, not during or after a drag operation. Selection SHALL be cleared when the user clicks on the canvas background or finishes dragging a node.
 
 #### Scenario: User clicks a table
 - **WHEN** the user clicks on a table node without moving it
 - **THEN** the table is highlighted and the detail panel is opened
+
+#### Scenario: Selection for Contextual Actions
+- **WHEN** a node or edge is selected
+- **THEN** the system SHALL display its identity and available actions (like delete) in a centralized contextual toolbar.
 
 #### Scenario: User clicks the background
 - **WHEN** the user clicks on an empty area of the canvas
@@ -42,6 +50,20 @@ The system SHALL allow the visualizer to load its data from an internal constant
 #### Scenario: Running in CLI dev mode
 - **WHEN** the visualizer is launched by `modscape dev`
 - **THEN** it fetches the initial YAML model from a local API endpoint instead of the manual input
+
+### Requirement: Keyboard-Based Deletion
+The system SHALL support deleting selected elements (nodes or edges) using standard keyboard keys.
+
+#### Scenario: Deleting with Delete/Backspace
+- **WHEN** one or more elements are selected on the canvas and the user presses the `Delete` or `Backspace` key
+- **THEN** the selected elements are removed from the model.
+
+### Requirement: Contextual Toolbar Actions
+The system SHALL provide a centralized toolbar that displays information and actions for the currently selected element.
+
+#### Scenario: Toolbar Visibility
+- **WHEN** an element is selected
+- **THEN** the toolbar displays the element's name/type and a "Delete" action button.
 
 ## MODIFIED Requirements
 

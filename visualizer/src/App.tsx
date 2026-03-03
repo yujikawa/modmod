@@ -44,7 +44,8 @@ function Flow() {
     focusNodeId,
     setFocusNodeId,
     addRelationship,
-    removeNode
+    removeNode,
+    removeEdge
   } = useStore()
   
   const [nodes, setNodes, onNodesChange] = useNodesState([])
@@ -218,6 +219,14 @@ function Flow() {
     saveLayout();
   }, [removeNode, saveLayout]);
 
+  const onEdgesDelete = useCallback((deletedEdges: Edge[]) => {
+    deletedEdges.forEach(edge => {
+      // Edge ID is e-INDEX, but removeEdge needs source and target
+      removeEdge(edge.source, edge.target);
+    });
+    saveLayout();
+  }, [removeEdge, saveLayout]);
+
   const onPaneClick = useCallback(() => {
     setSelectedTableId(null);
     setSelectedEdgeId(null);
@@ -281,6 +290,7 @@ function Flow() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodesDelete={onNodesDelete}
+        onEdgesDelete={onEdgesDelete}
         onNodeDragStop={onNodeDragStop}
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
@@ -288,6 +298,8 @@ function Flow() {
         onSelectionChange={onSelectionChange}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
+        deleteKeyCode={['Backspace', 'Delete']}
+        selectNodesOnDrag={false}
         fitView
       >
         <Background color="#334155" gap={20} />

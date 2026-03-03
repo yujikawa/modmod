@@ -2,7 +2,6 @@ import { memo } from 'react'
 import { Handle, Position, type NodeProps, NodeResizer } from 'reactflow'
 import type { Table } from '../types/schema'
 import { useStore } from '../store/useStore'
-import { X } from 'lucide-react'
 
 const TYPE_CONFIG: Record<string, { color: string; icon: string; label: string }> = {
   fact: { color: '#f87171', icon: '📊', label: 'FACT' },
@@ -18,7 +17,6 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
     updateNodeDimensions, 
     saveLayout, 
     hoveredColumnId, 
-    removeNode,
     selectedTableId
   } = useStore()
 
@@ -61,38 +59,6 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
           zIndex: 100
         }}
       />
-      
-      {isActuallySelected && (
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            removeNode(id);
-          }}
-          style={{
-            position: 'absolute',
-            top: '-15px',
-            right: '-15px',
-            width: '28px',
-            height: '28px',
-            backgroundColor: '#ef4444',
-            color: 'white',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: '2px solid #ffffff',
-            cursor: 'pointer',
-            zIndex: 1001,
-            boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
-            transition: 'transform 0.1s ease',
-          }}
-          onMouseDown={(e) => e.stopPropagation()} // Prevent drag start when clicking delete
-          title="Delete Table"
-        >
-          <X size={16} />
-        </button>
-      )}
       
       <Handle 
         type="target" 
