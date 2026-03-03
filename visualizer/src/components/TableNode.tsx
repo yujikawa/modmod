@@ -35,18 +35,28 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
   
   // Advanced Labels
   let typeLabel = typeConfig?.label || '';
-  if (table.appearance?.type === 'fact' && table.appearance.sub_type) {
+  const subType = table.appearance?.sub_type;
+  const scd = table.appearance?.scd;
+
+  if (table.appearance?.type === 'fact' && subType) {
     const strategyMap: Record<string, string> = {
       transaction: 'Trans.',
       periodic: 'Periodic',
       accumulating: 'Accum.',
       factless: 'Factless'
     };
-    typeLabel = `FACT (${strategyMap[table.appearance.sub_type] || table.appearance.sub_type})`;
-  } else if (table.appearance?.type === 'dimension' && table.appearance.sub_type) {
-    typeLabel = `DIM (SCD ${table.appearance.sub_type.replace('type', 'T')})`;
+    typeLabel = `FACT (${strategyMap[subType] || subType})`;
+  } else if (table.appearance?.type && subType) {
+    // Generic display for Dim, Hub, Link, Sat, etc.
+    typeLabel = `${table.appearance.type.toUpperCase()} (${subType})`;
   } else if (table.appearance?.type) {
     typeLabel = table.appearance.type.toUpperCase();
+  }
+
+  // Append SCD if present
+  if (scd) {
+    const scdLabel = `SCD ${scd.replace('type', 'T')}`;
+    typeLabel = typeLabel ? `${typeLabel} / ${scdLabel}` : scdLabel;
   }
 
   const onResizeEnd = (_: any, params: { width: number; height: number }) => {
@@ -161,35 +171,18 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
             cursor: 'grab'
           }}
         >
-          {/* Top Row: Icon and Metadata Badge */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              {icon && <span style={{ fontSize: '14px' }}>{icon}</span>}
-              <div style={{ 
-                fontSize: '10px', 
-                color: '#94a3b8', 
-                textTransform: 'uppercase', 
-                fontFamily: 'monospace',
-                letterSpacing: '0.05em'
-              }}>
-                {table.id}
-              </div>
+          {/* Top Row: Icon and ID */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+            {icon && <span style={{ fontSize: '14px' }}>{icon}</span>}
+            <div style={{ 
+              fontSize: '10px', 
+              color: '#94a3b8', 
+              textTransform: 'uppercase', 
+              fontFamily: 'monospace',
+              letterSpacing: '0.05em'
+            }}>
+              {table.id}
             </div>
-            {typeLabel && (
-              <div style={{ 
-                fontSize: '9px', 
-                fontWeight: 800, 
-                padding: '1px 6px', 
-                borderRadius: '4px', 
-                backgroundColor: `${themeColor}30`, 
-                color: themeColor,
-                border: `1px solid ${themeColor}50`,
-                flexShrink: 0,
-                whiteSpace: 'nowrap'
-              }}>
-                {typeLabel}
-              </div>
-            )}
           </div>
 
           {/* Primary Row: Table Name */}
@@ -197,11 +190,26 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
             fontSize: '14px', 
             fontWeight: 'bold', 
             color: '#ffffff',
-            lineHeight: '1.4',
+            lineHeight: '1.2',
             wordBreak: 'break-all'
           }}>
             {table.name}
           </div>
+
+          {/* Metadata Row: Type, Sub-type, and SCD (Moved here) */}
+          {typeLabel && (
+            <div style={{ 
+              fontSize: '9px', 
+              fontWeight: 700, 
+              color: themeColor,
+              marginTop: '4px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.02em',
+              opacity: 0.9
+            }}>
+              {typeLabel}
+            </div>
+          )}
         </div>
         
         {/* Columns - Non-draggable area */}

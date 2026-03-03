@@ -440,38 +440,38 @@ const DetailPanel = () => {
 
         {/* Quick Access Metadata Selectors */}
         <div style={{ display: 'flex', gap: '8px', marginRight: '16px' }}>
-          {table!.appearance?.type === 'fact' && (
-            <select 
-              value={table!.appearance?.sub_type || ''}
-              onChange={(e) => handleUpdateTable({ appearance: { ...table!.appearance, sub_type: (e.target.value || undefined) as any } })}
-              className="bg-slate-800 border border-slate-700 text-slate-300 text-[10px] px-2 py-1 rounded outline-none"
-              title="Fact Table Type"
-            >
-              <option value="">- Fact Table Type -</option>
-              <option value="transaction">Transaction</option>
-              <option value="periodic">Periodic Snapshot</option>
-              <option value="accumulating">Accumulating Snapshot</option>
-              <option value="factless">Factless</option>
-            </select>
-          )}
-          {table!.appearance?.type === 'dimension' && (
-            <select 
-              value={table!.appearance?.sub_type || ''}
-              onChange={(e) => handleUpdateTable({ appearance: { ...table!.appearance, sub_type: (e.target.value || undefined) as any } })}
-              className="bg-slate-800 border border-slate-700 text-slate-300 text-[10px] px-2 py-1 rounded outline-none"
-              title="Dim Table Type"
-            >
-              <option value="">- Dim Table Type -</option>
-              <option value="type0">SCD Type 0</option>
-              <option value="type1">SCD Type 1</option>
-              <option value="type2">SCD Type 2</option>
-              <option value="type3">SCD Type 3</option>
-              <option value="type4">SCD Type 4</option>
-              <option value="type5">SCD Type 5</option>
-              <option value="type6">SCD Type 6</option>
-              <option value="type7">SCD Type 7</option>
-            </select>
-          )}
+          <select 
+            value={table!.appearance?.sub_type || ''}
+            onChange={(e) => handleUpdateTable({ appearance: { ...table!.appearance, sub_type: (e.target.value || undefined) as any } })}
+            className="bg-slate-800 border border-slate-700 text-slate-300 text-[10px] px-2 py-1 rounded outline-none"
+            title="Table Sub-type"
+          >
+            <option value="">- Sub-type -</option>
+            <option value="transaction">Transaction</option>
+            <option value="periodic">Periodic Snapshot</option>
+            <option value="accumulating">Accumulating Snapshot</option>
+            <option value="factless">Factless</option>
+            <option value="conformed">Conformed</option>
+            <option value="junk">Junk</option>
+            <option value="degenerate">Degenerate</option>
+          </select>
+          
+          <select 
+            value={table!.appearance?.scd || ''}
+            onChange={(e) => handleUpdateTable({ appearance: { ...table!.appearance, scd: (e.target.value || undefined) as any } })}
+            className="bg-slate-800 border border-slate-700 text-slate-300 text-[10px] px-2 py-1 rounded outline-none"
+            title="SCD Type"
+          >
+            <option value="">- SCD Type -</option>
+            <option value="type0">SCD Type 0</option>
+            <option value="type1">SCD Type 1</option>
+            <option value="type2">SCD Type 2</option>
+            <option value="type3">SCD Type 3</option>
+            <option value="type4">SCD Type 4</option>
+            <option value="type5">SCD Type 5</option>
+            <option value="type6">SCD Type 6</option>
+            <option value="type7">SCD Type 7</option>
+          </select>
         </div>
 
         <button 

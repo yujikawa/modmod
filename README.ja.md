@@ -104,7 +104,7 @@ tables:
       type: fact    # fact | dimension | hub | link | satellite
       # --- 分析メタデータ ---
       sub_type: transaction # transaction | periodic | accumulating | factless
-      # (Dimension用SCDタイプ: type0 | type1 | type2 | type3 | type4 | type5 | type6 | type7)
+      scd: type2            # type0 | type1 | type2 | type3 | type4 | type5 | type6 | type7
       icon: 📦      # カスタム絵文字や文字
       color: "#f87171" # エンティティのテーマカラー
     

@@ -104,7 +104,7 @@ tables:
       type: fact    # fact | dimension | hub | link | satellite
       # --- Analytics Metadata ---
       sub_type: transaction # transaction | periodic | accumulating | factless
-      # (Use sub_type for SCD types in Dimensions: type0 | type1 | type2 | type3 | type4 | type5 | type6 | type7)
+      scd: type2            # type0 | type1 | type2 | type3 | type4 | type5 | type6 | type7
       icon: 📦      # Custom emoji or character
       color: "#f87171" # Custom theme color for this entity
     

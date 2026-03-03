@@ -41,6 +41,13 @@ export function normalizeSchema(data: any): Schema {
     }
 
     const appearance = table.appearance ? { ...table.appearance } : undefined;
+    if (appearance) {
+      // Compatibility mapping: sub_type (if type0-7) -> scd
+      if (appearance.sub_type && /^type[0-7]$/.test(appearance.sub_type) && !appearance.scd) {
+        appearance.scd = appearance.sub_type;
+        appearance.sub_type = undefined;
+      }
+    }
 
     return {
       ...table,

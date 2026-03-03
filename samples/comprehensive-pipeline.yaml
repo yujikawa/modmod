@@ -78,7 +78,7 @@ tables:
     name: DIM_CUSTOMERS
     appearance:
       type: dimension
-      sub_type: type2
+      scd: type2
       layer: dwh
       icon: 👤
     lineage:
@@ -300,11 +300,11 @@ layout:
     x: 913
     'y': 360
   mart_customer_sales_summary:
-    x: 1416
-    'y': 244
+    x: 1415
+    'y': 245
   new_domain_1772543778995:
-    x: 1234
-    'y': -402
+    x: 1253
+    'y': -385
     width: 600
     height: 400
   new_table_1772543818647:

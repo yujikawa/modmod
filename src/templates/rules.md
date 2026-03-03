@@ -11,21 +11,14 @@
 ## 2. Analytics Metadata
 Modscape supports attributes to communicate the "Story" and "Grain" of your data to humans and AI agents.
 
-### Fact Table Types / Dimension History (`appearance.sub_type`)
-- **For Fact Tables**:
-  - `transaction`: Standard fact table where one row = one event (e.g., an order).
-  - `periodic`: Snapshot fact table capturing state at set intervals (e.g., monthly inventory).
-  - `accumulating`: Fact table updated as a process moves through milestones (e.g., order → shipping → delivery).
-  - `factless`: Tables that record the occurrence of an event without numeric measures (e.g., event attendance).
-- **For Dimension Tables (SCD Types)**:
-  - `type0`: Fixed dimensions (no changes allowed).
-  - `type1`: Overwrite changes (no history maintained).
-  - `type2`: Add new row for changes (full history with timestamps).
-  - `type3`: Add new column for changes (partial history).
-  - `type4`: History table (separate table for history).
-  - `type5`: Hybrid (1 + 4).
-  - `type6`: Hybrid (1 + 2 + 3).
-  - `type7`: Hybrid (1 + 2).
+### Fact Table Types / Dimension History (`appearance.sub_type` and `appearance.scd`)
+Modscape separates a table's core nature from its history tracking method.
+
+- **`sub_type` (The "What")**:
+  - **For Fact Tables**: `transaction` (atomic event), `periodic` (state interval), `accumulating` (milestones), `factless` (occurrence only).
+  - **For Dimension Tables**: `conformed` (shared), `junk` (flags), `degenerate` (in-fact).
+- **`scd` (The "How it changes")**:
+  - `type0` (fixed), `type1` (overwrite), `type2` (history row), `type3` (history col), `type4` (history table), `type5` (1+4), `type6` (1+2+3), `type7` (1+2).
 
 ### Column Additivity (`logical.additivity`)
 - `fully`: Can be summed across all dimensions (e.g., sales amount). Displays as `Σ`.
@@ -52,7 +45,8 @@ tables:
     name: Orders Fact
     appearance:
       type: fact
-      sub_type: transaction # transaction | periodic | accumulating | factless
+      sub_type: transaction
+      scd: type2 # Fact table with status transition history
     conceptual:
       description: "Records of customer purchases"
       tags: ["WHO", "WHEN", "HOW MUCH"]
@@ -68,7 +62,8 @@ tables:
     name: Customers Dim
     appearance:
       type: dimension
-      sub_type: type2 # type0 | type1 | type2 | type3 | type6
+      sub_type: conformed
+      scd: type2
     columns:
       - id: customer_id
         logical: { name: ID, type: Int, isPrimaryKey: true }
@@ -82,5 +77,5 @@ tables:
 
 ## 7. The Golden Rules
 - When updating `model.yaml`, always self-audit against these rules.
-- Set appropriate `appearance.type` and `sub_type` for new tables.
+- Set appropriate `appearance.type`, `sub_type`, and `scd` for new tables.
 - Use `additivity` for numeric measures to inform BI tools and analysts.

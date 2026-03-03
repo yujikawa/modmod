@@ -18,7 +18,8 @@ export interface Table {
   name: string; // Display name (Logical name)
   appearance?: {
     type?: 'fact' | 'dimension' | 'hub' | 'link' | 'satellite';
-    sub_type?: string; // Generic sub-classification (e.g. transaction, type2, type4, etc.)
+    sub_type?: string; // Generic sub-classification (e.g. transaction, periodic, etc.)
+    scd?: string; // History tracking (e.g. type0, type1, type2, etc.)
     layer?: 'source' | 'staging' | 'intermediate' | 'mart' | string;
     icon?: string;
     color?: string;
