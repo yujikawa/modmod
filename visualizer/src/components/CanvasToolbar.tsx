@@ -1,4 +1,4 @@
-import { Layout, Grid, Trash2, Tag, Layers, Database, Plus, GitGraph, Network } from 'lucide-react'
+import { Layout, Grid, Trash2, Tag, Layers, Database, GitGraph, Network, X, Eye, Plus } from 'lucide-react'
 import { useStore } from '../store/useStore'
 
 const CanvasToolbar = () => {
@@ -14,7 +14,9 @@ const CanvasToolbar = () => {
     showER,
     showLineage,
     setShowER,
-    setShowLineage
+    setShowLineage,
+    setSelectedTableId,
+    setSelectedEdgeId
   } = useStore()
 
   const table = getSelectedTable()
@@ -34,94 +36,119 @@ const CanvasToolbar = () => {
     saveLayout()
   }
 
+  const handleClearSelection = () => {
+    setSelectedTableId(null)
+    setSelectedEdgeId(null)
+  }
+
   return (
-    <div className="absolute top-4 right-4 flex gap-2 z-10 items-center">
-      {/* View Mode Toggle (Independent) */}
-      <div className="flex bg-slate-900/80 backdrop-blur-md border border-slate-700 rounded-lg shadow-2xl p-1 overflow-hidden mr-2">
-        <button
-          onClick={() => setShowER(!showER)}
-          className={`flex items-center gap-2 px-3 py-1.5 text-[10px] font-bold uppercase tracking-tight rounded-md transition-all ${
-            showER 
-              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-              : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'
-          }`}
-          title="Toggle ER (Relationships)"
-        >
-          <Network size={14} />
-          <span>ER</span>
-        </button>
-        <button
-          onClick={() => setShowLineage(!showLineage)}
-          className={`flex items-center gap-2 px-3 py-1.5 text-[10px] font-bold uppercase tracking-tight rounded-md transition-all ${
-            showLineage 
-              ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
-              : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'
-          }`}
-          title="Toggle Lineage (Data Flow)"
-        >
-          <GitGraph size={14} />
-          <span>Lineage</span>
-        </button>
+    <>
+      {/* 1. Permanent Vertical Toolbox (Left side - Top aligned to avoid DetailPanel collision) */}
+      <div className="absolute top-4 left-4 z-10">
+        <div className="flex flex-col bg-slate-900/85 backdrop-blur-md border border-slate-700 rounded-2xl shadow-2xl overflow-hidden w-14">
+          
+          {/* View Section */}
+          <div className="flex flex-col items-center py-3 gap-2">
+            <div className="flex flex-col items-center text-[8px] font-bold text-slate-500 uppercase tracking-tighter opacity-80">
+              <Eye size={12} />
+              <span>View</span>
+            </div>
+            <div className="flex flex-col gap-1 px-1.5 w-full">
+              <button
+                onClick={() => setShowER(!showER)}
+                className={`flex items-center justify-center w-full aspect-square rounded-xl transition-all ${
+                  showER 
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                    : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800 border border-transparent'
+                }`}
+                title={showER ? "Hide ER Relationships" : "Show ER Relationships"}
+              >
+                <Network size={20} />
+              </button>
+              <button
+                onClick={() => setShowLineage(!showLineage)}
+                className={`flex items-center justify-center w-full aspect-square rounded-xl transition-all ${
+                  showLineage 
+                    ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
+                    : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800 border border-transparent'
+                }`}
+                title={showLineage ? "Hide Data Lineage" : "Show Data Lineage"}
+              >
+                <GitGraph size={20} />
+              </button>
+            </div>
+          </div>
+
+          <div className="border-t border-slate-800 mx-2" />
+
+          {/* Add Section */}
+          <div className="flex flex-col items-center py-3 gap-2">
+            <div className="flex flex-col items-center text-[8px] font-bold text-slate-500 uppercase tracking-tighter opacity-80">
+              <Plus size={12} />
+              <span>Add</span>
+            </div>
+            <div className="flex flex-col gap-1 px-1.5 w-full">
+              <button
+                onClick={() => addDomain(100, 100)}
+                className="flex items-center justify-center w-full aspect-square text-slate-500 hover:text-blue-400 hover:bg-slate-800 rounded-xl transition-all group"
+                title="Add new Domain"
+              >
+                <Layout size={20} />
+              </button>
+              
+              <button
+                onClick={() => addTable(200, 200)}
+                className="flex items-center justify-center w-full aspect-square text-slate-500 hover:text-emerald-400 hover:bg-slate-800 rounded-xl transition-all group"
+                title="Add new Table"
+              >
+                <Grid size={20} />
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Contextual Selection Bar */}
+      {/* 2. Contextual Selection Bar (Top Right) */}
       {activeSelection && (
-        <div className="flex items-center gap-3 bg-slate-900/90 backdrop-blur-md border border-blue-500/30 rounded-lg shadow-2xl p-1 px-3 animate-in fade-in slide-in-from-right-4 duration-200">
-          <div className="flex items-center gap-2 border-r border-slate-700 pr-3 mr-1">
-            {table && <Database size={14} className="text-emerald-400" />}
-            {domain && <Layers size={14} className="text-blue-400" />}
+        <div className="absolute top-4 right-4 z-10 flex items-center gap-3 bg-slate-900/90 backdrop-blur-md border border-blue-500/30 rounded-xl shadow-2xl p-1.5 px-4 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center gap-2 border-r border-slate-700 pr-4 mr-1">
+            {table && <Database size={16} className="text-emerald-400" />}
+            {domain && <Layers size={16} className="text-blue-400" />}
             {relationshipData && (
-              (relationshipData.relationship.type as any) === 'lineage' 
-                ? <GitGraph size={14} className="text-blue-400" />
-                : <Tag size={14} className="text-amber-400" />
+              ((relationshipData.relationship.type as any) === 'lineage') 
+                ? <GitGraph size={16} className="text-blue-400" />
+                : <Tag size={16} className="text-amber-400" />
             )}
             
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              {table ? 'Table' : domain ? 'Domain' : ((relationshipData?.relationship.type as any) === 'lineage' ? 'Lineage' : 'Relationship')}
-            </span>
+            <div className="flex flex-col leading-tight">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                Selected {table ? 'Table' : domain ? 'Domain' : (((relationshipData?.relationship.type as any) === 'lineage') ? 'Lineage' : 'Relation')}
+              </span>
+              <span className="text-xs font-semibold text-slate-200 truncate max-w-[180px]">
+                {table ? table.name : domain ? domain.name : relationshipData ? `${relationshipData.relationship.from.table} → ${relationshipData.relationship.to.table}` : ''}
+              </span>
+            </div>
           </div>
 
-          <div className="max-w-[200px] truncate">
-            <span className="text-xs font-semibold text-slate-200">
-              {table ? table.name : domain ? domain.name : relationshipData ? `${relationshipData.relationship.from.table} → ${relationshipData.relationship.to.table}` : ''}
-            </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleDelete}
+              className="flex items-center justify-center w-8 h-8 hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded-lg transition-all group"
+              title="Delete Selected (Del)"
+            >
+              <Trash2 size={16} />
+            </button>
+            <button
+              onClick={handleClearSelection}
+              className="flex items-center justify-center w-8 h-8 hover:bg-slate-800 text-slate-500 hover:text-slate-300 rounded-lg transition-all"
+              title="Clear Selection"
+            >
+              <X size={16} />
+            </button>
           </div>
-
-          <button
-            onClick={handleDelete}
-            className="flex items-center justify-center p-1.5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded-md transition-all group"
-            title="Delete Selected (Del)"
-          >
-            <Trash2 size={14} className="group-active:scale-90 transition-transform" />
-          </button>
         </div>
       )}
-
-      {/* Add Controls */}
-      <div className="flex bg-slate-900/80 backdrop-blur-md border border-slate-700 rounded-lg shadow-2xl p-1 overflow-hidden">
-        <button
-          onClick={() => addDomain(100, 100)}
-          className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 rounded-md transition-all group"
-          title="Add new Domain"
-        >
-          <Layout size={14} className="text-blue-400 group-hover:scale-110 transition-transform" />
-          <span>Domain</span>
-          <Plus size={12} className="text-slate-500 group-hover:text-blue-400 transition-colors" />
-        </button>
-        
-        <div className="w-[1px] bg-slate-700 mx-1 my-1" />
-        
-        <button
-          onClick={() => addTable(200, 200)}
-          className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 rounded-md transition-all group"
-          title="Add new Table"
-        >
-          <Grid size={14} className="text-emerald-400 group-hover:scale-110 transition-transform" />
-          <span>Table</span>
-          <Plus size={12} className="text-slate-500 group-hover:text-emerald-400 transition-colors" />
-        </button>
-      </div>
-    </div>
+    </>
   )
 }
 

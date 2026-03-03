@@ -59,11 +59,25 @@ The system SHALL support deleting selected elements (nodes or edges) using stand
 - **THEN** the selected elements are removed from the model.
 
 ### Requirement: Contextual Toolbar Actions
-The system SHALL provide a centralized toolbar that displays information and actions for the currently selected element.
+The system SHALL provide a centralized toolbar that displays information and actions for the currently selected element. This toolbar SHALL be positioned in the top-right of the canvas, separate from permanent tool controls.
 
 #### Scenario: Toolbar Visibility
 - **WHEN** an element is selected
-- **THEN** the toolbar displays the element's name/type and a "Delete" action button.
+- **THEN** the toolbar displays the element's name/type, a "Delete" action button, and a "Clear Selection" (X) button.
+
+### Requirement: Permanent Vertical Toolbox
+The system SHALL provide a permanent vertical toolbox on the top-left of the canvas for core view and creation actions.
+
+#### Scenario: Toolbox Positioning
+- **WHEN** the visualizer is launched
+- **THEN** a vertical panel is fixed at the top-left, containing "View" and "Add" sections.
+
+### Requirement: Resizable Detail Panel
+The system SHALL allow users to manually adjust the height of the Detail Panel via a drag-and-drop interaction.
+
+#### Scenario: Vertical Resizing
+- **WHEN** the user drags the top border of the Detail Panel
+- **THEN** the panel's height updates in real-time, following the mouse position within specified constraints (150px to 90vh).
 
 ### Requirement: Advanced Table Metadata Rendering
 The system SHALL display both the table's nature (sub_type) and its history tracking method (scd) in the table header if defined.

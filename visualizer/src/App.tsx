@@ -198,8 +198,8 @@ function Flow() {
 
     // 1. Generate ER Edges
     if (showER && schema.relationships) {
-      const HIGHLIGHT_STYLE = { stroke: '#4ade80', strokeWidth: 5 };
-      const NORMAL_STYLE = { stroke: '#334155', strokeWidth: 3 };
+      const HIGHLIGHT_STYLE = { stroke: '#f1f5f9', strokeWidth: 5 }; // Silver-White (Slate-100)
+      const NORMAL_STYLE = { stroke: '#94a3b8', strokeWidth: 3 }; // Silver-Slate (Slate-400)
 
       const erEdges = schema.relationships.map((rel, index) => {
         const edgeId = `e-${index}`;

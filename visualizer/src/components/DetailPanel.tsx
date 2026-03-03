@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useStore } from '../store/useStore'
 import { X, Plus, Trash2, Tag as TagIcon, Table as TableIcon, Layers, Database } from 'lucide-react'
 import type { Table, Column } from '../types/schema'
@@ -31,13 +31,59 @@ const DetailPanel = () => {
   
   const [activeTab, setActiveTab] = useState('conceptual')
   const [tagInput, setTagInput] = useState('')
+  const [panelHeight, setPanelHeight] = useState(400) // Default height in pixels
+  const [isResizing, setIsResizing] = useState(false)
+
+  // Use simple effect for global mouse move to handle resizing
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const newHeight = window.innerHeight - e.clientY;
+      // Constraint height between 150px and 90% of window height
+      setPanelHeight(Math.max(150, Math.min(newHeight, window.innerHeight * 0.9)));
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      document.body.style.cursor = 'default';
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
 
   if (!selectedTableId && !selectedEdgeId) return null
   if (!table && !domain && !relationshipData) return null
 
+  const startResizing = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    document.body.style.cursor = 'ns-resize';
+  };
+
   // Helper to prevent event propagation to React Flow canvas
   const stopPropagation = (e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
     e.stopPropagation();
+  };
+
+  // Common Wrapper Style
+  const panelStyle: React.CSSProperties = {
+    height: `${panelHeight}px`,
+    maxHeight: '90vh',
+    minHeight: '150px',
+    backgroundColor: '#0f172a', 
+    borderTop: '2px solid #3b82f6',
+    display: 'flex', 
+    flexDirection: 'column',
+    color: '#f1f5f9',
+    boxShadow: '0 -10px 25px -5px rgba(0, 0, 0, 0.4)',
+    fontFamily: 'sans-serif',
+    position: 'relative'
   };
 
   // --- Relationship Editor Rendering ---
@@ -49,19 +95,21 @@ const DetailPanel = () => {
         onClick={stopPropagation}
         onMouseDown={stopPropagation}
         onPointerDown={stopPropagation}
-        style={{ 
-          height: '35vh', 
-          maxHeight: '400px',
-          minHeight: '200px',
-          backgroundColor: '#0f172a', 
-          borderTop: '2px solid #3b82f6',
-          display: 'flex', 
-          flexDirection: 'column',
-          color: '#f1f5f9',
-          boxShadow: '0 -10px 25px -5px rgba(0, 0, 0, 0.4)',
-          fontFamily: 'sans-serif'
-        }}
+        style={panelStyle}
       >
+        {/* Resize Handle */}
+        <div 
+          onMouseDown={startResizing}
+          style={{
+            position: 'absolute',
+            top: '-4px',
+            left: 0,
+            right: 0,
+            height: '8px',
+            cursor: 'ns-resize',
+            zIndex: 60
+          }}
+        />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 20px', borderBottom: '1px solid #1e293b', backgroundColor: '#020617' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
             <Database size={18} style={{ color: '#3b82f6' }} />
@@ -133,19 +181,21 @@ const DetailPanel = () => {
         onClick={stopPropagation}
         onMouseDown={stopPropagation}
         onPointerDown={stopPropagation}
-        style={{ 
-          height: '35vh', 
-          maxHeight: '400px',
-          minHeight: '200px',
-          backgroundColor: '#0f172a', 
-          borderTop: `2px solid ${domain.color || '#3b82f6'}`,
-          display: 'flex', 
-          flexDirection: 'column',
-          color: '#f1f5f9',
-          boxShadow: '0 -10px 25px -5px rgba(0, 0, 0, 0.4)',
-          fontFamily: 'sans-serif'
-        }}
+        style={{ ...panelStyle, borderTopColor: domain.color || '#3b82f6' }}
       >
+        {/* Resize Handle */}
+        <div 
+          onMouseDown={startResizing}
+          style={{
+            position: 'absolute',
+            top: '-4px',
+            left: 0,
+            right: 0,
+            height: '8px',
+            cursor: 'ns-resize',
+            zIndex: 60
+          }}
+        />
         {/* Panel Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 20px', borderBottom: '1px solid #1e293b', backgroundColor: '#020617' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
@@ -241,18 +291,26 @@ const DetailPanel = () => {
   
   // Advanced Labels
   let typeLabel = typeConfig?.label || '';
-  if (table!.appearance?.type === 'fact' && table!.appearance.sub_type) {
+  const subType = table!.appearance?.sub_type;
+  const scd = table!.appearance?.scd;
+
+  if (table!.appearance?.type === 'fact' && subType) {
     const strategyMap: Record<string, string> = {
       transaction: 'Trans.',
       periodic: 'Periodic',
       accumulating: 'Accum.',
       factless: 'Factless'
     };
-    typeLabel = `FACT (${strategyMap[table!.appearance.sub_type] || table!.appearance.sub_type})`;
-  } else if (table!.appearance?.type === 'dimension' && table!.appearance.sub_type) {
-    typeLabel = `DIM (SCD ${table!.appearance.sub_type.replace('type', 'T')})`;
+    typeLabel = `FACT (${strategyMap[subType] || subType})`;
+  } else if (table!.appearance?.type && subType) {
+    typeLabel = `${table!.appearance.type.toUpperCase()} (${subType})`;
   } else if (table!.appearance?.type) {
     typeLabel = table!.appearance.type.toUpperCase();
+  }
+
+  if (scd) {
+    const scdLabel = `SCD ${scd.replace('type', 'T')}`;
+    typeLabel = typeLabel ? `${typeLabel} / ${scdLabel}` : scdLabel;
   }
 
   const handleUpdateTable = (updates: Partial<Table>) => {
@@ -370,19 +428,21 @@ const DetailPanel = () => {
       onClick={stopPropagation}
       onMouseDown={stopPropagation}
       onPointerDown={stopPropagation}
-      style={{ 
-        height: '45vh', 
-        maxHeight: '600px',
-        minHeight: '300px',
-        backgroundColor: '#0f172a', 
-        borderTop: `2px solid ${themeColor}`,
-        display: 'flex', 
-        flexDirection: 'column',
-        color: '#f1f5f9',
-        boxShadow: '0 -10px 25px -5px rgba(0, 0, 0, 0.4)',
-        fontFamily: 'sans-serif'
-      }}
+      style={{ ...panelStyle, borderTopColor: themeColor }}
     >
+      {/* Resize Handle */}
+      <div 
+        onMouseDown={startResizing}
+        style={{
+          position: 'absolute',
+          top: '-4px',
+          left: 0,
+          right: 0,
+          height: '8px',
+          cursor: 'ns-resize',
+          zIndex: 60
+        }}
+      />
       {/* Panel Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderBottom: '1px solid #1e293b', backgroundColor: '#020617' }}>
         <div style={{ flex: 1 }}>
