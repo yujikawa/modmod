@@ -368,48 +368,91 @@ const DetailPanel = () => {
       }}
     >
       {/* Panel Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 20px', borderBottom: '1px solid #1e293b', backgroundColor: '#020617' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-          {icon && <span style={{ fontSize: '18px' }}>{icon}</span>}
-          <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <input 
-                value={table!.name}
-                onChange={(e) => handleUpdateTable({ name: e.target.value })}
-                title="Logical Table Name"
-                style={{ 
-                  fontSize: '16px', 
-                  fontWeight: 'bold', 
-                  color: '#ffffff', 
-                  backgroundColor: 'transparent', 
-                  border: 'none',
-                  borderBottom: '1px solid transparent',
-                  padding: '2px 0',
-                  outline: 'none',
-                  width: 'fit-content',
-                  minWidth: '200px'
-                }}
-                onFocus={(e) => (e.target as HTMLInputElement).style.borderBottom = '1px solid #3b82f6'}
-                onBlur={(e) => (e.target as HTMLInputElement).style.borderBottom = '1px solid transparent'}
-              />
-              {typeLabel && (
-                <span style={{ 
-                  fontSize: '9px', 
-                  fontWeight: 800, 
-                  padding: '1px 5px', 
-                  borderRadius: '3px', 
-                  backgroundColor: `${themeColor}20`, 
-                  color: themeColor,
-                  border: `1px solid ${themeColor}40`,
-                  textTransform: 'uppercase'
-                }}>
-                  {typeLabel}
-                </span>
-              )}
-            </div>
-            <p style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', margin: 0 }}>{table!.id}</p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderBottom: '1px solid #1e293b', backgroundColor: '#020617' }}>
+        <div style={{ flex: 1 }}>
+          {/* Top Row: Icon, ID, and Badge */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            {icon && <span style={{ fontSize: '16px' }}>{icon}</span>}
+            <span style={{ 
+              fontSize: '11px', 
+              color: '#94a3b8', 
+              textTransform: 'uppercase', 
+              fontFamily: 'monospace',
+              letterSpacing: '0.05em'
+            }}>
+              {table!.id}
+            </span>
+            {typeLabel && (
+              <span style={{ 
+                fontSize: '9px', 
+                fontWeight: 800, 
+                padding: '1px 5px', 
+                borderRadius: '3px', 
+                backgroundColor: `${themeColor}30`, 
+                color: themeColor, 
+                border: `1px solid ${themeColor}50`,
+                textTransform: 'uppercase'
+              }}>
+                {typeLabel}
+              </span>
+            )}
+          </div>
+
+          {/* Primary Row: Editable Table Name */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input 
+              value={table!.name}
+              onChange={(e) => handleUpdateTable({ name: e.target.value })}
+              title="Logical Table Name"
+              style={{ 
+                fontSize: '18px', 
+                fontWeight: 'bold', 
+                color: '#ffffff', 
+                backgroundColor: 'transparent', 
+                border: 'none',
+                borderBottom: '1px solid transparent',
+                padding: '2px 0',
+                outline: 'none',
+                width: '100%',
+                maxWidth: '500px'
+              }}
+              onFocus={(e) => (e.target as HTMLInputElement).style.borderBottom = '1px solid #3b82f6'}
+              onBlur={(e) => (e.target as HTMLInputElement).style.borderBottom = '1px solid transparent'}
+            />
           </div>
         </div>
+
+        {/* Quick Access Metadata Selectors */}
+        <div style={{ display: 'flex', gap: '8px', marginRight: '16px' }}>
+          {table!.appearance?.type === 'fact' && (
+            <select 
+              value={table!.appearance?.strategy || 'transaction'}
+              onChange={(e) => handleUpdateTable({ appearance: { ...table!.appearance, strategy: e.target.value as any } })}
+              className="bg-slate-800 border border-slate-700 text-slate-300 text-[10px] px-2 py-1 rounded outline-none"
+              title="Fact Strategy"
+            >
+              <option value="transaction">Transaction</option>
+              <option value="periodic">Periodic Snapshot</option>
+              <option value="accumulating">Accumulating Snapshot</option>
+              <option value="factless">Factless</option>
+            </select>
+          )}
+          {table!.appearance?.type === 'dimension' && (
+            <select 
+              value={table!.appearance?.scd || 'type1'}
+              onChange={(e) => handleUpdateTable({ appearance: { ...table!.appearance, scd: e.target.value as any } })}
+              className="bg-slate-800 border border-slate-700 text-slate-300 text-[10px] px-2 py-1 rounded outline-none"
+              title="SCD Type"
+            >
+              <option value="type0">SCD Type 0</option>
+              <option value="type1">SCD Type 1</option>
+              <option value="type2">SCD Type 2</option>
+              <option value="type3">SCD Type 3</option>
+              <option value="type6">SCD Type 6</option>
+            </select>
+          )}
+        </div>
+
         <button 
           onClick={(e) => {
             e.stopPropagation();
@@ -524,9 +567,10 @@ const DetailPanel = () => {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                 <thead style={{ backgroundColor: '#020617', borderBottom: '1px solid #1e293b', textAlign: 'left' }}>
                   <tr>
-                    <th style={{ padding: '10px 16px', color: '#64748b', width: '30%' }}>Logical Name</th>
-                    <th style={{ padding: '10px 16px', color: '#64748b', width: '20%' }}>Type</th>
-                    <th style={{ padding: '10px 16px', color: '#64748b', width: '40%' }}>Description</th>
+                    <th style={{ padding: '10px 16px', color: '#64748b', width: '35%' }}>Logical Name</th>
+                    <th style={{ padding: '10px 16px', color: '#64748b', width: '15%' }}>Role</th>
+                    <th style={{ padding: '10px 16px', color: '#64748b', width: '15%' }}>Type</th>
+                    <th style={{ padding: '10px 16px', color: '#64748b', width: '30%' }}>Description</th>
                     <th style={{ padding: '10px 16px', width: '50px' }}></th>
                   </tr>
                 </thead>
@@ -537,6 +581,7 @@ const DetailPanel = () => {
                         <div className="flex items-center gap-2">
                           <button 
                             onClick={() => handleUpdateLogicalColumn(col.id, { isPrimaryKey: !col.logical?.isPrimaryKey })}
+                            title="Primary Key"
                             className={`transition-opacity ${col.logical?.isPrimaryKey ? 'opacity-100' : 'opacity-20 hover:opacity-50'}`}
                           >🔑</button>
                           <input 
@@ -544,6 +589,27 @@ const DetailPanel = () => {
                             onChange={(e) => handleUpdateLogicalColumn(col.id, { name: e.target.value })}
                             className="bg-transparent border-none text-slate-100 w-full outline-none p-1 focus:bg-slate-800 rounded"
                           />
+                        </div>
+                      </td>
+                      <td style={{ padding: '6px 16px' }}>
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => handleUpdateLogicalColumn(col.id, { isMetadata: !col.logical?.isMetadata })}
+                            title="Metadata/Audit"
+                            className={`transition-opacity text-sm ${col.logical?.isMetadata ? 'opacity-100' : 'opacity-20 hover:opacity-50'}`}
+                          >🕒</button>
+                          <select
+                            value={col.logical?.additivity || ''}
+                            onChange={(e) => handleUpdateLogicalColumn(col.id, { additivity: (e.target.value || undefined) as any })}
+                            title="Additivity (for Measures)"
+                            style={{ fontSize: '10px' }}
+                            className="bg-slate-800 border border-slate-700 text-slate-400 p-1 rounded outline-none"
+                          >
+                            <option value="">-</option>
+                            <option value="fully">Σ (Full)</option>
+                            <option value="semi">Σ~ (Semi)</option>
+                            <option value="non">⊘ (Non)</option>
+                          </select>
                         </div>
                       </td>
                       <td style={{ padding: '6px 16px' }}>

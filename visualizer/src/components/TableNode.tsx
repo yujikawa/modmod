@@ -16,18 +16,30 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
   const { 
     updateNodeDimensions, 
     saveLayout, 
-    hoveredColumnId, 
-    selectedTableId
+    hoveredColumnId
   } = useStore()
 
-  const isActuallySelected = selected || selectedTableId === id;
+  const isActuallySelected = selected;
   const hasColumns = table.columns && table.columns.length > 0;
   
   // Resolve appearance
   const typeConfig = table.appearance?.type ? TYPE_CONFIG[table.appearance.type] : null;
   const themeColor = table.appearance?.color || typeConfig?.color || '#334155';
   const icon = table.appearance?.icon || typeConfig?.icon || '';
-  const typeLabel = typeConfig?.label || '';
+  
+  // Advanced Labels
+  let typeLabel = typeConfig?.label || '';
+  if (table.appearance?.type === 'fact' && table.appearance.strategy) {
+    const strategyMap: Record<string, string> = {
+      transaction: 'Trans.',
+      periodic: 'Periodic',
+      accumulating: 'Accum.',
+      factless: 'Factless'
+    };
+    typeLabel = `FACT (${strategyMap[table.appearance.strategy] || table.appearance.strategy})`;
+  } else if (table.appearance?.type === 'dimension' && table.appearance.scd) {
+    typeLabel = `DIM (SCD ${table.appearance.scd.replace('type', 'T')})`;
+  }
 
   const onResizeEnd = (_: any, params: { width: number; height: number }) => {
     updateNodeDimensions(id, params.width, params.height)
@@ -89,53 +101,53 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
         <div 
           className="table-drag-handle"
           style={{ 
-            padding: '12px', 
+            padding: '10px 12px', 
             backgroundColor: 'rgba(15, 23, 42, 0.8)', 
             borderBottom: hasColumns ? '1px solid #334155' : 'none', 
             flexShrink: 0,
             cursor: 'grab'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-              {icon && <span style={{ fontSize: '14px', flexShrink: 0 }}>{icon}</span>}
+          {/* Top Row: Icon and Metadata Badge */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {icon && <span style={{ fontSize: '14px' }}>{icon}</span>}
               <div style={{ 
-                fontSize: '14px', 
-                fontWeight: 'bold', 
-                color: '#ffffff',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
+                fontSize: '10px', 
+                color: '#94a3b8', 
+                textTransform: 'uppercase', 
+                fontFamily: 'monospace',
+                letterSpacing: '0.05em'
               }}>
-                {table.name}
+                {table.id}
               </div>
             </div>
             {typeLabel && (
               <div style={{ 
                 fontSize: '9px', 
                 fontWeight: 800, 
-                padding: '2px 6px', 
+                padding: '1px 6px', 
                 borderRadius: '4px', 
-                backgroundColor: `${themeColor}20`, 
+                backgroundColor: `${themeColor}30`, 
                 color: themeColor,
-                border: `1px solid ${themeColor}40`,
+                border: `1px solid ${themeColor}50`,
                 flexShrink: 0,
-                marginLeft: '8px'
+                whiteSpace: 'nowrap'
               }}>
                 {typeLabel}
               </div>
             )}
           </div>
+
+          {/* Primary Row: Table Name */}
           <div style={{ 
-            fontSize: '10px', 
-            color: '#94a3b8', 
-            textTransform: 'uppercase', 
-            marginTop: '2px',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis'
+            fontSize: '14px', 
+            fontWeight: 'bold', 
+            color: '#ffffff',
+            lineHeight: '1.4',
+            wordBreak: 'break-all'
           }}>
-            {table.id}
+            {table.name}
           </div>
         </div>
         
@@ -175,6 +187,10 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
                         {col.logical?.isPrimaryKey && <span style={{ color: '#eab308', marginRight: '4px' }}>🔑</span>}
                         {col.logical?.isForeignKey && <span style={{ marginRight: '4px' }}>🔩</span>}
                         {col.logical?.isPartitionKey && <span style={{ marginRight: '4px' }}>📂</span>}
+                        {col.logical?.isMetadata && <span style={{ marginRight: '4px' }} title="Metadata/Audit Column">🕒</span>}
+                        {col.logical?.additivity === 'fully' && <span style={{ color: '#4ade80', marginRight: '4px' }} title="Fully Additive">Σ</span>}
+                        {col.logical?.additivity === 'semi' && <span style={{ color: '#fbbf24', marginRight: '4px' }} title="Semi-Additive">Σ~</span>}
+                        {col.logical?.additivity === 'non' && <span style={{ color: '#f87171', marginRight: '4px' }} title="Non-Additive">⊘</span>}
                         <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {col.logical?.name || col.id}
                         </span>

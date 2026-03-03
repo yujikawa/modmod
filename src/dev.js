@@ -45,7 +45,8 @@ export async function startDevServer(paths, visualizerPath) {
   const app = express();
   app.use(express.json());
 
-  const modelMap = scanFiles(Array.isArray(paths) ? paths : [paths]);
+  const inputPaths = Array.isArray(paths) ? paths : [paths];
+  let modelMap = scanFiles(inputPaths);
   const distPath = path.resolve(__dirname, '../visualizer-dist');
 
   if (modelMap.size === 0) {
@@ -66,8 +67,9 @@ export async function startDevServer(paths, visualizerPath) {
     return modelMap.values().next().value;
   };
 
-  // API to list all available models
+  // API to list all available models - re-scans on every request
   app.get('/api/files', (req, res) => {
+    modelMap = scanFiles(inputPaths);
     const files = Array.from(modelMap.entries()).map(([slug, fullPath]) => ({
       slug,
       name: slug.charAt(0).toUpperCase() + slug.slice(1).replace(/[-_]/g, ' '),
@@ -148,7 +150,7 @@ export async function startDevServer(paths, visualizerPath) {
     open(url);
   });
 
-  chokidar.watch(Array.from(modelMap.values())).on('change', (changedPath) => {
+  chokidar.watch(inputPaths).on('change', (changedPath) => {
     console.log(`  File changed: ${path.relative(process.cwd(), changedPath)}. Please refresh the browser.`);
   });
 }

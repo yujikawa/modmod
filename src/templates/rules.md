@@ -2,86 +2,82 @@
 
 ## 1. Modeling Strategy
 <!-- Define your modeling methodology here. Example: Data Vault 2.0, Star Schema, 3NF -->
-- [Enter methodology name here, e.g., Star Schema]
-- Maintain structure according to table roles (e.g., Fact/Dim, Hub/Sat).
+- **Dimensional Modeling (Star Schema)**: Recommended for most analytical use cases. 
+  - Use `appearance.type: fact` for central measurement tables.
+  - Use `appearance.type: dimension` for descriptive attribute tables.
+- **Data Vault 2.0**: For highly scalable enterprise data warehouses.
+  - Use `appearance.type: hub`, `link`, or `satellite`.
 
-## 2. Naming Conventions
-<!-- Define your naming rules here -->
+## 2. Analytics Metadata
+Modscape supports attributes to communicate the "Story" and "Grain" of your data to humans and AI agents.
+
+### Fact Table Strategies (`appearance.strategy`)
+- `transaction`: Standard fact table where one row = one event (e.g., an order).
+- `periodic`: Snapshot fact table capturing state at set intervals (e.g., monthly inventory).
+- `accumulating`: Fact table updated as a process moves through milestones (e.g., order → shipping → delivery).
+- `factless`: Tables that record the occurrence of an event without numeric measures (e.g., event attendance).
+
+### Dimension SCD Types (`appearance.scd`)
+- `type0`: Fixed dimensions (no changes allowed).
+- `type1`: Overwrite changes (no history maintained).
+- `type2`: Add new row for changes (full history with timestamps).
+- `type3`: Add new column for changes (partial history).
+- `type6`: Hybrid approach (1+2+3).
+
+### Column Additivity (`logical.additivity`)
+- `fully`: Can be summed across all dimensions (e.g., sales amount). Displays as `Σ`.
+- `semi`: Summing is valid only across some dimensions (e.g., bank balance - can't sum across time). Displays as `Σ~`.
+- `non`: Summing is never valid (e.g., unit price, ratios). Displays as `⊘`.
+
+### Metadata Columns (`logical.isMetadata`)
+Mark technical or audit columns (like `created_at`, `dbt_updated_at`) with `isMetadata: true` to display a `🕒` icon.
+
+## 3. Naming Conventions
 - **Casing**: [Select one: snake_case / UPPER_SNAKE_CASE / camelCase]
 - **Prefixes**: (e.g., `f_` for facts, `d_` for dimensions)
 - **Suffixes**: (e.g., `_id` for primary keys, `_h` for history tables)
 
-## 3. Standard Data Types
-- String: 
-- Numeric: 
-- Date/Time: 
+## 4. Standard Data Types
+- String: Varchar, Text
+- Numeric: Integer, Decimal, Float
+- Date/Time: Timestamp, Date
 
-## 4. YAML Schema Reference
-Use this structure for `model.yaml`:
-
+## 5. YAML Schema Reference
 ```yaml
 tables:
-  - id: table_id # Unique identifier
-    name: Table Display Name (Logical)
-    appearance: # Optional: Visual style
-      type: hub # Predefined: hub, link, satellite, fact, dimension
-      icon: "🌐"  # Optional: Emoji override
-      color: "#fbbf24" # Optional: Hex color override
+  - id: fct_orders
+    name: Orders Fact
+    appearance:
+      type: fact
+      strategy: transaction # transaction | periodic | accumulating | factless
     conceptual:
-      description: "Business definition"
-      tags: ["WHO", "WHAT", "WHEN", etc.]
+      description: "Records of customer purchases"
+      tags: ["WHO", "WHEN", "HOW MUCH"]
     columns:
-      - id: column_id
-        logical:
-          name: "Column Name"
-          type: "Data Type"
-          description: "Optional description"
-          isPrimaryKey: true/false
-          isForeignKey: true/false
-        physical: # Optional
-          name: "physical_name"
-          type: "DB_TYPE"
-          constraints: ["NOT NULL", "UNIQUE"]
-    sampleData: # Optional: 2D array mapped to columns by index
-      - ["value1", "value2"] # Corresponds to first and second column
-      - ["value3", "value4"]
+      - id: order_id
+        logical: { name: ID, type: Int, isPrimaryKey: true }
+      - id: amount
+        logical: { name: Amount, type: Decimal, additivity: fully } # fully | semi | non
+      - id: updated_at
+        logical: { name: Updated At, type: Timestamp, isMetadata: true }
 
-domains: # Optional: Group tables into visual containers
-  - id: domain_id
-    name: Domain Name
-    description: "Domain purpose"
-    tables: ["table_id_1", "table_id_2"]
-    color: "rgba(59, 130, 246, 0.05)" # Optional background color
-
-relationships:
-  - from: { table: table_id, column: column_id }
-    to: { table: other_id, column: column_id }
-    type: "one-to-many" # or "one-to-one", "many-to-many"
-
-layout: # Automatically managed by the visualizer OR updated by AI Agent
-  table_id: { x: 100, y: 100 }
-  domain_id: { x: 50, y: 50, width: 600, height: 400 }
+  - id: dim_customers
+    name: Customers Dim
+    appearance:
+      type: dimension
+      scd: type2 # type0 | type1 | type2 | type3 | type6
+    columns:
+      - id: customer_id
+        logical: { name: ID, type: Int, isPrimaryKey: true }
+      - id: valid_from
+        logical: { name: Valid From, type: Timestamp, isMetadata: true }
 ```
 
-## 📁 File Management
+## 6. Layout Management
+- **Visualizer Priority**: The GUI handles layout through drag-and-drop.
+- **AI Agent Responsibility**: When creating new entities, assign initial (x, y) coordinates to place them near related tables.
 
-For larger projects, it is recommended to **split the model into multiple YAML files by domain** rather than keeping everything in a single file.
-
--   **Directory Management**: By specifying a directory with `modscape dev models/`, the visualizer will automatically scan and manage all YAML files within that folder.
--   **Naming Conventions**: The filename (without extension) is used as the "model slug" in the visualizer (e.g., `customer.yaml`, `billing.yaml`).
--   **Common Structure**: Maintain a consistent `layout` format across all files. AI agents MUST respect the existing `layout` section when making updates.
-
-## 5. Layout Management
-- **Visualizer Priority**: The GUI handles layout through drag-and-drop, writing to the `layout` section.
-- **AI Agent Responsibility**: When creating new entities or domains, you MUST assign initial coordinates (x, y) to place them logically near related tables. Do NOT leave new entities at (0, 0) or stacked on top of each other.
-- **Preservation**: Do NOT modify existing coordinates unless a "Cleanup" or "Re-layout" is explicitly requested.
-
-## 6. The Golden Rules
+## 7. The Golden Rules
 - When updating `model.yaml`, always self-audit against these rules.
-- Set appropriate `appearance.type` (fact, dimension, hub, link, satellite) for new tables.
-- When defining relationships, ensure consistency between `from` and `to` tables.
-- If user instructions are ambiguous, propose the best design based on these rules.
-
-## 7. Strictly Forbidden
-- Do not create custom data types not defined in this document.
-- Do not destroy or overwrite the `layout` section without assigning new, logical coordinates.
+- Set appropriate `appearance.type` and `strategy`/`scd` for new tables.
+- Use `additivity` for numeric measures to inform BI tools and analysts.

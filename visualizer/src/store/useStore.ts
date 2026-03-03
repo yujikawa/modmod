@@ -51,6 +51,8 @@ interface AppState {
   removeNode: (id: string) => void;
   updateTable: (id: string, updates: Partial<Table>) => void;
   updateDomain: (id: string, updates: Partial<Domain>) => void;
+  toggleTableSelection: (id: string) => void;
+  toggleEdgeSelection: (id: string) => void;
   
   // Multi-file Actions
   fetchAvailableFiles: () => Promise<void>;
@@ -418,6 +420,24 @@ addRelationship: (source, target, sourceHandle, targetHandle) => {
     const newSchema = { ...schema, domains: newDomains };
     set({ schema: normalizeSchema(newSchema) });
     get().syncToYamlInput();
+  },
+
+  toggleTableSelection: (id) => {
+    const { selectedTableId } = get();
+    if (selectedTableId === id) {
+      set({ selectedTableId: null });
+    } else {
+      set({ selectedTableId: id, selectedEdgeId: null });
+    }
+  },
+
+  toggleEdgeSelection: (id) => {
+    const { selectedEdgeId } = get();
+    if (selectedEdgeId === id) {
+      set({ selectedEdgeId: null });
+    } else {
+      set({ selectedEdgeId: id, selectedTableId: null });
+    }
   },
   
   getSelectedTable: () => {
