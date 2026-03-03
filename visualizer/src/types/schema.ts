@@ -18,6 +18,8 @@ export interface Table {
   name: string; // Display name (Logical name)
   appearance?: {
     type?: 'fact' | 'dimension' | 'hub' | 'link' | 'satellite';
+    strategy?: 'transaction' | 'periodic' | 'accumulating' | 'factless'; // For Facts
+    scd?: 'type0' | 'type1' | 'type2' | 'type3' | 'type6'; // For Dimensions
     icon?: string;
     color?: string;
   };
@@ -43,6 +45,8 @@ export interface Column {
     isPrimaryKey?: boolean;
     isForeignKey?: boolean;
     isPartitionKey?: boolean;
+    additivity?: 'fully' | 'semi' | 'non'; // For Measures
+    isMetadata?: boolean; // For Audit/SCD metadata columns
   };
   physical?: { // Optional
     name?: string;

@@ -44,8 +44,12 @@ export function normalizeSchema(data: any): Schema {
       ...table,
       id: table.id || 'unknown',
       name: table.name || table.id || 'Unnamed Table',
-      appearance: table.appearance || undefined,
-      columns: Array.isArray(table.columns) ? table.columns : [],
+      appearance: table.appearance ? { ...table.appearance } : undefined,
+      columns: Array.isArray(table.columns) ? table.columns.map((col: any) => ({
+        ...col,
+        logical: col.logical ? { ...col.logical } : undefined,
+        physical: col.physical ? { ...col.physical } : undefined
+      })) : [],
       sampleData: Array.isArray(sampleData) ? sampleData : []
     }
   })

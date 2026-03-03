@@ -26,7 +26,20 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
   const typeConfig = table.appearance?.type ? TYPE_CONFIG[table.appearance.type] : null;
   const themeColor = table.appearance?.color || typeConfig?.color || '#334155';
   const icon = table.appearance?.icon || typeConfig?.icon || '';
-  const typeLabel = typeConfig?.label || '';
+  
+  // Advanced Labels
+  let typeLabel = typeConfig?.label || '';
+  if (table.appearance?.type === 'fact' && table.appearance.strategy) {
+    const strategyMap: Record<string, string> = {
+      transaction: 'Trans.',
+      periodic: 'Periodic',
+      accumulating: 'Accum.',
+      factless: 'Factless'
+    };
+    typeLabel = `FACT (${strategyMap[table.appearance.strategy] || table.appearance.strategy})`;
+  } else if (table.appearance?.type === 'dimension' && table.appearance.scd) {
+    typeLabel = `DIM (SCD ${table.appearance.scd.replace('type', 'T')})`;
+  }
 
   const onResizeEnd = (_: any, params: { width: number; height: number }) => {
     updateNodeDimensions(id, params.width, params.height)
@@ -174,6 +187,10 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
                         {col.logical?.isPrimaryKey && <span style={{ color: '#eab308', marginRight: '4px' }}>🔑</span>}
                         {col.logical?.isForeignKey && <span style={{ marginRight: '4px' }}>🔩</span>}
                         {col.logical?.isPartitionKey && <span style={{ marginRight: '4px' }}>📂</span>}
+                        {col.logical?.isMetadata && <span style={{ marginRight: '4px' }} title="Metadata/Audit Column">🕒</span>}
+                        {col.logical?.additivity === 'fully' && <span style={{ color: '#4ade80', marginRight: '4px' }} title="Fully Additive">Σ</span>}
+                        {col.logical?.additivity === 'semi' && <span style={{ color: '#fbbf24', marginRight: '4px' }} title="Semi-Additive">Σ~</span>}
+                        {col.logical?.additivity === 'non' && <span style={{ color: '#f87171', marginRight: '4px' }} title="Non-Additive">⊘</span>}
                         <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {col.logical?.name || col.id}
                         </span>
