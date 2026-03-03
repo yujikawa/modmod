@@ -122,8 +122,8 @@ domains:
     color: rgba(139, 92, 246, 0.05)
 layout:
   dv_raw:
-    x: -502
-    'y': 224
+    x: -197
+    'y': 339
     width: 1416
     height: 733
   new_table_1772429337792:
@@ -170,8 +170,14 @@ layout:
     x: 200
     'y': 201
   sat_customer_crm:
-    x: 912
-    'y': 163
+    x: 880
+    'y': 298
   link_sale:
-    x: 113
-    'y': 407
+    x: 495
+    'y': 437
+  hub_product:
+    x: 190
+    'y': 223
+  hub_customer:
+    x: 30
+    'y': 30

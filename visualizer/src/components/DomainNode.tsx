@@ -5,11 +5,10 @@ import { useStore } from '../store/useStore'
 const DomainNode = ({ id, data, selected }: NodeProps) => {
   const { 
     updateNodeDimensions, 
-    saveLayout, 
-    selectedTableId
+    saveLayout
   } = useStore()
 
-  const isActuallySelected = selected || selectedTableId === id;
+  const isActuallySelected = selected;
   const color = data.color || '#1e293b';
   const hasAlpha = color.startsWith('rgba') || color.startsWith('hsla') || (color.startsWith('#') && color.length > 7);
   const opacity = hasAlpha ? 1 : 0.5;
@@ -50,7 +49,6 @@ const DomainNode = ({ id, data, selected }: NodeProps) => {
       />
       
       <div
-        className="nodrag"
         style={{
           position: 'absolute',
           inset: 0,
@@ -58,7 +56,7 @@ const DomainNode = ({ id, data, selected }: NodeProps) => {
           opacity: opacity,
           borderRadius: '10px',
           zIndex: -1,
-          cursor: 'default'
+          cursor: 'grab'
         }}
       />
       

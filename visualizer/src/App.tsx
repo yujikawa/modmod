@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect } from 'react'
 import ReactFlow, { 
   Background, 
   Controls, 
@@ -28,9 +28,6 @@ const edgeTypes = {
   button: ButtonEdge,
 }
 
-const HIGHLIGHT_STYLE = { stroke: '#4ade80', strokeWidth: 3 };
-const NORMAL_STYLE = { stroke: '#334155', strokeWidth: 1 };
-
 function Flow() {
   const { 
     schema, 
@@ -45,7 +42,9 @@ function Flow() {
     setFocusNodeId,
     addRelationship,
     removeNode,
-    removeEdge
+    removeEdge,
+    toggleTableSelection,
+    toggleEdgeSelection
   } = useStore()
   
   const [nodes, setNodes, onNodesChange] = useNodesState([])
@@ -66,7 +65,7 @@ function Flow() {
     }
   }, [focusNodeId, getNode, setCenter, setFocusNodeId])
 
-  // Sync Nodes
+  // Sync Nodes (including selection state)
   useEffect(() => {
     if (!schema) return
 
@@ -107,7 +106,7 @@ function Flow() {
           type: 'domain',
           position: { x, y },
           style: { width, height },
-          dragHandle: '.domain-drag-handle',
+          selected: domain.id === selectedTableId,
           data: { label: domain.name, color: domain.color },
         });
 
@@ -135,6 +134,7 @@ function Flow() {
               ...(tableLayout?.width ? { width: tableLayout.width } : {}),
               ...(nodeHeight ? { height: nodeHeight } : {})
             },
+            selected: table.id === selectedTableId,
             dragHandle: '.table-drag-handle',
             data: { table },
             parentNode: domain.id,
@@ -165,6 +165,7 @@ function Flow() {
           ...(tableLayout?.width ? { width: tableLayout.width } : {}),
           ...(nodeHeight ? { height: nodeHeight } : {})
         },
+        selected: table.id === selectedTableId,
         dragHandle: '.table-drag-handle',
         data: { table },
       });
@@ -173,11 +174,24 @@ function Flow() {
     setNodes(newNodes)
   }, [schema, setNodes])
 
+  // Sync Store Selection to React Flow nodes state (without recreating all nodes)
+  useEffect(() => {
+    setNodes((nds) => 
+      nds.map((node) => ({
+        ...node,
+        selected: node.id === selectedTableId
+      }))
+    )
+  }, [selectedTableId, setNodes])
+
   // Sync Edges with dynamic highlighting
-  const currentEdges = useMemo(() => {
-    if (!schema || !schema.relationships) return []
+  useEffect(() => {
+    if (!schema || !schema.relationships) return
     
-    return schema.relationships.map((rel, index) => {
+    const HIGHLIGHT_STYLE = { stroke: '#4ade80', strokeWidth: 3 };
+    const NORMAL_STYLE = { stroke: '#334155', strokeWidth: 1 };
+
+    const newEdges = schema.relationships.map((rel, index) => {
       const edgeId = `e-${index}`;
       const isConnectedToSelectedTable = selectedTableId === rel.from.table || selectedTableId === rel.to.table;
       const isDirectlySelected = selectedEdgeId === edgeId;
@@ -199,11 +213,9 @@ function Flow() {
         zIndex: isHighlighted ? 10 : 1,
       }
     }) as Edge[]
-  }, [schema, selectedTableId, selectedEdgeId])
 
-  useEffect(() => {
-    setEdges(currentEdges)
-  }, [currentEdges, setEdges])
+    setEdges(newEdges)
+  }, [schema, selectedTableId, selectedEdgeId, setEdges])
 
   const onConnect = useCallback(
     (params: Connection) => {
@@ -233,15 +245,14 @@ function Flow() {
   }, [setSelectedTableId, setSelectedEdgeId]);
 
   const onNodeClick = useCallback((_: any, node: Node) => {
-    // onNodeClick triggers only if it's a distinct click (not a drag)
-    setSelectedTableId(node.id);
-    setSelectedEdgeId(null);
-  }, [setSelectedTableId, setSelectedEdgeId]);
+    toggleTableSelection(node.id);
+  }, [toggleTableSelection]);
+
+  const onEdgeClick = useCallback((_: any, edge: Edge) => {
+    toggleEdgeSelection(edge.id);
+  }, [toggleEdgeSelection]);
 
   const onNodeDragStop = useCallback((_: any, node: Node) => {
-    // Clear selection after drag stop to keep canvas clean
-    setSelectedTableId(null);
-
     if (!isCliMode) return;
 
     // Detect if this is a table dropped into a domain
@@ -273,13 +284,9 @@ function Flow() {
     saveLayout();
   }, [isCliMode, updateNodePosition, saveLayout, nodes, setSelectedTableId]);
 
-  const onSelectionChange = useCallback(({ edges: selectedEdges }: { nodes: Node[], edges: Edge[] }) => {
-    if (selectedEdges.length > 0) {
-      setSelectedEdgeId(selectedEdges[0].id);
-      setSelectedTableId(null);
-    }
-    // We don't handle nodes here to avoid triggering DetailPanel on grab/mousedown
-  }, [setSelectedTableId, setSelectedEdgeId]);
+  const onSelectionChange = useCallback(() => {
+    // We handle selection via onNodeClick and onEdgeClick to support toggle behavior.
+  }, []);
 
   return (
     <div className="flex-1 relative h-full">
@@ -293,13 +300,14 @@ function Flow() {
         onEdgesDelete={onEdgesDelete}
         onNodeDragStop={onNodeDragStop}
         onNodeClick={onNodeClick}
+        onEdgeClick={onEdgeClick}
         onPaneClick={onPaneClick}
         onConnect={onConnect}
         onSelectionChange={onSelectionChange}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         deleteKeyCode={['Backspace', 'Delete']}
-        selectNodesOnDrag={false}
+        selectNodesOnDrag={true}
         fitView
       >
         <Background color="#334155" gap={20} />

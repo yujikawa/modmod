@@ -16,11 +16,10 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
   const { 
     updateNodeDimensions, 
     saveLayout, 
-    hoveredColumnId, 
-    selectedTableId
+    hoveredColumnId
   } = useStore()
 
-  const isActuallySelected = selected || selectedTableId === id;
+  const isActuallySelected = selected;
   const hasColumns = table.columns && table.columns.length > 0;
   
   // Resolve appearance
