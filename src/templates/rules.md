@@ -8,8 +8,8 @@
 - **Data Vault 2.0**: For highly scalable enterprise data warehouses.
   - Use `appearance.type: hub`, `link`, or `satellite`.
 
-## 2. Advanced Analytics Metadata
-Modscape supports advanced attributes to communicate the "Story" and "Grain" of your data to humans and AI agents.
+## 2. Analytics Metadata
+Modscape supports attributes to communicate the "Story" and "Grain" of your data to humans and AI agents.
 
 ### Fact Table Strategies (`appearance.strategy`)
 - `transaction`: Standard fact table where one row = one event (e.g., an order).
@@ -49,7 +49,7 @@ tables:
     name: Orders Fact
     appearance:
       type: fact
-      strategy: transaction
+      strategy: transaction # transaction | periodic | accumulating | factless
     conceptual:
       description: "Records of customer purchases"
       tags: ["WHO", "WHEN", "HOW MUCH"]
@@ -57,7 +57,7 @@ tables:
       - id: order_id
         logical: { name: ID, type: Int, isPrimaryKey: true }
       - id: amount
-        logical: { name: Amount, type: Decimal, additivity: fully }
+        logical: { name: Amount, type: Decimal, additivity: fully } # fully | semi | non
       - id: updated_at
         logical: { name: Updated At, type: Timestamp, isMetadata: true }
 
@@ -65,7 +65,7 @@ tables:
     name: Customers Dim
     appearance:
       type: dimension
-      scd: type2
+      scd: type2 # type0 | type1 | type2 | type3 | type6
     columns:
       - id: customer_id
         logical: { name: ID, type: Int, isPrimaryKey: true }

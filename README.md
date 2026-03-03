@@ -21,12 +21,18 @@ In modern data analysis platforms, data modeling is no longer just about drawing
 ## Key Features
 
 - **YAML-as-Code**: Define your entire data architecture in a single, human-readable YAML file. Track changes via Git.
+- **Instant Local Visualization**: Visualize your YAML models (following the Modscape schema) instantly on your machine. No database connections or cloud infrastructure required—just point to your file and start exploring.
 - **Specialized Modeling Types**: Native support for entity types like `fact`, `dimension`, `hub`, `link`, and `satellite`.
 - **Sample Data Stories**: Attach real-world data samples to your entities to explain the "Story" behind the data.
 - **Interactive Visual Canvas**: 
   - **Drag-to-Connect**: Create relationships between columns intuitively.
   - **Auto-Layout Persistence**: Arrange nodes on the canvas; coordinates are saved directly back to your YAML.
   - **Domain Grouping**: Organize tables into visual business domains.
+- **Analytics Metadata**: 
+  - **Fact Strategies**: Define `transaction`, `periodic`, `accumulating`, or `factless` grains.
+  - **SCD Management**: Visualize `SCD Type 2` and other history-tracking dimensions.
+  - **Additivity Rules**: Mark columns as `fully`, `semi`, or `non-additive` to guide BI development.
+  - **Metadata/Audit Tracking**: Identify audit columns with specialized visual cues.
 - **AI-Agent Ready**: Built-in scaffolding for **Gemini, Claude, and Codex** to accelerate your modeling workflow using LLMs.
 - **Documentation Export**: Generate Mermaid-compatible Markdown for your internal wikis or GitHub/GitLab pages.
 
@@ -79,15 +85,16 @@ Best for direct architectural control.
 
 ## Defining Your Model (YAML)
 
-Modscape uses a schema designed for data analysis contexts.
+Modscape uses a schema designed for data analysis contexts. This single file acts as the **Single Source of Truth** for your logical and physical data architecture.
 
 ```yaml
-# 1. Domains: Visual containers for business logic
+# 1. Domains: Visual containers for grouping business logic
 domains:
   - id: core_sales
     name: Core Sales
-    color: "rgba(59, 130, 246, 0.05)"
-    tables: [orders, products]
+    description: "Optional description of the domain"
+    color: "rgba(59, 130, 246, 0.05)" # Container background color
+    tables: [orders, products] # List of table IDs
 
 # 2. Tables: Entity definitions with multi-layer metadata
 tables:
@@ -95,20 +102,41 @@ tables:
     name: ORDERS
     appearance:
       type: fact    # fact | dimension | hub | link | satellite
-      icon: 📦      # Visual cue for the entity
+      # --- Analytics Metadata ---
+      strategy: transaction # transaction | periodic | accumulating | factless
+      scd: null             # type0 | type1 | type2 | type3 | type6 (for Dimensions)
+      icon: 📦      # Custom emoji or character
+      color: "#f87171" # Custom theme color for this entity
+    
     conceptual:
       description: "Sales transaction records"
-      tags: ["WHO", "WHEN", "HOW MUCH"] # Grain identifiers
+      tags: ["WHO", "WHEN", "HOW MUCH"] # BEAM* or Grain identifiers
+    
     physical:
-      name: STG_ORDERS
-      schema: ANALYTICS_DB
+      name: STG_ORDERS     # Actual table name in DB
+      schema: ANALYTICS_DB # DB schema/namespace
+    
     columns:
       - id: order_id
-        logical: { name: ORDER_ID, type: Int, isPrimaryKey: true }
+        logical:
+          name: ORDER_ID
+          type: Int
+          description: "Unique identifier"
+          isPrimaryKey: true
+          isForeignKey: false
+          isPartitionKey: false
+          # --- Analytics Metadata ---
+          isMetadata: false # Set true for audit columns (🕒 icon)
+          additivity: fully # fully | semi | non (Σ icon)
+        physical:
+          name: O_ID
+          type: NUMBER(38,0)
+          constraints: ["NOT NULL"]
+      
       - id: customer_id
         logical: { name: CUSTOMER_ID, type: Int, isForeignKey: true }
-    
-    # 3. Sample Data: Telling the story through data
+
+    # 3. Sample Data: Storytelling through data
     sampleData:
       - [1001, 501]
       - [1002, 502]
@@ -117,7 +145,11 @@ tables:
 relationships:
   - from: { table: orders, column: customer_id }
     to: { table: customers, column: id }
-    type: many-to-one
+    type: many-to-one # one-to-one | one-to-many | many-to-many
+
+# 5. Layout: Visual coordinates (Auto-managed)
+layout:
+  orders: { x: 100, y: 100, width: 320, height: 400 }
 ```
 
 ---
