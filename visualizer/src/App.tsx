@@ -44,7 +44,8 @@ function Flow() {
     focusNodeId,
     setFocusNodeId,
     addRelationship,
-    removeNode
+    removeNode,
+    removeEdge
   } = useStore()
   
   const [nodes, setNodes, onNodesChange] = useNodesState([])
@@ -218,20 +219,29 @@ function Flow() {
     saveLayout();
   }, [removeNode, saveLayout]);
 
-  const onSelectionChange = useCallback(({ nodes: selectedNodes, edges: selectedEdges }: { nodes: Node[], edges: Edge[] }) => {
-    if (selectedNodes.length > 0) {
-      setSelectedTableId(selectedNodes[0].id);
-      setSelectedEdgeId(null);
-    } else if (selectedEdges.length > 0) {
-      setSelectedEdgeId(selectedEdges[0].id);
-      setSelectedTableId(null);
-    } else {
-      setSelectedTableId(null);
-      setSelectedEdgeId(null);
-    }
+  const onEdgesDelete = useCallback((deletedEdges: Edge[]) => {
+    deletedEdges.forEach(edge => {
+      // Edge ID is e-INDEX, but removeEdge needs source and target
+      removeEdge(edge.source, edge.target);
+    });
+    saveLayout();
+  }, [removeEdge, saveLayout]);
+
+  const onPaneClick = useCallback(() => {
+    setSelectedTableId(null);
+    setSelectedEdgeId(null);
+  }, [setSelectedTableId, setSelectedEdgeId]);
+
+  const onNodeClick = useCallback((_: any, node: Node) => {
+    // onNodeClick triggers only if it's a distinct click (not a drag)
+    setSelectedTableId(node.id);
+    setSelectedEdgeId(null);
   }, [setSelectedTableId, setSelectedEdgeId]);
 
   const onNodeDragStop = useCallback((_: any, node: Node) => {
+    // Clear selection after drag stop to keep canvas clean
+    setSelectedTableId(null);
+
     if (!isCliMode) return;
 
     // Detect if this is a table dropped into a domain
@@ -261,7 +271,15 @@ function Flow() {
 
     updateNodePosition(node.id, node.position.x, node.position.y, parentId);
     saveLayout();
-  }, [isCliMode, updateNodePosition, saveLayout, nodes]);
+  }, [isCliMode, updateNodePosition, saveLayout, nodes, setSelectedTableId]);
+
+  const onSelectionChange = useCallback(({ edges: selectedEdges }: { nodes: Node[], edges: Edge[] }) => {
+    if (selectedEdges.length > 0) {
+      setSelectedEdgeId(selectedEdges[0].id);
+      setSelectedTableId(null);
+    }
+    // We don't handle nodes here to avoid triggering DetailPanel on grab/mousedown
+  }, [setSelectedTableId, setSelectedEdgeId]);
 
   return (
     <div className="flex-1 relative h-full">
@@ -272,11 +290,16 @@ function Flow() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodesDelete={onNodesDelete}
+        onEdgesDelete={onEdgesDelete}
         onNodeDragStop={onNodeDragStop}
+        onNodeClick={onNodeClick}
+        onPaneClick={onPaneClick}
         onConnect={onConnect}
         onSelectionChange={onSelectionChange}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
+        deleteKeyCode={['Backspace', 'Delete']}
+        selectNodesOnDrag={false}
         fitView
       >
         <Background color="#334155" gap={20} />

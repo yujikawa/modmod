@@ -67,3 +67,4 @@ body {
   transition: opacity 0.15s ease-in-out;
   pointer-events: auto; /* Ensure handle is interactive even when transparent */
 }
+

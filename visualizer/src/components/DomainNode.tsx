@@ -1,15 +1,12 @@
 import { memo } from 'react'
 import { type NodeProps, NodeResizer } from 'reactflow'
 import { useStore } from '../store/useStore'
-import { X } from 'lucide-react'
 
 const DomainNode = ({ id, data, selected }: NodeProps) => {
   const { 
     updateNodeDimensions, 
     saveLayout, 
-    removeNode,
-    selectedTableId,
-    setSelectedTableId
+    selectedTableId
   } = useStore()
 
   const isActuallySelected = selected || selectedTableId === id;
@@ -22,14 +19,8 @@ const DomainNode = ({ id, data, selected }: NodeProps) => {
     saveLayout()
   }
 
-  const handleNodeClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSelectedTableId(id);
-  };
-
   return (
     <div
-      onClick={handleNodeClick}
       style={{
         width: '100%',
         height: '100%',
@@ -57,37 +48,6 @@ const DomainNode = ({ id, data, selected }: NodeProps) => {
           zIndex: 100
         }}
       />
-      
-      {isActuallySelected && (
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            removeNode(id);
-          }}
-          style={{
-            position: 'absolute',
-            top: '-15px',
-            right: '-15px',
-            width: '28px',
-            height: '28px',
-            backgroundColor: '#ef4444',
-            color: 'white',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: '2px solid #ffffff',
-            cursor: 'pointer',
-            zIndex: 1001,
-            boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
-          }}
-          onMouseDown={(e) => e.stopPropagation()}
-          title="Delete Domain"
-        >
-          <X size={16} />
-        </button>
-      )}
       
       <div
         className="nodrag"

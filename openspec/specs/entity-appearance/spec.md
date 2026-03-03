@@ -44,3 +44,10 @@ The table node in the visualizer diagram SHALL reflect the appearance metadata t
 #### Scenario: Top Border Coloring
 - **WHEN** a table has a theme color assigned
 - **THEN** the node SHALL have a 3px thick top border using that color.
+
+### Requirement: Visual Feedback for Active Interactions
+The system SHALL provide immediate visual feedback when a node is being interacted with, specifically during a drag operation, to signify active engagement.
+
+#### Scenario: Node Dragging Feedback
+- **WHEN** a user is dragging a node (table or domain)
+- **THEN** the node SHALL exhibit a visual change indicating it is being moved.
