@@ -29,7 +29,7 @@ In modern data analysis platforms, data modeling is no longer just about drawing
   - **Auto-Layout Persistence**: Arrange nodes on the canvas; coordinates are saved directly back to your YAML.
   - **Domain Grouping**: Organize tables into visual business domains.
 - **Analytics Metadata**: 
-  - **Fact Strategies**: Define `transaction`, `periodic`, `accumulating`, or `factless` grains.
+  - **Fact Table Types**: Define `transaction`, `periodic`, `accumulating`, or `factless` grains.
   - **SCD Management**: Visualize `SCD Type 2` and other history-tracking dimensions.
   - **Additivity Rules**: Mark columns as `fully`, `semi`, or `non-additive` to guide BI development.
   - **Metadata/Audit Tracking**: Identify audit columns with specialized visual cues.
@@ -103,8 +103,8 @@ tables:
     appearance:
       type: fact    # fact | dimension | hub | link | satellite
       # --- Analytics Metadata ---
-      strategy: transaction # transaction | periodic | accumulating | factless
-      scd: null             # type0 | type1 | type2 | type3 | type6 (for Dimensions)
+      sub_type: transaction # transaction | periodic | accumulating | factless
+      # (Use sub_type for SCD types in Dimensions: type0 | type1 | type2 | type3 | type4 | type5 | type6 | type7)
       icon: 📦      # Custom emoji or character
       color: "#f87171" # Custom theme color for this entity
     

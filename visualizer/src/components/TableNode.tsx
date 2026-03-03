@@ -29,16 +29,18 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
   
   // Advanced Labels
   let typeLabel = typeConfig?.label || '';
-  if (table.appearance?.type === 'fact' && table.appearance.strategy) {
+  if (table.appearance?.type === 'fact' && table.appearance.sub_type) {
     const strategyMap: Record<string, string> = {
       transaction: 'Trans.',
       periodic: 'Periodic',
       accumulating: 'Accum.',
       factless: 'Factless'
     };
-    typeLabel = `FACT (${strategyMap[table.appearance.strategy] || table.appearance.strategy})`;
-  } else if (table.appearance?.type === 'dimension' && table.appearance.scd) {
-    typeLabel = `DIM (SCD ${table.appearance.scd.replace('type', 'T')})`;
+    typeLabel = `FACT (${strategyMap[table.appearance.sub_type] || table.appearance.sub_type})`;
+  } else if (table.appearance?.type === 'dimension' && table.appearance.sub_type) {
+    typeLabel = `DIM (SCD ${table.appearance.sub_type.replace('type', 'T')})`;
+  } else if (table.appearance?.type) {
+    typeLabel = table.appearance.type.toUpperCase();
   }
 
   const onResizeEnd = (_: any, params: { width: number; height: number }) => {

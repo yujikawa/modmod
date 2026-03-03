@@ -3,7 +3,7 @@ tables:
     name: Orders (Transaction Fact)
     appearance:
       type: fact
-      strategy: transaction
+      sub_type: transaction
       icon: 💰
     conceptual:
       description: Individual sales transactions
@@ -37,7 +37,7 @@ tables:
     name: Inventory (Periodic Snapshot)
     appearance:
       type: fact
-      strategy: periodic
+      sub_type: periodic
       icon: 📦
     conceptual:
       description: Monthly stock levels at end of period
@@ -67,7 +67,7 @@ tables:
     name: Shipping (Accumulating Snapshot)
     appearance:
       type: fact
-      strategy: accumulating
+      sub_type: accumulating
       icon: 🚚
     conceptual:
       description: Milestones from order to delivery
@@ -92,7 +92,7 @@ tables:
     name: Promotion (Factless Fact)
     appearance:
       type: fact
-      strategy: factless
+      sub_type: factless
       icon: 🏷️
     conceptual:
       description: Records of customers participating in promos
@@ -112,7 +112,7 @@ tables:
     name: Customers (SCD Type 2)
     appearance:
       type: dimension
-      scd: type2
+      sub_type: type2
       icon: 👤
     columns:
       - id: customer_key
@@ -162,8 +162,8 @@ relationships:
 domains: []
 layout:
   fct_orders:
-    x: 356
-    'y': 74
+    x: 357
+    'y': 73
     width: 320
   fct_shipping_process:
     x: 701
