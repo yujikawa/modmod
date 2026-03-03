@@ -368,46 +368,57 @@ const DetailPanel = () => {
       }}
     >
       {/* Panel Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 20px', borderBottom: '1px solid #1e293b', backgroundColor: '#020617' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-          {icon && <span style={{ fontSize: '18px' }}>{icon}</span>}
-          <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <input 
-                value={table!.name}
-                onChange={(e) => handleUpdateTable({ name: e.target.value })}
-                title="Logical Table Name"
-                style={{ 
-                  fontSize: '16px', 
-                  fontWeight: 'bold', 
-                  color: '#ffffff', 
-                  backgroundColor: 'transparent', 
-                  border: 'none',
-                  borderBottom: '1px solid transparent',
-                  padding: '2px 0',
-                  outline: 'none',
-                  width: 'fit-content',
-                  minWidth: '200px'
-                }}
-                onFocus={(e) => (e.target as HTMLInputElement).style.borderBottom = '1px solid #3b82f6'}
-                onBlur={(e) => (e.target as HTMLInputElement).style.borderBottom = '1px solid transparent'}
-              />
-              {typeLabel && (
-                <span style={{ 
-                  fontSize: '9px', 
-                  fontWeight: 800, 
-                  padding: '1px 5px', 
-                  borderRadius: '3px', 
-                  backgroundColor: `${themeColor}20`, 
-                  color: themeColor, 
-                  border: `1px solid ${themeColor}40`,
-                  textTransform: 'uppercase'
-                }}>
-                  {typeLabel}
-                </span>
-              )}
-            </div>
-            <p style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', margin: 0 }}>{table!.id}</p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderBottom: '1px solid #1e293b', backgroundColor: '#020617' }}>
+        <div style={{ flex: 1 }}>
+          {/* Top Row: Icon, ID, and Badge */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            {icon && <span style={{ fontSize: '16px' }}>{icon}</span>}
+            <span style={{ 
+              fontSize: '11px', 
+              color: '#94a3b8', 
+              textTransform: 'uppercase', 
+              fontFamily: 'monospace',
+              letterSpacing: '0.05em'
+            }}>
+              {table!.id}
+            </span>
+            {typeLabel && (
+              <span style={{ 
+                fontSize: '9px', 
+                fontWeight: 800, 
+                padding: '1px 5px', 
+                borderRadius: '3px', 
+                backgroundColor: `${themeColor}30`, 
+                color: themeColor, 
+                border: `1px solid ${themeColor}50`,
+                textTransform: 'uppercase'
+              }}>
+                {typeLabel}
+              </span>
+            )}
+          </div>
+
+          {/* Primary Row: Editable Table Name */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input 
+              value={table!.name}
+              onChange={(e) => handleUpdateTable({ name: e.target.value })}
+              title="Logical Table Name"
+              style={{ 
+                fontSize: '18px', 
+                fontWeight: 'bold', 
+                color: '#ffffff', 
+                backgroundColor: 'transparent', 
+                border: 'none',
+                borderBottom: '1px solid transparent',
+                padding: '2px 0',
+                outline: 'none',
+                width: '100%',
+                maxWidth: '500px'
+              }}
+              onFocus={(e) => (e.target as HTMLInputElement).style.borderBottom = '1px solid #3b82f6'}
+              onBlur={(e) => (e.target as HTMLInputElement).style.borderBottom = '1px solid transparent'}
+            />
           </div>
         </div>
 
