@@ -4,8 +4,7 @@ import { useStore } from '../store/useStore'
 
 const DomainNode = ({ id, data, selected }: NodeProps) => {
   const { 
-    updateNodeDimensions, 
-    saveLayout
+    updateNodeDimensions
   } = useStore()
 
   const isActuallySelected = selected;
@@ -15,7 +14,6 @@ const DomainNode = ({ id, data, selected }: NodeProps) => {
 
   const onResizeEnd = (_: any, params: { width: number; height: number }) => {
     updateNodeDimensions(id, params.width, params.height)
-    saveLayout()
   }
 
   return (

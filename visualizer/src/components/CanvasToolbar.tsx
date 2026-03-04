@@ -10,7 +10,6 @@ const CanvasToolbar = () => {
     getSelectedRelationship,
     removeNode,
     removeEdge,
-    saveLayout,
     showER,
     showLineage,
     setShowER,
@@ -33,7 +32,6 @@ const CanvasToolbar = () => {
     } else if (relationshipData) {
       removeEdge(relationshipData.relationship.from.table, relationshipData.relationship.to.table)
     }
-    saveLayout()
   }
 
   const handleClearSelection = () => {

@@ -93,30 +93,14 @@ export async function startDevServer(paths, visualizerPath) {
     }
   });
 
-  // API to save layout changes
-  app.post('/api/layout', (req, res) => {
-    const modelPath = getModelPath(req.query.model);
-    if (!modelPath) return res.status(404).json({ error: 'Model not found' });
-
-    try {
-      const layout = req.body;
-      const content = fs.readFileSync(modelPath, 'utf8');
-      const data = yaml.load(content);
-      data.layout = layout;
-      fs.writeFileSync(modelPath, yaml.dump(data, { indent: 2, lineWidth: -1 }), 'utf8');
-      res.json({ success: true });
-    } catch (e) {
-      res.status(500).json({ error: e.message });
-    }
-  });
-
   // API to save entire YAML content
-  app.post('/api/save-yaml', (req, res) => {
+  app.post('/api/save', (req, res) => {
     const modelPath = getModelPath(req.query.model);
     if (!modelPath) return res.status(404).json({ error: 'Model not found' });
 
     try {
       const { yaml: yamlContent } = req.body;
+      // Basic validation
       yaml.load(yamlContent);
       fs.writeFileSync(modelPath, yamlContent, 'utf8');
       res.json({ success: true });

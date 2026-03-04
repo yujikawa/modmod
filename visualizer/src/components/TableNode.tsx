@@ -16,7 +16,6 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
   const { table } = data
   const { 
     updateNodeDimensions, 
-    saveLayout, 
     hoveredColumnId,
     showER,
     showLineage
@@ -62,7 +61,6 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
 
   const onResizeEnd = (_: any, params: { width: number; height: number }) => {
     updateNodeDimensions(id, params.width, params.height)
-    saveLayout()
   }
 
   return (

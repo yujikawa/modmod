@@ -39,7 +39,6 @@ function Flow() {
     selectedEdgeId,
     setSelectedEdgeId,
     updateNodePosition,
-    saveLayout,
     isCliMode,
     focusNodeId,
     setFocusNodeId,
@@ -295,16 +294,14 @@ function Flow() {
 
   const onNodesDelete = useCallback((deletedNodes: Node[]) => {
     deletedNodes.forEach(node => removeNode(node.id));
-    saveLayout();
-  }, [removeNode, saveLayout]);
+  }, [removeNode]);
 
   const onEdgesDelete = useCallback((deletedEdges: Edge[]) => {
     deletedEdges.forEach(edge => {
       // Edge ID is e-INDEX, but removeEdge needs source and target
       removeEdge(edge.source, edge.target);
     });
-    saveLayout();
-  }, [removeEdge, saveLayout]);
+  }, [removeEdge]);
 
   const onPaneClick = useCallback(() => {
     setSelectedTableId(null);
@@ -327,8 +324,7 @@ function Flow() {
     const parentId = node.parentNode;
 
     updateNodePosition(node.id, node.position.x, node.position.y, parentId);
-    saveLayout();
-  }, [isCliMode, updateNodePosition, saveLayout]);
+  }, [isCliMode, updateNodePosition]);
 
   const onSelectionChange = useCallback(() => {
     // We handle selection via onNodeClick and onEdgeClick to support toggle behavior.

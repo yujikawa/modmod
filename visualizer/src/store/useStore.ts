@@ -16,6 +16,8 @@ interface AppState {
   hoveredColumnId: string | null;
   error: string | null;
   isCliMode: boolean;
+  isAutoSaveEnabled: boolean;
+  savingStatus: 'idle' | 'saving' | 'saved' | 'error';
   
   // YAML Input (Sidebar State)
   yamlInput: string;
@@ -41,10 +43,11 @@ interface AppState {
   setIsCliMode: (isCli: boolean) => void;
   setShowER: (show: boolean) => void;
   setShowLineage: (show: boolean) => void;
+  setIsAutoSaveEnabled: (enabled: boolean) => void;
   parseAndSetSchema: (yaml: string) => void;
   updateNodePosition: (id: string, x: number, y: number, parentId?: string | null) => void;
   updateNodeDimensions: (id: string, width: number, height: number) => void;
-  saveLayout: () => Promise<void>;
+  saveSchema: (force?: boolean) => Promise<void>;
   
   // Modeling Actions
   addTable: (x: number, y: number) => void;
@@ -75,6 +78,8 @@ interface AppState {
   getSelectedRelationship: () => { relationship: Relationship; index: number } | null;
 }
 
+let saveTimeout: any = null;
+
 export const useStore = create<AppState>((set, get) => ({
   schema: null,
   selectedTableId: null,
@@ -82,6 +87,8 @@ export const useStore = create<AppState>((set, get) => ({
   hoveredColumnId: null,
   error: null,
   isCliMode: (typeof window !== 'undefined' && (window as any).MODSCAPE_CLI_MODE === true),
+  isAutoSaveEnabled: true,
+  savingStatus: 'idle',
 
   // YAML Input
   yamlInput: '',
@@ -117,6 +124,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   setShowER: (show) => set({ showER: show }),
   setShowLineage: (show) => set({ showLineage: show }),
+  setIsAutoSaveEnabled: (enabled) => set({ isAutoSaveEnabled: enabled }),
   
   setSelectedTableId: (id) => set({ selectedTableId: id }),
   setSelectedEdgeId: (id) => set({ selectedEdgeId: id }),
@@ -194,6 +202,7 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       const schema = parseYAML(yamlInput)
       set({ schema, error: null })
+      get().saveSchema()
     } catch (e: any) {
       set({ error: e.message })
     }
@@ -229,6 +238,7 @@ export const useStore = create<AppState>((set, get) => ({
 
     set({ schema: { ...schema, domains: newDomains, layout: newLayout } });
     get().syncToYamlInput();
+    get().saveSchema();
   },
 
   updateNodeDimensions: (id, width, height) => {
@@ -243,22 +253,35 @@ export const useStore = create<AppState>((set, get) => ({
 
     set({ schema: { ...schema, layout: newLayout } });
     get().syncToYamlInput();
+    get().saveSchema();
   },
 
-  saveLayout: async () => {
-    const { schema, currentModelSlug } = get();
-    if (!schema || !schema.layout) return;
+  saveSchema: async (force = false) => {
+    const { schema, currentModelSlug, isAutoSaveEnabled, isCliMode } = get();
+    if (!schema || !isCliMode) return;
+    if (!isAutoSaveEnabled && !force) return;
 
-    try {
-      const url = currentModelSlug ? `/api/layout?model=${currentModelSlug}` : '/api/layout';
-      await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(schema.layout)
-      });
-    } catch (e) {
-      console.error('Failed to save layout:', e);
-    }
+    set({ savingStatus: 'saving' });
+
+    if (saveTimeout) clearTimeout(saveTimeout);
+
+    saveTimeout = setTimeout(async () => {
+      try {
+        const url = currentModelSlug ? `/api/save?model=${currentModelSlug}` : '/api/save';
+        const yamlString = yaml.dump(schema, { indent: 2, lineWidth: -1, noRefs: true });
+        
+        await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ yaml: yamlString })
+        });
+        set({ savingStatus: 'saved' });
+        setTimeout(() => set({ savingStatus: 'idle' }), 2000);
+      } catch (e) {
+        console.error('Failed to save schema:', e);
+        set({ savingStatus: 'error' });
+      }
+    }, 500);
   },
 
   addTable: (x, y) => {
@@ -284,6 +307,7 @@ export const useStore = create<AppState>((set, get) => ({
     
     set({ schema: normalizeSchema(newSchema), error: null });
     get().syncToYamlInput();
+    get().saveSchema();
   },
   
   addDomain: (x, y) => {
@@ -308,31 +332,54 @@ export const useStore = create<AppState>((set, get) => ({
     
     set({ schema: normalizeSchema(newSchema), error: null });
     get().syncToYamlInput();
+    get().saveSchema();
   },
-addRelationship: (source, target, sourceHandle, targetHandle) => {
-  const schema = get().schema;
-  if (!schema) return;
 
-  // Correctly extract column ID by removing table ID and suffix
-  const sourceCol = sourceHandle ? (sourceHandle.replace(`${source}-`, '').replace('-source', '') || undefined) : undefined;
-  const targetCol = targetHandle ? (targetHandle.replace(`${target}-`, '').replace('-target', '') || undefined) : undefined;
+  addRelationship: (source, target, sourceHandle, targetHandle) => {
+    const schema = get().schema;
+    if (!schema) return;
 
-  // Validation: Prevent duplicate relationships
-  const isDuplicate = (schema.relationships || []).some(rel => 
-    rel.from.table === source && 
-    rel.from.column === sourceCol && 
-    rel.to.table === target && 
-    rel.to.column === targetCol
-  );
+    // 1. Handle Lineage
+    const isLineage = sourceHandle?.includes('lineage') || targetHandle?.includes('lineage');
+    
+    if (isLineage) {
+      get().addLineage(source, target);
+      return;
+    }
 
-  if (isDuplicate) return;
+    // 2. Handle ER (Bidirectional Support)
+    let finalSource = source;
+    let finalTarget = target;
+    let finalSourceHandle = sourceHandle;
+    let finalTargetHandle = targetHandle;
 
-  const newRelationship: Relationship = {
-    from: { table: source, column: sourceCol },
-    to: { table: target, column: targetCol },
-    type: 'one-to-many'
-  };
+    const isSourceTargetRole = sourceHandle?.includes('target');
+    const isTargetSourceRole = targetHandle?.includes('source');
 
+    if (isSourceTargetRole || isTargetSourceRole) {
+      finalSource = target;
+      finalTarget = source;
+      finalSourceHandle = targetHandle;
+      finalTargetHandle = sourceHandle;
+    }
+
+    const sourceCol = finalSourceHandle ? (finalSourceHandle.replace(`${finalSource}-`, '').replace('-source', '') || undefined) : undefined;
+    const targetCol = finalTargetHandle ? (finalTargetHandle.replace(`${finalTarget}-`, '').replace('-target', '') || undefined) : undefined;
+
+    const isDuplicate = (schema.relationships || []).some(rel => 
+      rel.from.table === finalSource && 
+      rel.from.column === sourceCol && 
+      rel.to.table === finalTarget && 
+      rel.to.column === targetCol
+    );
+
+    if (isDuplicate) return;
+
+    const newRelationship: Relationship = {
+      from: { table: finalSource, column: sourceCol },
+      to: { table: finalTarget, column: targetCol },
+      type: 'one-to-many'
+    };
 
     const newSchema = {
       ...schema,
@@ -341,6 +388,7 @@ addRelationship: (source, target, sourceHandle, targetHandle) => {
 
     set({ schema: normalizeSchema(newSchema) });
     get().syncToYamlInput();
+    get().saveSchema();
   },
 
   addLineage: (source, target) => {
@@ -366,6 +414,7 @@ addRelationship: (source, target, sourceHandle, targetHandle) => {
     const newSchema = { ...schema, tables: newTables };
     set({ schema: normalizeSchema(newSchema) });
     get().syncToYamlInput();
+    get().saveSchema();
   },
 
   updateRelationship: (index, updates) => {
@@ -381,6 +430,7 @@ addRelationship: (source, target, sourceHandle, targetHandle) => {
 
     set({ schema: { ...schema, relationships: newRelationships } });
     get().syncToYamlInput();
+    get().saveSchema();
   },
 
   removeEdge: (source, target) => {
@@ -413,6 +463,7 @@ addRelationship: (source, target, sourceHandle, targetHandle) => {
     const newSchema = { ...schema, relationships: newRelationships, tables: newTables };
     set({ schema: normalizeSchema(newSchema), selectedEdgeId: null });
     get().syncToYamlInput();
+    get().saveSchema();
   },
 
   removeNode: (id) => {
@@ -439,6 +490,7 @@ addRelationship: (source, target, sourceHandle, targetHandle) => {
 
     set({ schema: normalizeSchema(newSchema), selectedTableId: null });
     get().syncToYamlInput();
+    get().saveSchema();
   },
 
   updateTable: (id, updates) => {
@@ -455,6 +507,7 @@ addRelationship: (source, target, sourceHandle, targetHandle) => {
     const newSchema = { ...schema, tables: newTables };
     set({ schema: normalizeSchema(newSchema) });
     get().syncToYamlInput();
+    get().saveSchema();
   },
 
   updateDomain: (id, updates) => {
@@ -471,6 +524,7 @@ addRelationship: (source, target, sourceHandle, targetHandle) => {
     const newSchema = { ...schema, domains: newDomains };
     set({ schema: normalizeSchema(newSchema) });
     get().syncToYamlInput();
+    get().saveSchema();
   },
 
   assignTableToDomain: (tableId, domainId) => {
@@ -491,6 +545,7 @@ addRelationship: (source, target, sourceHandle, targetHandle) => {
 
     set({ schema: { ...schema, domains: newDomains } });
     get().syncToYamlInput();
+    get().saveSchema();
   },
 
   toggleTableSelection: (id) => {
