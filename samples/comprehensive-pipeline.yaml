@@ -212,7 +212,7 @@ tables:
   - id: new_table_1772543857480
     name: mart_inquiry_count
     appearance:
-      type: fact
+      type: mart
     columns:
       - id: id
         logical:
@@ -311,5 +311,5 @@ layout:
     x: 70
     'y': 100
   new_table_1772543857480:
-    x: 341
+    x: 342
     'y': 191
