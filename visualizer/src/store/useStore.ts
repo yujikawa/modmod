@@ -35,6 +35,7 @@ interface AppState {
   focusNodeId: string | null;
   showER: boolean;
   showLineage: boolean;
+  connectionStartHandle: { nodeId: string; handleId: string | null; handleType: string | null } | null;
   
   // Actions
   setSchema: (schema: any) => void;
@@ -73,6 +74,7 @@ interface AppState {
   setIsSidebarOpen: (isOpen: boolean) => void;
   setActiveTab: (tab: 'editor' | 'entities') => void;
   setFocusNodeId: (id: string | null) => void;
+  setConnectionStartHandle: (handle: { nodeId: string; handleId: string | null; handleType: string | null } | null) => void;
   
   // Computed (helpers)
   getSelectedTable: () => Table | null;
@@ -114,6 +116,7 @@ export const useStore = create<AppState>((set, get) => ({
   focusNodeId: null,
   showER: true,
   showLineage: true,
+  connectionStartHandle: null,
 
   setSchema: (data) => {
     try {
@@ -137,6 +140,7 @@ export const useStore = create<AppState>((set, get) => ({
   setIsSidebarOpen: (isOpen) => set({ isSidebarOpen: isOpen }),
   setActiveTab: (tab) => set({ activeTab: tab }),
   setFocusNodeId: (id) => set({ focusNodeId: id }),
+  setConnectionStartHandle: (handle) => set({ connectionStartHandle: handle }),
   
   fetchAvailableFiles: async () => {
     const injectedData = (window as any).__MODSCAPE_DATA__;

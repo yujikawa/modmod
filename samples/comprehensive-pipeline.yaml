@@ -259,13 +259,6 @@ relationships:
       column: customer_hk
     type: many-to-one
   - from:
-      table: link_orders
-      column: product_hk
-    to:
-      table: hub_products
-      column: product_hk
-    type: many-to-one
-  - from:
       table: hub_customers
       column: source
     to:

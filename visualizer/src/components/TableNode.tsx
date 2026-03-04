@@ -18,7 +18,8 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
     updateNodeDimensions, 
     hoveredColumnId,
     showER,
-    showLineage
+    showLineage,
+    connectionStartHandle
   } = useStore()
 
   const isActuallySelected = selected;
@@ -46,13 +47,11 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
     };
     typeLabel = `FACT (${strategyMap[subType] || subType})`;
   } else if (table.appearance?.type && subType) {
-    // Generic display for Dim, Hub, Link, Sat, etc.
     typeLabel = `${table.appearance.type.toUpperCase()} (${subType})`;
   } else if (table.appearance?.type) {
     typeLabel = table.appearance.type.toUpperCase();
   }
 
-  // Append SCD if present
   if (scd) {
     const scdLabel = `SCD ${scd.replace('type', 'T')}`;
     typeLabel = typeLabel ? `${typeLabel} / ${scdLabel}` : scdLabel;
@@ -61,6 +60,27 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
   const onResizeEnd = (_: any, params: { width: number; height: number }) => {
     updateNodeDimensions(id, params.width, params.height)
   }
+
+  // Helper to determine handle state
+  const getHandleClass = (handleType: string, isLineage: boolean = false) => {
+    if (!connectionStartHandle) return '';
+    
+    const isSourceNode = connectionStartHandle.nodeId === id;
+    const startingHandleType = connectionStartHandle.handleType;
+    const isStartingLineage = connectionStartHandle.handleId?.includes('lineage');
+
+    // 1. Same Node check
+    if (isSourceNode) return 'handle-dim';
+
+    // 2. Type Mismatch (Lineage vs ER)
+    if (isLineage !== isStartingLineage) return 'handle-dim';
+
+    // 3. Match logic
+    if (startingHandleType === 'source' && handleType === 'target') return 'handle-pulse';
+    if (startingHandleType === 'target' && handleType === 'source') return 'handle-pulse';
+
+    return 'handle-dim';
+  };
 
   return (
     <div 
@@ -93,6 +113,7 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
         type="target" 
         position={Position.Top} 
         id={`${id}-target`} 
+        className={getHandleClass('target', false)}
         style={{ 
           background: '#94a3b8', 
           width: '8px', 
@@ -108,12 +129,14 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
         type="target"
         position={Position.Left}
         id={`${id}-lineage-target`}
+        className={getHandleClass('target', true)}
         style={{ top: '50%', left: '-4px', background: '#3b82f6', width: '10px', height: '10px', zIndex: 20, opacity: showLineage ? 1 : 0, pointerEvents: (showLineage && !isEditingDisabled) ? 'all' : 'none' }}
       />
       <Handle
         type="source"
         position={Position.Right}
         id={`${id}-lineage-source`}
+        className={getHandleClass('source', true)}
         style={{ top: '50%', right: '-4px', background: '#3b82f6', width: '10px', height: '10px', zIndex: 20, opacity: showLineage ? 1 : 0, pointerEvents: (showLineage && !isEditingDisabled) ? 'all' : 'none' }}
       />
       
@@ -220,7 +243,7 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
                         type="target"
                         position={Position.Left}
                         id={`${id}-${col.id}-target`}
-                        className="column-handle"
+                        className={`column-handle ${getHandleClass('target', false)}`}
                         style={{ left: '-4px', opacity: 0, pointerEvents: (showER && !isEditingDisabled) ? 'all' : 'none' }}
                       />
                       <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -253,7 +276,7 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
                         type="source"
                         position={Position.Right}
                         id={`${id}-${col.id}-source`}
-                        className="column-handle"
+                        className={`column-handle ${getHandleClass('source', false)}`}
                         style={{ right: '-4px', opacity: 0, pointerEvents: (showER && !isEditingDisabled) ? 'all' : 'none' }}
                       />
                     </td>
@@ -270,6 +293,7 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
         type="source" 
         position={Position.Bottom} 
         id={`${id}-source`} 
+        className={getHandleClass('source', false)}
         style={{ 
           background: '#94a3b8', 
           width: '8px', 

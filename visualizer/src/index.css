@@ -68,3 +68,30 @@ body {
   pointer-events: auto; /* Ensure handle is interactive even when transparent */
 }
 
+/* Edge Creation UX */
+@keyframes pulse-handle {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+  70% { transform: scale(1.4); box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+}
+
+.handle-pulse {
+  animation: pulse-handle 1.5s infinite;
+  background-color: #3b82f6 !important;
+  border: 2px solid #ffffff !important;
+  z-index: 100 !important;
+  opacity: 1 !important;
+}
+
+.handle-dim {
+  opacity: 0.2 !important;
+  transition: opacity 0.3s ease;
+}
+
+.react-flow__handle {
+  transition: transform 0.2s ease, background-color 0.2s ease, opacity 0.3s ease;
+}
+
+.react-flow__handle:hover {
+  transform: scale(1.5);
+}

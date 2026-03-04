@@ -49,7 +49,8 @@ function Flow() {
     toggleEdgeSelection,
     showER,
     showLineage,
-    addLineage
+    addLineage,
+    setConnectionStartHandle
   } = useStore()
   
   const [nodes, setNodes, onNodesChange] = useNodesState([])
@@ -316,6 +317,14 @@ function Flow() {
     toggleEdgeSelection(edge.id);
   }, [toggleEdgeSelection]);
 
+  const onConnectStart = useCallback((_: any, { nodeId, handleId, handleType }: any) => {
+    setConnectionStartHandle({ nodeId, handleId, handleType });
+  }, [setConnectionStartHandle]);
+
+  const onConnectEnd = useCallback(() => {
+    setConnectionStartHandle(null);
+  }, [setConnectionStartHandle]);
+
   const onNodeDragStop = useCallback((_: any, node: Node) => {
     if (!isCliMode) return;
 
@@ -350,10 +359,13 @@ function Flow() {
         onEdgeClick={onEdgeClick}
         onPaneClick={onPaneClick}
         onConnect={onConnect}
+        onConnectStart={onConnectStart}
+        onConnectEnd={onConnectEnd}
         onSelectionChange={onSelectionChange}
         isValidConnection={isValidConnection}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
+        connectionRadius={30}
         deleteKeyCode={['Backspace', 'Delete']}
         selectNodesOnDrag={true}
         fitView
