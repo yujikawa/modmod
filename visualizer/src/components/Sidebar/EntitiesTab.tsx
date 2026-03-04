@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useStore } from '../../store/useStore'
-import { Search, Hash, Layers, ArrowUpRight } from 'lucide-react'
+import { Search, Hash, Layout, ArrowUpRight } from 'lucide-react'
 
 const EntitiesTab = () => {
   const { schema, setSelectedTableId, setFocusNodeId } = useStore()
@@ -42,7 +42,7 @@ const EntitiesTab = () => {
         {filteredDomains.length > 0 && (
           <section>
             <div className="flex items-center gap-2 mb-2 px-1">
-              <Layers size={12} className="text-slate-500" />
+              <Layout size={12} className="text-slate-500" />
               <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Domains</h3>
             </div>
             <div className="space-y-1">

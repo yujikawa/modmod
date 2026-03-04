@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useStore } from '../store/useStore'
-import { X, Plus, Trash2, Tag as TagIcon, Table as TableIcon, Layers, Database } from 'lucide-react'
+import { X, Plus, Trash2, Tag as TagIcon, Table as TableIcon, Database } from 'lucide-react'
 import type { Table, Column } from '../types/schema'
 
 const TYPE_CONFIG: Record<string, { color: string; icon: string; label: string }> = {
@@ -202,7 +202,7 @@ const DetailPanel = () => {
         {/* Panel Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 20px', borderBottom: '1px solid #1e293b', backgroundColor: '#020617' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-            <Layers size={18} style={{ color: domain.color || '#3b82f6' }} />
+            <Database size={18} style={{ color: domain.color || '#3b82f6' }} />
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <input 
@@ -283,7 +283,7 @@ const DetailPanel = () => {
   // --- Table Editor Rendering ---
   const tabs = [
     { id: 'conceptual', label: 'Conceptual', icon: <TagIcon size={14} /> },
-    { id: 'logical', label: 'Logical', icon: <Layers size={14} /> },
+    { id: 'logical', label: 'Logical', icon: <Database size={14} /> },
     { id: 'physical', label: 'Physical', icon: <Database size={14} /> },
     { id: 'sample', label: 'Sample Data', icon: <TableIcon size={14} /> }
   ]
@@ -818,7 +818,7 @@ const DetailPanel = () => {
 
             {!table!.columns || table!.columns.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center p-8 bg-slate-900/50 rounded-lg border border-dashed border-slate-800">
-                <Layers size={32} className="text-slate-700 mb-4" />
+                <TableIcon size={32} className="text-slate-700 mb-4" />
                 <p className="text-sm text-slate-400 mb-1">No columns defined yet.</p>
                 <p className="text-xs text-slate-500 italic">Add columns in the "Logical" tab first to enable sample data.</p>
               </div>

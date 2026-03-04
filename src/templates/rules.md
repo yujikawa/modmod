@@ -17,15 +17,8 @@ Modscape separates a table's core nature from its history tracking method.
 - **`sub_type` (The "What")**:
   - **For Fact Tables**: `transaction` (atomic event), `periodic` (state interval), `accumulating` (milestones), `factless` (occurrence only).
   - **For Dimension Tables**: `conformed` (shared), `junk` (flags), `degenerate` (in-fact).
-- **`scd` (The "How it changes")**:
-  - `type0` (fixed), `type1` (overwrite), `type2` (history row), `type3` (history col), `type4` (history table), `type5` (1+4), `type6` (1+2+3), `type7` (1+2).
-
-### Architectural Layers (`appearance.layer`)
-Organize tables by their stage in the pipeline:
-- `source`: Raw data from external systems.
-- `staging`: Initial clean/cast of raw data.
-- `intermediate`: Reusable business logic/joins.
-- `mart`: Final reporting-ready models.
+- **`scd` (The \"How it changes\")**:
+  `type0` (fixed), `type1` (overwrite), `type2` (history row), `type3` (history col), `type4` (history table), `type5` (1+4), `type6` (1+2+3), `type7` (1+2).
 
 ### Data Lineage (`lineage.upstream`)
 Explicitly define dependencies to communicate the data flow:

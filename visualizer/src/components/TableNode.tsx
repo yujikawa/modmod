@@ -23,7 +23,6 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
 
   const isActuallySelected = selected;
   const hasColumns = table.columns && table.columns.length > 0;
-  const layer = table.appearance?.layer;
   
   // Disable connections when both modes are active to prevent ambiguity
   const isEditingDisabled = showER && showLineage;
@@ -89,29 +88,6 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
         }}
       />
 
-      {/* Layer Floating Tab */}
-      {layer && (
-        <div style={{
-          position: 'absolute',
-          top: '-18px',
-          left: '0',
-          fontSize: '9px',
-          fontWeight: 900,
-          color: '#94a3b8',
-          backgroundColor: 'rgba(30, 41, 59, 0.9)',
-          padding: '1px 6px',
-          borderRadius: '4px 4px 0 0',
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          border: '1px solid #334155',
-          borderBottom: 'none',
-          pointerEvents: 'none',
-          zIndex: 1
-        }}>
-          {layer}
-        </div>
-      )}
-      
       {/* ER Top Handle */}
       <Handle 
         type="target" 
@@ -150,7 +126,7 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
           borderRight: `2px solid ${isActuallySelected ? '#3b82f6' : '#334155'}`,
           borderBottom: `2px solid ${isActuallySelected ? '#3b82f6' : '#334155'}`,
           borderTop: `4px solid ${themeColor}`,
-          borderRadius: layer ? '0 8px 8px 8px' : '8px',
+          borderRadius: '8px',
           overflow: 'hidden',
           color: '#f1f5f9',
           boxShadow: isActuallySelected ? '0 0 0 4px rgba(59, 130, 246, 0.2)' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',

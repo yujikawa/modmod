@@ -1,4 +1,4 @@
-import { Layout, Grid, Trash2, Tag, Layers, Database, GitGraph, Network, X, Eye, Plus } from 'lucide-react'
+import { Layout, Grid, Trash2, Tag, Database, GitGraph, Network, X, Eye, Plus } from 'lucide-react'
 import { useStore } from '../store/useStore'
 
 const CanvasToolbar = () => {
@@ -111,7 +111,7 @@ const CanvasToolbar = () => {
         <div className="absolute top-4 right-4 z-10 flex items-center gap-3 bg-slate-900/90 backdrop-blur-md border border-blue-500/30 rounded-xl shadow-2xl p-1.5 px-4 animate-in fade-in slide-in-from-top-4 duration-300">
           <div className="flex items-center gap-2 border-r border-slate-700 pr-4 mr-1">
             {table && <Database size={16} className="text-emerald-400" />}
-            {domain && <Layers size={16} className="text-blue-400" />}
+            {domain && <Layout size={16} className="text-blue-400" />}
             {relationshipData && (
               ((relationshipData.relationship.type as any) === 'lineage') 
                 ? <GitGraph size={16} className="text-blue-400" />
