@@ -280,36 +280,73 @@ domains:
       - new_table_1772543818647
       - new_table_1772543857480
     color: rgba(59, 130, 246, 0.05)
+  - id: new_domain_1772665360010
+    name: RAW VALUT
+    description: Domain purpose
+    tables:
+      - sat_customer_details
+      - hub_customers
+      - link_orders
+      - hub_products
+    color: rgba(59, 130, 246, 0.05)
+  - id: new_domain_1772665422430
+    name: Conformed tables
+    description: Domain purpose
+    tables:
+      - dim_customers
+    color: rgba(59, 130, 246, 0.05)
+  - id: new_domain_1772665491944
+    name: SALES
+    description: Domain purpose
+    tables:
+      - mart_customer_sales_summary
+      - fct_orders
+    color: rgba(59, 130, 246, 0.05)
 layout:
   hub_customers:
-    x: 357
-    'y': 304
+    x: 154
+    'y': 573
   sat_customer_details:
-    x: 340
-    'y': 551
+    x: 172
+    'y': 808
   link_orders:
-    x: 353
-    'y': 36
+    x: 161
+    'y': 330
   hub_products:
-    x: 344
-    'y': -164
+    x: 166
+    'y': 114
   dim_customers:
-    x: 825
-    'y': 27
+    x: 91
+    'y': 86
   fct_orders:
-    x: 913
-    'y': 360
+    x: 177
+    'y': 40
   mart_customer_sales_summary:
-    x: 1415
-    'y': 245
+    x: 626
+    'y': 39
   new_domain_1772543778995:
-    x: 1253
-    'y': -385
+    x: 818
+    'y': -392
+    width: 926
+    height: 309
+  new_table_1772543818647:
+    x: 50
+    'y': 42
+  new_table_1772543857480:
+    x: 535
+    'y': 39
+  new_domain_1772665360010:
+    x: 190
+    'y': -398
+    width: 572
+    height: 1110
+  new_domain_1772665422430:
+    x: 809
+    'y': -41
     width: 600
     height: 400
-  new_table_1772543818647:
-    x: 70
-    'y': 100
-  new_table_1772543857480:
-    x: 342
-    'y': 191
+  new_domain_1772665491944:
+    x: 805
+    'y': 436
+    width: 968
+    height: 281
