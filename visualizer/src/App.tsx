@@ -322,34 +322,13 @@ function Flow() {
   const onNodeDragStop = useCallback((_: any, node: Node) => {
     if (!isCliMode) return;
 
-    // Detect if this is a table dropped into a domain
-    let parentId = node.parentNode;
-    
-    if (node.type === 'table') {
-      // Find domains that contain this node's current center position
-      const nodeCenterX = node.position.x + (node.width || 0) / 2;
-      const nodeCenterY = node.position.y + (node.height || 0) / 2;
-
-      const domains = nodes.filter(n => n.type === 'domain' && n.id !== node.id);
-      const targetDomain = domains.find(d => {
-        const dx = d.position.x;
-        const dy = d.position.y;
-        const dw = d.width || 600;
-        const dh = d.height || 400;
-        return (
-          nodeCenterX >= dx && 
-          nodeCenterX <= dx + dw && 
-          nodeCenterY >= dy && 
-          nodeCenterY <= dy + dh
-        );
-      });
-
-      parentId = targetDomain ? targetDomain.id : undefined;
-    }
+    // Domain assignment is now explicit via the Detail Panel.
+    // We preserve the current parentId if it exists.
+    const parentId = node.parentNode;
 
     updateNodePosition(node.id, node.position.x, node.position.y, parentId);
     saveLayout();
-  }, [isCliMode, updateNodePosition, saveLayout, nodes, setSelectedTableId]);
+  }, [isCliMode, updateNodePosition, saveLayout]);
 
   const onSelectionChange = useCallback(() => {
     // We handle selection via onNodeClick and onEdgeClick to support toggle behavior.

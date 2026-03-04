@@ -56,6 +56,7 @@ interface AppState {
   removeNode: (id: string) => void;
   updateTable: (id: string, updates: Partial<Table>) => void;
   updateDomain: (id: string, updates: Partial<Domain>) => void;
+  assignTableToDomain: (tableId: string, domainId?: string | null) => void;
   toggleTableSelection: (id: string) => void;
   toggleEdgeSelection: (id: string) => void;
   
@@ -469,6 +470,26 @@ addRelationship: (source, target, sourceHandle, targetHandle) => {
 
     const newSchema = { ...schema, domains: newDomains };
     set({ schema: normalizeSchema(newSchema) });
+    get().syncToYamlInput();
+  },
+
+  assignTableToDomain: (tableId, domainId) => {
+    const { schema } = get();
+    if (!schema) return;
+
+    const newDomains = (schema.domains || []).map(domain => {
+      // Remove from current domain if it's there
+      const filteredTables = domain.tables.filter(id => id !== tableId);
+      
+      // If this is the target domain, add the table
+      if (domain.id === domainId) {
+        return { ...domain, tables: Array.from(new Set([...filteredTables, tableId])) };
+      }
+      
+      return { ...domain, tables: filteredTables };
+    });
+
+    set({ schema: { ...schema, domains: newDomains } });
     get().syncToYamlInput();
   },
 

@@ -156,7 +156,7 @@ tables:
   - id: mart_customer_sales_summary
     name: MART_CUSTOMER_SALES_SUMMARY
     appearance:
-      type: fact
+      type: mart
       sub_type: periodic
       layer: mart
       icon: 📈
@@ -294,8 +294,8 @@ layout:
     x: 344
     'y': -164
   dim_customers:
-    x: 918
-    'y': 31
+    x: 825
+    'y': 27
   fct_orders:
     x: 913
     'y': 360

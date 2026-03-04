@@ -43,7 +43,7 @@ function scanFiles(inputPaths) {
 
 export async function startDevServer(paths, visualizerPath) {
   const app = express();
-  app.use(express.json());
+  app.use(express.json({ limit: '10mb' }));
 
   const inputPaths = Array.isArray(paths) ? paths : [paths];
   let modelMap = scanFiles(inputPaths);

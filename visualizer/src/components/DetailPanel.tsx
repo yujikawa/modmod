@@ -8,11 +8,13 @@ const TYPE_CONFIG: Record<string, { color: string; icon: string; label: string }
   dimension: { color: '#60a5fa', icon: '🏷️', label: 'DIM' },
   hub: { color: '#fbbf24', icon: '🌐', label: 'HUB' },
   link: { color: '#34d399', icon: '🔗', label: 'LINK' },
-  satellite: { color: '#a78bfa', icon: '🛰️', label: 'SAT' }
+  satellite: { color: '#a78bfa', icon: '🛰️', label: 'SAT' },
+  mart: { color: '#f5700b', icon: '📈', label: 'MART' }
 };
 
 const DetailPanel = () => {
   const { 
+    schema,
     selectedTableId, 
     selectedEdgeId,
     getSelectedTable, 
@@ -22,7 +24,8 @@ const DetailPanel = () => {
     setSelectedEdgeId,
     updateTable,
     updateDomain,
-    updateRelationship
+    updateRelationship,
+    assignTableToDomain
   } = useStore()
   
   const table = getSelectedTable()
@@ -600,6 +603,20 @@ const DetailPanel = () => {
                   outline: 'none'
                 }}
               />
+            </section>
+            
+            <section>
+              <h3 style={{ fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Domain Assignment</h3>
+              <select 
+                value={schema?.domains?.find(d => d.tables.includes(table!.id))?.id || ''}
+                onChange={(e) => assignTableToDomain(table!.id, e.target.value || null)}
+                className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm p-2 rounded outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="">- No Domain -</option>
+                {schema?.domains?.map(d => (
+                  <option key={d.id} value={d.id}>{d.name} ({d.id})</option>
+                ))}
+              </select>
             </section>
             
             <section>

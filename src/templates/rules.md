@@ -20,6 +20,17 @@ Modscape separates a table's core nature from its history tracking method.
 - **`scd` (The "How it changes")**:
   - `type0` (fixed), `type1` (overwrite), `type2` (history row), `type3` (history col), `type4` (history table), `type5` (1+4), `type6` (1+2+3), `type7` (1+2).
 
+### Architectural Layers (`appearance.layer`)
+Organize tables by their stage in the pipeline:
+- `source`: Raw data from external systems.
+- `staging`: Initial clean/cast of raw data.
+- `intermediate`: Reusable business logic/joins.
+- `mart`: Final reporting-ready models.
+
+### Data Lineage (`lineage.upstream`)
+Explicitly define dependencies to communicate the data flow:
+- Use `lineage.upstream: [table_id1, table_id2]` to list source tables.
+
 ### Column Additivity (`logical.additivity`)
 - `fully`: Can be summed across all dimensions (e.g., sales amount). Displays as `Σ`.
 - `semi`: Summing is valid only across some dimensions (e.g., bank balance - can't sum across time). Displays as `Σ~`.

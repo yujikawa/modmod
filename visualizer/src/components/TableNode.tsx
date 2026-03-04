@@ -8,7 +8,8 @@ const TYPE_CONFIG: Record<string, { color: string; icon: string; label: string }
   dimension: { color: '#60a5fa', icon: '🏷️', label: 'DIM' },
   hub: { color: '#fbbf24', icon: '🌐', label: 'HUB' },
   link: { color: '#34d399', icon: '🔗', label: 'LINK' },
-  satellite: { color: '#a78bfa', icon: '🛰️', label: 'SAT' }
+  satellite: { color: '#a78bfa', icon: '🛰️', label: 'SAT' },
+  mart: { color: '#f5700b', icon: '📈', label: 'MART' }
 };
 
 const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
@@ -179,9 +180,13 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
               color: '#94a3b8', 
               textTransform: 'uppercase', 
               fontFamily: 'monospace',
-              letterSpacing: '0.05em'
+              letterSpacing: '0.05em',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
             }}>
               {table.id}
+              <span style={{ opacity: 0.5, fontSize: '9px' }}>({table.columns?.length || 0})</span>
             </div>
           </div>
 
@@ -217,7 +222,7 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
           <div className="nodrag" style={{ padding: '0', overflowY: 'auto', flex: 1, cursor: 'default' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
               <tbody>
-                {table.columns!.map((col) => (
+                {table.columns!.map((col, index) => (
                   <tr 
                     key={col.id} 
                     className="column-row"
@@ -245,6 +250,7 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
                         style={{ left: '-4px', opacity: 0, pointerEvents: (showER && !isEditingDisabled) ? 'all' : 'none' }}
                       />
                       <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span style={{ color: '#475569', marginRight: '6px', fontSize: '9px', fontFamily: 'monospace', width: '14px', textAlign: 'right' }}>{index + 1}.</span>
                         {col.logical?.isPrimaryKey && <span style={{ color: '#eab308', marginRight: '4px' }}>🔑</span>}
                         {col.logical?.isForeignKey && <span style={{ marginRight: '4px' }}>🔩</span>}
                         {col.logical?.isPartitionKey && <span style={{ marginRight: '4px' }}>📂</span>}
