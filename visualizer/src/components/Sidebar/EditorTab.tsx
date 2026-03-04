@@ -1,5 +1,9 @@
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useStore } from '../../store/useStore'
-import { AlertCircle, Save, Play, CheckCircle2, Loader2 } from 'lucide-react'
+import { AlertCircle, Save, Play, CheckCircle2, Loader2, Info } from 'lucide-react'
+import CodeMirror, { type ReactCodeMirrorRef } from '@uiw/react-codemirror'
+import { yaml } from '@codemirror/lang-yaml'
+import { oneDark } from '@codemirror/theme-one-dark'
 
 const EditorTab = () => {
   const { 
@@ -11,13 +15,48 @@ const EditorTab = () => {
     isAutoSaveEnabled,
     setIsAutoSaveEnabled,
     savingStatus,
-    saveSchema
+    saveSchema,
+    lastUpdateSource
   } = useStore()
-  
-  const handleParse = async () => {
-    parseAndSetSchema(yamlInput);
+
+  const [localYaml, setLocalYaml] = useState(yamlInput)
+  const timerRef = useRef<any>(null)
+  const editorRef = useRef<ReactCodeMirrorRef>(null)
+
+  // Sync store -> editor (for visual edits)
+  useEffect(() => {
+    if (lastUpdateSource === 'visual' && editorRef.current?.view) {
+      const view = editorRef.current.view;
+      const currentDoc = view.state.doc.toString();
+      
+      if (currentDoc !== yamlInput) {
+        // Dispatch as a transaction that adds to history
+        view.dispatch({
+          changes: { from: 0, to: currentDoc.length, insert: yamlInput },
+          userEvent: 'visual-edit'
+        });
+        setLocalYaml(yamlInput);
+      }
+    }
+  }, [yamlInput, lastUpdateSource])
+
+  // Handle local changes (typing or undo/redo in editor)
+  const handleChange = useCallback((value: string) => {
+    setLocalYaml(value)
+    
+    // Auto-parse with debounce
+    if (timerRef.current) clearTimeout(timerRef.current)
+    
+    timerRef.current = setTimeout(() => {
+      setYamlInput(value) 
+      parseAndSetSchema(value)
+    }, 300)
+  }, [setYamlInput, parseAndSetSchema])
+
+  const handleManualApply = async () => {
+    parseAndSetSchema(localYaml);
     if (isCliMode) {
-      await saveSchema(true); // Force save on manual click
+      await saveSchema(true); // Force save
     }
   }
 
@@ -63,19 +102,32 @@ const EditorTab = () => {
             </div>
           </div>
         )}
+        
+        <div className="flex items-center gap-1 text-slate-600" title="Pro Tip: Use Ctrl+Z to undo visual changes!">
+          <Info size={12} />
+          <span className="text-[9px] font-bold uppercase tracking-tighter">Undo Support Active</span>
+        </div>
       </div>
       
-      <div className="relative flex-1 flex flex-col min-h-0">
-        <textarea
-          className="flex-1 w-full p-4 bg-slate-800/50 text-slate-100 border border-slate-700 rounded-md font-mono text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition-all resize-none shadow-inner"
-          placeholder="tables: ..."
-          value={yamlInput}
-          onChange={(e) => setYamlInput(e.target.value)}
+      <div className="relative flex-1 flex flex-col min-h-0 border border-slate-700 rounded-md overflow-hidden bg-[#282c34]">
+        <CodeMirror
+          ref={editorRef}
+          value={localYaml}
+          height="100%"
+          theme={oneDark}
+          extensions={[yaml()]}
+          onChange={handleChange}
+          basicSetup={{
+            lineNumbers: true,
+            foldGutter: true,
+            highlightActiveLine: true,
+          }}
+          className="flex-1 text-sm overflow-auto"
         />
         
-        {error && (
-          <div className="mt-2 p-3 bg-red-500/10 border border-red-500/30 rounded-md text-red-400 text-xs flex gap-2 items-start shrink-0">
-            <AlertCircle size={14} className="shrink-0 mt-0.5" />
+        {error && (localYaml === yamlInput) && (
+          <div className="absolute bottom-4 left-4 right-4 p-3 bg-red-900/90 border border-red-500/50 rounded-md text-red-100 text-xs flex gap-2 items-start z-10 shadow-2xl backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2">
+            <AlertCircle size={14} className="shrink-0 mt-0.5 text-red-400" />
             <span>{error}</span>
           </div>
         )}
@@ -86,7 +138,7 @@ const EditorTab = () => {
           {isCliMode ? (isAutoSaveEnabled ? 'Changes save automatically' : 'Click save to update file') : 'Changes reset on reload'}
         </div>
         <button 
-          onClick={handleParse}
+          onClick={handleManualApply}
           disabled={savingStatus === 'saving'}
           className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium text-sm transition-all shadow-lg shrink-0 ${
             isCliMode 

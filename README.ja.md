@@ -185,11 +185,15 @@ Modscapeは **AI-First** を掲げて設計されています。 `modscape init`
 
 ## クレジット
 
-Modscapeは以下のプロジェクトによって支えられています：
-- **React Flow**: インタラクティブなグラフエンジン。
-- **Lucide**: 一貫性のあるアイコンセット。
-- **Express**: ローカル開発サーバー。
-- **Commander**: CLIフレームワーク。
+Modscape は以下の素晴らしいオープンソースプロジェクトによって支えられています：
+
+- [React Flow](https://reactflow.dev/) - インタラクティブなグラフ UI フレームワーク。
+- [CodeMirror 6](https://codemirror.net/) - 次世代のウェブベース・コードエディタ。
+- [Lucide React](https://lucide.dev/) - シンプルで美しいアイコンセット。
+- [Zustand](https://github.com/pmndrs/zustand) - React 用の軽量・高速な状態管理ライブラリ。
+- [Express](https://expressjs.com/) - Node.js 用のミニマリストなウェブフレームワーク。
+- [js-yaml](https://github.com/nodeca/js-yaml) - JavaScript 用 YAML パーサー。
+- [Commander.js](https://github.com/tj/commander.js) - Node.js CLI ツールのための標準ライブラリ。
 
 ## ライセンス
 MIT

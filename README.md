@@ -185,11 +185,15 @@ Modscape is designed to be **AI-First**. By running `modscape init`, you establi
 
 ## Credits
 
-Modscape is built upon:
-- **React Flow**: Interactive graph engine.
-- **Lucide**: Consistent iconography.
-- **Express**: Local dev server.
-- **Commander**: CLI framework.
+Modscape is made possible by these incredible open-source projects:
+
+- [React Flow](https://reactflow.dev/) - Interactive node-based UI framework.
+- [CodeMirror 6](https://codemirror.net/) - Next-generation code editor for the web.
+- [Lucide React](https://lucide.dev/) - Beautifully simple pixel-perfect icons.
+- [Zustand](https://github.com/pmndrs/zustand) - Bear necessities for state management in React.
+- [Express](https://expressjs.com/) - Fast, unopinionated, minimalist web framework for Node.js.
+- [js-yaml](https://github.com/nodeca/js-yaml) - JavaScript YAML parser and dumper.
+- [Commander.js](https://github.com/tj/commander.js) - The complete solution for node.js command-line interfaces.
 
 ## License
 MIT

@@ -18,6 +18,7 @@ interface AppState {
   isCliMode: boolean;
   isAutoSaveEnabled: boolean;
   savingStatus: 'idle' | 'saving' | 'saved' | 'error';
+  lastUpdateSource: 'user' | 'visual' | 'undo';
   
   // YAML Input (Sidebar State)
   yamlInput: string;
@@ -44,6 +45,7 @@ interface AppState {
   setShowER: (show: boolean) => void;
   setShowLineage: (show: boolean) => void;
   setIsAutoSaveEnabled: (enabled: boolean) => void;
+  setLastUpdateSource: (source: 'user' | 'visual' | 'undo') => void;
   parseAndSetSchema: (yaml: string) => void;
   updateNodePosition: (id: string, x: number, y: number, parentId?: string | null) => void;
   updateNodeDimensions: (id: string, width: number, height: number) => void;
@@ -89,15 +91,16 @@ export const useStore = create<AppState>((set, get) => ({
   isCliMode: (typeof window !== 'undefined' && (window as any).MODSCAPE_CLI_MODE === true),
   isAutoSaveEnabled: true,
   savingStatus: 'idle',
+  lastUpdateSource: 'visual',
 
   // YAML Input
   yamlInput: '',
-  setYamlInput: (yaml) => set({ yamlInput: yaml }),
+  setYamlInput: (yaml) => set({ yamlInput: yaml, lastUpdateSource: 'user' }),
   syncToYamlInput: () => {
     const { schema } = get();
     if (schema) {
       const yamlString = yaml.dump(schema, { indent: 2, lineWidth: -1, noRefs: true });
-      set({ yamlInput: yamlString });
+      set({ yamlInput: yamlString, lastUpdateSource: 'visual' });
     }
   },
 
@@ -125,6 +128,7 @@ export const useStore = create<AppState>((set, get) => ({
   setShowER: (show) => set({ showER: show }),
   setShowLineage: (show) => set({ showLineage: show }),
   setIsAutoSaveEnabled: (enabled) => set({ isAutoSaveEnabled: enabled }),
+  setLastUpdateSource: (source) => set({ lastUpdateSource: source }),
   
   setSelectedTableId: (id) => set({ selectedTableId: id }),
   setSelectedEdgeId: (id) => set({ selectedEdgeId: id }),
