@@ -53,6 +53,8 @@ export function normalizeSchema(data: any): Schema {
       ...table,
       id: table.id || 'unknown',
       name: table.name !== undefined ? table.name : (table.id || 'Unnamed Table'),
+      logical_name: table.logical_name,
+      physical_name: table.physical_name,
       appearance,
       lineage: table.lineage ? { ...table.lineage } : undefined,
       columns: Array.isArray(table.columns) ? table.columns.map((col: any) => ({

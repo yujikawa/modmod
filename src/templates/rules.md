@@ -10,7 +10,14 @@
 - **Generic Modeling**: For all other physical tables.
   - Use `appearance.type: table` for raw mirror tables, simple RDB exports, or utility tables.
 
-## 2. Analytics & Visual Metadata
+## 2. Table Naming Hierarchy
+Modscape supports three levels of naming to bridge the gap between business and technology.
+
+1.  **Conceptual Name (`name`)**: The primary title on the canvas (e.g., "Customers"). Largest font.
+2.  **Logical Name (`logical_name`)**: Formal business name (e.g., "Customer Master"). Hidden on canvas if identical to Conceptual Name.
+3.  **Physical Name (`physical_name`)**: Actual database table name (e.g., `dim_customers`). Defaults to the technical `id` if empty.
+
+## 3. Analytics & Visual Metadata
 Modscape supports attributes to communicate the "Story" and "Grain" of your data.
 
 ### Grain & History (`appearance.sub_type` and `appearance.scd`)
@@ -29,7 +36,7 @@ Categorize entities visually to make the canvas intuitive:
 Define dependencies to communicate data flow:
 - Use `lineage.upstream: [table_id1, table_id2]` to list source tables.
 
-## 3. Sample Data Stories
+## 4. Sample Data Stories
 **Every table must include realistic sample data** to explain the context without requiring SQL queries.
 - **Format**: A 2D array where the first row is headers.
 - **Rule**: Provide at least 3 rows of high-quality, representative data.
@@ -39,31 +46,31 @@ sampleData:
   - [value1, value2]
 ```
 
-## 4. Physical Modeling Rules
+## 5. Physical Modeling Rules
 Provide physical mapping metadata to ensure the model is implementation-ready.
 
 - **Physical Naming**: All names (tables, schemas, columns) must use `snake_case`.
 - **Schema Standards**: `raw`, `staging`, `analytics`, or `mart`.
 - **Data Types**: Use standard SQL types (e.g., `VARCHAR`, `BIGINT`, `NUMBER(38,2)`, `DATE`, `TIMESTAMP_NTZ`).
 
-## 5. Logical Column Rules
+## 6. Logical Column Rules
 - **Key Flags**: Mark `isPrimaryKey: true`, `isForeignKey: true`, or `isPartitionKey: true` (for performance).
 - **Metadata Columns**: Mark technical columns (e.g., `updated_at`) with `isMetadata: true` (🕒 icon).
 - **Additivity**:
   - `fully`: Can be summed across all dimensions (Σ icon).
   - `semi`: Summing is restricted (e.g., bank balance) (Σ~ icon).
-  - `non`: Summing is invalid (e.g., unit price) (⊘ icon).
+  - `non`: Summing is never valid (e.g., unit price) (⊘ icon).
 
-## 6. Relationship Cardinality
+## 7. Relationship Cardinality
 Explicitly define the nature of ER connections using `type`:
 - Options: `one-to-one`, `one-to-many`, `many-to-one`, `many-to-many`.
 
-## 7. Domain Organization
+## 8. Domain Organization
 Group tables into business domains to manage complexity.
 - Assign a unique `color` to each domain container.
 - Use `description` to explain the domain's business purpose.
 
-## 8. YAML Schema Reference (Hero Example)
+## 9. YAML Schema Reference (Hero Example)
 ```yaml
 domains:
   - id: sales
@@ -74,6 +81,8 @@ domains:
 tables:
   - id: fct_orders
     name: Orders Fact
+    logical_name: "Sales Transaction Record"
+    physical_name: "fct_orders"
     appearance:
       type: fact
       sub_type: transaction
@@ -93,21 +102,19 @@ tables:
       - [1001, 50.0, "COMPLETED"]
       - [1002, 120.5, "PENDING"]
 
-  - id: raw_users
-    name: Raw Users
-    appearance:
-      type: table
-      icon: "📋"
-    physical:
-      name: users
-      schema: raw
-    columns:
-      - id: user_id
-        logical: { name: User ID, type: Int, isPrimaryKey: true }
+relationships:
+  - from: { table: dim_customers, column: customer_id }
+    to: { table: fct_orders, column: customer_id }
+    type: one-to-many
 ```
 
-## 9. The Golden Rules
+## 10. Layout Management
+- **Visualizer Priority**: The GUI handles layout through drag-and-drop.
+- **AI Agent Responsibility**: When creating new entities, assign initial (x, y) coordinates to place them near related tables.
+
+## 11. The Golden Rules
 - When updating `model.yaml`, always self-audit against these rules.
+- **Utilize the 3-layer naming (Conceptual, Logical, Physical) for clarity.**
 - **Generate realistic `sampleData` for every new entity.**
 - **Provide `physical` mappings to make the model implementation-ready.**
 - Use `isPartitionKey` for large tables to inform performance design.

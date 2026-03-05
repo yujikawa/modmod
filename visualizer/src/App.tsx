@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import ReactFlow, { 
   Background, 
   Controls, 
@@ -57,6 +57,7 @@ function Flow() {
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const { fitView, getViewport, setViewport } = useReactFlow()
+  const [edgeSyncTrigger, setEdgeSyncTrigger] = useState(0)
 
   const isEditingDisabled = showER && showLineage
   const isViewingDisabled = !showER && !showLineage
@@ -224,7 +225,17 @@ function Flow() {
     });
 
     setNodes(newNodes)
-  }, [schema, setNodes])
+
+    // Robust Snapping Booster: 
+    // Wait for nodes to finish layout rendering, then trigger fitView and a edge re-sync
+    const timer = setTimeout(() => {
+      fitView({ duration: 400, padding: 0.2 });
+      window.dispatchEvent(new Event('resize'));
+      // Trigger a secondary edge sync to catch finalized handle positions
+      setEdgeSyncTrigger(v => v + 1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [schema, setNodes, fitView])
 
   // Sync Store Selection to React Flow nodes state (without recreating all nodes)
   useEffect(() => {
@@ -312,7 +323,7 @@ function Flow() {
     }
 
     setEdges(newEdges);
-  }, [schema, selectedTableId, selectedEdgeId, setEdges, showER, showLineage, theme])
+  }, [schema, selectedTableId, selectedEdgeId, setEdges, showER, showLineage, theme, edgeSyncTrigger])
 
   const onConnect = useCallback(
     (params: Connection) => {

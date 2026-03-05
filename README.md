@@ -21,21 +21,19 @@ In modern data analysis platforms, data modeling is no longer just about drawing
 ## Key Features
 
 - **YAML-as-Code**: Define your entire data architecture in a single, human-readable YAML file. Track changes via Git.
-- **Instant Local Visualization**: Visualize your YAML models instantly on your machine. No database connections or cloud infrastructure required—just point to your file and start exploring.
-- **Integrated Professional Editor**: Powered by **CodeMirror 6**, providing syntax highlighting and a rich YAML editing experience directly in the sidebar.
-- **Unified Undo/Redo & Auto-save**: 
-  - Visual actions (dragging, resizing, metadata edits) are synchronized with the editor's history. Undo your last action with `Ctrl+Z`.
-  - Optional **Auto-save** ensures your local YAML is always up-to-date with your visual changes.
-- **Dark/Light Mode Support**: Switch between themes seamlessly for better eye comfort or documentation exports.
-- **Specialized Modeling Types**: Native support for entity types like `fact`, `dimension`, `mart`, `hub`, `link`, and `satellite`.
+- **Tri-Layer Naming System**: Document entities across three levels of abstraction: **Conceptual** (Visual name), **Logical** (Formal business name), and **Physical** (Actual database table name).
+- **Auto-Format Layout**: Automatically arrange tables and domains based on their relationships using an intelligent hierarchical layout engine (Note: manual adjustment may be required for complex models).
+- **Redesigned Modeling Nodes**: Protruding "Index Tabs" for entity types (FACT, DIM, HUB, LINK, etc.) and auto-truncating physical names for a professional look.
 - **Interactive Visual Canvas**: 
   - **Drag-to-Connect**: Create relationships between columns intuitively with "Magnetic Snapping".
+  - **Semantic Edge Badges**: Visually identify cardinality with `( 1 )` and `[ M ]` badges at the connection points.
   - **Data Lineage Mode**: Visualize data flow with animated dashed arrows.
   - **Domain-Grouped Navigation**: Organize tables into visual business domains and navigate them via a structured sidebar.
-- **Analytics Metadata**: 
-  - **Fact Table Types**: Define `transaction`, `periodic`, `accumulating`, or `factless` grains.
-  - **SCD Management**: Visualize `SCD Type 2` and other history-tracking dimensions.
-  - **Additivity Rules**: Mark columns as `fully`, `semi`, or `non-additive` (Σ icon).
+- **Unified Undo/Redo & Auto-save**: 
+  - Visual actions (dragging, formatting, editing) are synchronized with the built-in CodeMirror editor's history.
+  - Optional **Auto-save** ensures your local YAML is always up-to-date.
+- **Dark/Light Mode Support**: Switch between themes seamlessly for better eye comfort or documentation exports.
+- **Specialized Modeling Types**: Native support for entity types like `fact`, `dimension`, `mart`, `hub`, `link`, `satellite`, and generic `table`.
 - **AI-Agent Ready**: Built-in scaffolding for **Gemini, Claude, and Codex** to accelerate your modeling workflow using LLMs.
 
 ## Installation
@@ -90,26 +88,35 @@ Modscape uses a schema designed for data analysis contexts.
 domains:
   - id: core_sales
     name: Core Sales
-    color: "#3b82f6"
-    tables: [orders, products]
+    color: "rgba(59, 130, 246, 0.1)"
+    tables: [orders]
 
-# 2. Tables: Entity definitions with multi-layer metadata
+# 2. Tables: Entity definitions with tri-layer metadata
 tables:
   - id: orders
-    name: ORDERS
+    name: Orders           # Conceptual (Big)
+    logical_name: "Customer Purchase Record" # Logical (Medium)
+    physical_name: "fct_retail_sales"        # Physical (Small)
     appearance:
-      type: fact    # fact | dimension | mart | hub | link | satellite
+      type: fact    # fact | dimension | mart | hub | link | satellite | table
       sub_type: transaction 
-      scd: type2
-      icon: 📦
+      icon: 💰
     columns:
       - id: order_id
         logical:
           name: ORDER_ID
           type: Int
           isPrimaryKey: true
-          additivity: fully # fully | semi | non (Σ icon)
-          isMetadata: false # audit column (🕒 icon)
+          additivity: fully
+    sampleData:
+      - [order_id, amount, status]
+      - [1001, 50.0, "COMPLETED"]
+
+# 3. Relationships: Define ER cardinality
+relationships:
+  - from: { table: customers, column: customer_id }
+    to: { table: orders, column: customer_id }
+    type: one-to-many
 ```
 
 ---
@@ -138,11 +145,10 @@ Modscape is made possible by these incredible open-source projects:
 
 - [React Flow](https://reactflow.dev/) - Interactive node-based UI framework.
 - [CodeMirror 6](https://codemirror.net/) - Next-generation code editor for the web.
+- [Dagre](https://github.com/dagrejs/dagre) - Directed graph layout engine.
 - [Lucide React](https://lucide.dev/) - Beautifully simple pixel-perfect icons.
 - [Zustand](https://github.com/pmndrs/zustand) - Bear necessities for state management.
-- [Express](https://expressjs.com/) - Fast, unopinionated web framework for Node.js.
 - [js-yaml](https://github.com/nodeca/js-yaml) - JavaScript YAML parser and dumper.
-- [Commander.js](https://github.com/tj/commander.js) - CLI framework.
 
 ## License
 MIT

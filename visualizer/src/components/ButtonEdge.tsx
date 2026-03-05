@@ -78,7 +78,7 @@ export default function ButtonEdge({
       absolute flex items-center justify-center 
       w-5 h-5 text-[9px] font-black border shadow-sm
       backdrop-blur-sm transition-all duration-300
-      select-none pointer-events-none
+      select-none pointer-events-none z-[100]
     `;
     
     const themeClasses = theme === 'dark'
