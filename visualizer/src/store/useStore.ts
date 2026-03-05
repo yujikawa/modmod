@@ -561,7 +561,15 @@ export const useStore = create<AppState>((set, get) => ({
       return { ...domain, tables: filteredTables };
     });
 
-    set({ schema: { ...schema, domains: newDomains } });
+    // Reset coordinates to relative (20, 20) inside the new domain
+    // or keep them if removing from domain (though absolute conversion would be better, 
+    // resetting to a safe place is more reliable for now)
+    const newLayout = {
+      ...(schema.layout || {}),
+      [tableId]: { x: 20, y: 20 }
+    };
+
+    set({ schema: { ...schema, domains: newDomains, layout: newLayout } });
     get().syncToYamlInput();
     get().saveSchema();
   },
