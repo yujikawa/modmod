@@ -9,7 +9,8 @@ const TYPE_CONFIG: Record<string, { color: string; icon: string; label: string }
   hub: { color: '#fbbf24', icon: '🌐', label: 'HUB' },
   link: { color: '#34d399', icon: '🔗', label: 'LINK' },
   satellite: { color: '#a78bfa', icon: '🛰️', label: 'SAT' },
-  mart: { color: '#f5700b', icon: '📈', label: 'MART' }
+  mart: { color: '#f5700b', icon: '📈', label: 'MART' },
+  table: { color: '#64748b', icon: '📋', label: 'TABLE' }
 };
 
 const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {

@@ -529,6 +529,7 @@ const DetailPanel = () => {
             <option value="fact">Fact</option>
             <option value="dimension">Dimension</option>
             <option value="mart">Mart</option>
+            <option value="table">Table</option>
             <option value="hub">Hub</option>
             <option value="link">Link</option>
             <option value="satellite">Satellite</option>

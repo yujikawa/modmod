@@ -7,6 +7,8 @@
   - Use `appearance.type: mart` for downstream reporting-ready tables (Data Marts).
 - **Data Vault 2.0**: For highly scalable enterprise data warehouses.
   - Use `appearance.type: hub`, `link`, or `satellite`.
+- **Generic Modeling**: For all other physical tables.
+  - Use `appearance.type: table` for raw mirror tables, simple RDB exports, or utility tables.
 
 ## 2. Analytics & Visual Metadata
 Modscape supports attributes to communicate the "Story" and "Grain" of your data.
@@ -20,7 +22,7 @@ Modscape supports attributes to communicate the "Story" and "Grain" of your data
 
 ### Visual Semantics (`appearance.icon` and `appearance.color`)
 Categorize entities visually to make the canvas intuitive:
-- **`icon`**: Use a single Emoji (e.g., 🛒, 👥, 📅) to represent the business concept.
+- **`icon`**: Use a single Emoji (e.g., 🛒, 👥, 📋) to represent the business concept.
 - **`color`**: Use Hex or RGBA codes for specific table highlighting (optional).
 
 ### Data Lineage (`lineage.upstream`)
@@ -91,10 +93,17 @@ tables:
       - [1001, 50.0, "COMPLETED"]
       - [1002, 120.5, "PENDING"]
 
-relationships:
-  - from: { table: dim_customers, column: customer_id }
-    to: { table: fct_orders, column: customer_id }
-    type: one-to-many
+  - id: raw_users
+    name: Raw Users
+    appearance:
+      type: table
+      icon: "📋"
+    physical:
+      name: users
+      schema: raw
+    columns:
+      - id: user_id
+        logical: { name: User ID, type: Int, isPrimaryKey: true }
 ```
 
 ## 9. The Golden Rules
