@@ -5,6 +5,7 @@
 - **Dimensional Modeling (Star Schema)**: Recommended for most analytical use cases. 
   - Use `appearance.type: fact` for central measurement tables.
   - Use `appearance.type: dimension` for descriptive attribute tables.
+  - Use `appearance.type: mart` for downstream reporting-ready tables (Data Marts).
 - **Data Vault 2.0**: For highly scalable enterprise data warehouses.
   - Use `appearance.type: hub`, `link`, or `satellite`.
 
@@ -17,7 +18,7 @@ Modscape separates a table's core nature from its history tracking method.
 - **`sub_type` (The "What")**:
   - **For Fact Tables**: `transaction` (atomic event), `periodic` (state interval), `accumulating` (milestones), `factless` (occurrence only).
   - **For Dimension Tables**: `conformed` (shared), `junk` (flags), `degenerate` (in-fact).
-- **`scd` (The \"How it changes\")**:
+- **`scd` (The "How it changes")**:
   `type0` (fixed), `type1` (overwrite), `type2` (history row), `type3` (history col), `type4` (history table), `type5` (1+4), `type6` (1+2+3), `type7` (1+2).
 
 ### Data Lineage (`lineage.upstream`)
@@ -34,7 +35,7 @@ Mark technical or audit columns (like `created_at`, `dbt_updated_at`) with `isMe
 
 ## 3. Naming Conventions
 - **Casing**: [Select one: snake_case / UPPER_SNAKE_CASE / camelCase]
-- **Prefixes**: (e.g., `f_` for facts, `d_` for dimensions)
+- **Prefixes**: (e.g., `f_` for facts, `d_` for dimensions, `m_` for marts)
 - **Suffixes**: (e.g., `_id` for primary keys, `_h` for history tables)
 
 ## 4. Standard Data Types
@@ -50,17 +51,14 @@ tables:
     appearance:
       type: fact
       sub_type: transaction
-      scd: type2 # Fact table with status transition history
+      scd: type2 
     conceptual:
       description: "Records of customer purchases"
-      tags: ["WHO", "WHEN", "HOW MUCH"]
     columns:
       - id: order_id
         logical: { name: ID, type: Int, isPrimaryKey: true }
       - id: amount
-        logical: { name: Amount, type: Decimal, additivity: fully } # fully | semi | non
-      - id: updated_at
-        logical: { name: Updated At, type: Timestamp, isMetadata: true }
+        logical: { name: Amount, type: Decimal, additivity: fully } 
 
   - id: dim_customers
     name: Customers Dim
@@ -71,8 +69,17 @@ tables:
     columns:
       - id: customer_id
         logical: { name: ID, type: Int, isPrimaryKey: true }
-      - id: valid_from
-        logical: { name: Valid From, type: Timestamp, isMetadata: true }
+
+  - id: mart_daily_revenue
+    name: Daily Revenue Mart
+    appearance:
+      type: mart
+      sub_type: periodic
+    columns:
+      - id: report_date
+        logical: { name: Date, type: Date, isPrimaryKey: true }
+      - id: daily_amount
+        logical: { name: Revenue, type: Decimal, additivity: fully }
 ```
 
 ## 6. Layout Management
