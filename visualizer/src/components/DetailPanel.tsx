@@ -75,7 +75,7 @@ const DetailPanel = () => {
     e.stopPropagation();
   };
 
-  // Common Wrapper Style - Peripheral UI switches with theme
+  // Common Wrapper Style
   const panelStyle: React.CSSProperties = {
     height: `${panelHeight}px`,
     maxHeight: '90vh',
@@ -89,6 +89,10 @@ const DetailPanel = () => {
     fontFamily: 'sans-serif',
     position: 'relative',
     transition: 'background-color 0.3s, color 0.3s'
+  };
+
+  const handleUpdateTable = (updates: Partial<Table>) => {
+    updateTable(table!.id, updates);
   };
 
   // --- Relationship Editor Rendering ---
@@ -214,8 +218,9 @@ const DetailPanel = () => {
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <input 
-                  value={domain.name}
+                  value={domain.name ?? ''}
                   onChange={(e) => updateDomain(domain.id, { name: e.target.value })}
+                  onBlur={(e) => { if (!e.target.value) updateDomain(domain.id, { name: 'UNNAMED_DOMAIN' }) }}
                   style={{ 
                     fontSize: '16px', 
                     fontWeight: 'bold', 
@@ -229,7 +234,6 @@ const DetailPanel = () => {
                     minWidth: '200px'
                   }}
                   onFocus={(e) => (e.target as HTMLInputElement).style.borderBottom = '1px solid #3b82f6'}
-                  onBlur={(e) => (e.target as HTMLInputElement).style.borderBottom = '1px solid transparent'}
                 />
                 <span style={{ fontSize: '9px', fontWeight: 800, padding: '1px 5px', borderRadius: '3px', backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.2)', textTransform: 'uppercase' }}>
                   DOMAIN
@@ -328,10 +332,6 @@ const DetailPanel = () => {
     const scdLabel = `SCD ${scd.replace('type', 'T')}`;
     typeLabel = typeLabel ? `${typeLabel} / ${scdLabel}` : scdLabel;
   }
-
-  const handleUpdateTable = (updates: Partial<Table>) => {
-    updateTable(table!.id, updates);
-  };
 
   const handleAddColumn = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -493,8 +493,9 @@ const DetailPanel = () => {
           {/* Primary Row: Editable Table Name */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <input 
-              value={table!.name}
+              value={table!.name ?? ''}
               onChange={(e) => handleUpdateTable({ name: e.target.value })}
+              onBlur={(e) => { if (!e.target.value) handleUpdateTable({ name: 'UNNAMED_TABLE' }) }}
               title="Logical Table Name"
               style={{ 
                 fontSize: '18px', 
@@ -509,7 +510,6 @@ const DetailPanel = () => {
                 maxWidth: '500px'
               }}
               onFocus={(e) => (e.target as HTMLInputElement).style.borderBottom = '1px solid #3b82f6'}
-              onBlur={(e) => (e.target as HTMLInputElement).style.borderBottom = '1px solid transparent'}
             />
           </div>
         </div>
@@ -729,9 +729,12 @@ const DetailPanel = () => {
                             className={`transition-opacity ${col.logical?.isPrimaryKey ? 'opacity-100' : 'opacity-20 hover:opacity-50'}`}
                           >🔑</button>
                           <input 
-                            value={col.logical?.name || col.id}
+                            value={col.logical?.name ?? ''}
                             onChange={(e) => handleUpdateLogicalColumn(col.id, { name: e.target.value })}
-                            className="bg-transparent border-none text-var(--text-primary) w-full outline-none p-1 focus:bg-slate-100 dark:focus:bg-slate-800 rounded font-medium transition-colors"
+                            onBlur={(e) => { if (!e.target.value) handleUpdateLogicalColumn(col.id, { name: col.id }) }}
+                            className={`bg-transparent border-none w-full outline-none p-1 rounded font-medium transition-colors ${
+                              theme === 'dark' ? 'text-white focus:bg-slate-800' : 'text-slate-900 focus:bg-slate-50'
+                            }`}
                           />
                         </div>
                       </td>
@@ -762,8 +765,9 @@ const DetailPanel = () => {
                       </td>
                       <td style={{ padding: '6px 16px' }}>
                         <input 
-                          value={col.logical?.type || ''}
+                          value={col.logical?.type ?? ''}
                           onChange={(e) => handleUpdateLogicalColumn(col.id, { type: e.target.value })}
+                          onBlur={(e) => { if (!e.target.value) handleUpdateLogicalColumn(col.id, { type: 'String' }) }}
                           placeholder="Type..."
                           className={`bg-transparent border-none font-mono text-[11px] w-full outline-none p-1 rounded transition-colors ${
                             theme === 'dark' ? 'text-slate-400 focus:bg-slate-800' : 'text-slate-500 focus:bg-slate-50'
@@ -820,7 +824,7 @@ const DetailPanel = () => {
                         </td>
                         <td style={{ padding: '6px 16px' }}>
                           <input 
-                            value={col.physical?.name || ''}
+                            value={col.physical?.name ?? ''}
                             onChange={(e) => handleUpdatePhysicalColumn(col.id, { name: e.target.value })}
                             placeholder={col.logical?.name.toLowerCase().replace(/ /g, '_')}
                             className={`bg-transparent border-none font-mono text-[11px] w-full outline-none p-1 rounded transition-colors ${
@@ -830,7 +834,7 @@ const DetailPanel = () => {
                         </td>
                         <td style={{ padding: '6px 16px' }}>
                           <input 
-                            value={col.physical?.type || ''}
+                            value={col.physical?.type ?? ''}
                             onChange={(e) => handleUpdatePhysicalColumn(col.id, { type: e.target.value })}
                             placeholder={col.logical?.type.toUpperCase()}
                             className={`bg-transparent border-none font-mono text-[11px] w-full outline-none p-1 rounded transition-colors ${

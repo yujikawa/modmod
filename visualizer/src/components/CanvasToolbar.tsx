@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Layout, Grid, Trash2, Tag, Database, GitGraph, Network, X, Eye, Plus, CircleHelp, Command, Undo2, Redo2, MousePointer2 } from 'lucide-react'
+import { Layout, Grid, Trash2, Tag, Database, GitGraph, Network, X, Eye, Plus, CircleHelp, Command, Undo2, Redo2 } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { useReactFlow } from 'reactflow'
 
@@ -196,14 +196,6 @@ const CanvasToolbar = () => {
                 </div>
                 <kbd className={`px-1.5 py-0.5 border rounded text-[10px] font-mono ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>Esc</kbd>
               </div>
-
-              <div className="flex items-center justify-between group">
-                <div className="flex items-center gap-2 text-slate-500">
-                  <MousePointer2 size={14} />
-                  <span className="text-xs font-medium">Multi-select</span>
-                </div>
-                <span className="text-[10px] font-mono text-slate-400">Shift + Drag</span>
-              </div>
             </div>
 
             <div className={`mt-5 pt-3 border-t text-[10px] text-slate-400 italic leading-relaxed ${theme === 'dark' ? 'border-slate-800' : 'border-slate-100'}`}>
@@ -223,7 +215,7 @@ const CanvasToolbar = () => {
             {domain && <Layout size={16} className="text-blue-500" />}
             {relationshipData && (
               ((relationshipData.relationship.type as any) === 'lineage') 
-                ? <GitGraph size={16} className="text-blue-500" />
+                ? <GitGraph size={16} className="text-blue-400" />
                 : <Tag size={16} className="text-amber-500" />
             )}
             

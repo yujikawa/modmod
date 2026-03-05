@@ -56,23 +56,22 @@ function Flow() {
   
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
-  const { setCenter, getNode } = useReactFlow()
+  const { fitView } = useReactFlow()
 
   const isEditingDisabled = showER && showLineage
 
   // Handle focusNodeId changes
   useEffect(() => {
     if (focusNodeId) {
-      const node = getNode(focusNodeId)
-      if (node) {
-        const x = node.position.x + (node.width || 0) / 2
-        const y = node.position.y + (node.height || 0) / 2
-        setCenter(x, y, { zoom: 1.2, duration: 800 })
-      }
+      fitView({ 
+        nodes: [{ id: focusNodeId }], 
+        duration: 800, 
+        padding: 0.5 
+      });
       // Reset focusNodeId after focusing
-      setFocusNodeId(null)
+      setFocusNodeId(null);
     }
-  }, [focusNodeId, getNode, setCenter, setFocusNodeId])
+  }, [focusNodeId, fitView, setFocusNodeId]);
 
   // Sync Nodes (including selection state)
   useEffect(() => {
