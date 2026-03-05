@@ -1,6 +1,8 @@
 tables:
   - id: hub_customers
     name: HUB_CUSTOMERS
+    logical_name: ''
+    physical_name: ''
     appearance:
       type: hub
       layer: raw_vault
@@ -237,7 +239,7 @@ relationships:
     to:
       table: dim_customers
       column: customer_key
-    type: many-to-one
+    type: one-to-many
   - from:
       table: link_orders
       column: customer_hk
@@ -312,8 +314,8 @@ layout:
     x: 535
     'y': 39
   new_domain_1772665360010:
-    x: 190
-    'y': -398
+    x: 198
+    'y': -431
     width: 572
     height: 1110
   new_domain_1772665422430:
