@@ -1,11 +1,18 @@
-import { memo } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { type NodeProps, NodeResizer } from 'reactflow'
 import { useStore } from '../store/useStore'
 
 const DomainNode = ({ id, data, selected }: NodeProps) => {
+  const [isNew, setIsNew] = useState(true)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsNew(false), 1000)
+    return () => clearTimeout(timer)
+  }, [])
+
   const { 
-    updateNodeDimensions, 
-    saveLayout
+    updateNodeDimensions,
+    theme
   } = useStore()
 
   const isActuallySelected = selected;
@@ -15,21 +22,22 @@ const DomainNode = ({ id, data, selected }: NodeProps) => {
 
   const onResizeEnd = (_: any, params: { width: number; height: number }) => {
     updateNodeDimensions(id, params.width, params.height)
-    saveLayout()
   }
 
   return (
     <div
+      className={isNew ? 'animate-creation' : ''}
       style={{
         width: '100%',
         height: '100%',
-        border: `2px dashed ${isActuallySelected ? '#3b82f6' : '#334155'}`,
+        border: `2px dashed ${isActuallySelected ? '#3b82f6' : (theme === 'dark' ? '#334155' : '#cbd5e1')}`,
         borderRadius: '12px',
         padding: '10px',
         position: 'relative',
-        color: '#94a3b8',
+        color: 'var(--text-secondary)',
         pointerEvents: 'all', 
-        cursor: 'default'
+        cursor: 'default',
+        transition: 'border-color 0.3s'
       }}
     >
       <NodeResizer
@@ -68,13 +76,14 @@ const DomainNode = ({ id, data, selected }: NodeProps) => {
           left: '0',
           fontSize: '14px',
           fontWeight: 'bold',
-          color: '#f1f5f9',
+          color: theme === 'dark' ? '#f1f5f9' : '#0f172a',
           whiteSpace: 'nowrap',
           pointerEvents: 'all',
           cursor: 'grab',
           padding: '2px 8px',
-          backgroundColor: 'rgba(30, 41, 59, 0.8)',
-          borderRadius: '4px 4px 0 0'
+          backgroundColor: theme === 'dark' ? 'rgba(30, 41, 59, 0.8)' : 'rgba(241, 245, 249, 0.9)',
+          borderRadius: '4px 4px 0 0',
+          transition: 'color 0.3s, background-color 0.3s'
         }}
       >
         {data.label}

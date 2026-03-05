@@ -3,19 +3,38 @@
 @tailwind utilities;
 
 :root {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 98%;
+  /* Default: Light Theme (Subtle Off-white) */
+  --canvas-bg: #f1f5f9;
+  --node-bg: #ffffff;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --border-main: #e2e8f0;
+  --header-bg: #f8fafc;
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(203, 213, 225, 0.5);
+}
+
+.dark {
+  --canvas-bg: #020617;
+  --node-bg: #1e293b;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --border-main: #334155;
+  --header-bg: #0f172a;
+  --glass-bg: rgba(15, 23, 42, 0.85);
+  --glass-border: rgba(51, 65, 85, 0.5);
 }
 
 * {
-  border-color: #1e293b; /* border-slate-800 fallback */
+  border-color: var(--border-main);
 }
 
 body {
   margin: 0;
   padding: 0;
-  background-color: #020617; /* bg-slate-950 */
-  color: #f1f5f9; /* text-slate-100 */
+  background-color: var(--canvas-bg);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 #root {
@@ -23,33 +42,42 @@ body {
   width: 100vw;
 }
 
-/* React Flow Dark Theme */
+/* React Flow Theming */
 .react-flow {
-  background-color: #020617;
+  background-color: var(--canvas-bg);
+}
+
+.react-flow__pane {
+  cursor: grab;
+}
+
+.react-flow__pane:active {
+  cursor: grabbing;
 }
 
 .react-flow__background {
-  background-color: #020617;
+  background-color: var(--canvas-bg);
 }
 
 .react-flow__controls {
-  background: #0f172a !important;
-  border: 1px solid #1e293b !important;
-  border-radius: 4px;
+  background: var(--header-bg) !important;
+  border: 1px solid var(--border-main) !important;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .react-flow__controls-button {
-  background: #0f172a !important;
-  border-bottom: 1px solid #1e293b !important;
-  fill: #f1f5f9 !important;
+  background: var(--header-bg) !important;
+  border-bottom: 1px solid var(--border-main) !important;
+  fill: var(--text-primary) !important;
 }
 
 .react-flow__controls-button:hover {
-  background: #1e293b !important;
+  background: var(--border-main) !important;
 }
 
 .react-flow__controls-button svg {
-  fill: #f1f5f9 !important;
+  fill: var(--text-primary) !important;
 }
 
 /* Column Handles for Interactive Relationships */
@@ -65,6 +93,44 @@ body {
 
 .column-handle {
   transition: opacity 0.15s ease-in-out;
-  pointer-events: auto; /* Ensure handle is interactive even when transparent */
+  pointer-events: auto;
 }
 
+/* Edge Creation UX */
+@keyframes pulse-handle {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+  70% { transform: scale(1.4); box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+}
+
+.handle-pulse {
+  animation: pulse-handle 1.5s infinite;
+  background-color: #3b82f6 !important;
+  border: 2px solid #ffffff !important;
+  z-index: 100 !important;
+  opacity: 1 !important;
+}
+
+.handle-dim {
+  opacity: 0.2 !important;
+  transition: opacity 0.3s ease;
+}
+
+.react-flow__handle {
+  transition: transform 0.2s ease, background-color 0.2s ease, opacity 0.3s ease;
+}
+
+.react-flow__handle:hover {
+  transform: scale(1.5);
+}
+
+/* Object Addition UX */
+@keyframes node-pop {
+  0% { transform: scale(0.5); opacity: 0; box-shadow: 0 0 0 0px #3b82f6; }
+  50% { transform: scale(1.1); opacity: 1; box-shadow: 0 0 40px 10px #3b82f6; }
+  100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0px transparent; }
+}
+
+.animate-creation {
+  animation: node-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}

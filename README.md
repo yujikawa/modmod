@@ -21,20 +21,22 @@ In modern data analysis platforms, data modeling is no longer just about drawing
 ## Key Features
 
 - **YAML-as-Code**: Define your entire data architecture in a single, human-readable YAML file. Track changes via Git.
-- **Instant Local Visualization**: Visualize your YAML models (following the Modscape schema) instantly on your machine. No database connections or cloud infrastructure required—just point to your file and start exploring.
-- **Specialized Modeling Types**: Native support for entity types like `fact`, `dimension`, `hub`, `link`, and `satellite`.
-- **Sample Data Stories**: Attach real-world data samples to your entities to explain the "Story" behind the data.
+- **Instant Local Visualization**: Visualize your YAML models instantly on your machine. No database connections or cloud infrastructure required—just point to your file and start exploring.
+- **Integrated Professional Editor**: Powered by **CodeMirror 6**, providing syntax highlighting and a rich YAML editing experience directly in the sidebar.
+- **Unified Undo/Redo & Auto-save**: 
+  - Visual actions (dragging, resizing, metadata edits) are synchronized with the editor's history. Undo your last action with `Ctrl+Z`.
+  - Optional **Auto-save** ensures your local YAML is always up-to-date with your visual changes.
+- **Dark/Light Mode Support**: Switch between themes seamlessly for better eye comfort or documentation exports.
+- **Specialized Modeling Types**: Native support for entity types like `fact`, `dimension`, `mart`, `hub`, `link`, and `satellite`.
 - **Interactive Visual Canvas**: 
-  - **Drag-to-Connect**: Create relationships between columns intuitively.
-  - **Auto-Layout Persistence**: Arrange nodes on the canvas; coordinates are saved directly back to your YAML.
-  - **Domain Grouping**: Organize tables into visual business domains.
+  - **Drag-to-Connect**: Create relationships between columns intuitively with "Magnetic Snapping".
+  - **Data Lineage Mode**: Visualize data flow with animated dashed arrows.
+  - **Domain-Grouped Navigation**: Organize tables into visual business domains and navigate them via a structured sidebar.
 - **Analytics Metadata**: 
   - **Fact Table Types**: Define `transaction`, `periodic`, `accumulating`, or `factless` grains.
   - **SCD Management**: Visualize `SCD Type 2` and other history-tracking dimensions.
-  - **Additivity Rules**: Mark columns as `fully`, `semi`, or `non-additive` to guide BI development.
-  - **Metadata/Audit Tracking**: Identify audit columns with specialized visual cues.
+  - **Additivity Rules**: Mark columns as `fully`, `semi`, or `non-additive` (Σ icon).
 - **AI-Agent Ready**: Built-in scaffolding for **Gemini, Claude, and Codex** to accelerate your modeling workflow using LLMs.
-- **Documentation Export**: Generate Mermaid-compatible Markdown for your internal wikis or GitHub/GitLab pages.
 
 ## Installation
 
@@ -76,80 +78,38 @@ Best for direct architectural control.
     ```bash
     modscape dev model.yaml
     ```
-3.  **Explore Samples**: Try the built-in patterns:
-    ```bash
-    modscape dev samples/
-    ```
 
 ---
 
 ## Defining Your Model (YAML)
 
-Modscape uses a schema designed for data analysis contexts. This single file acts as the **Single Source of Truth** for your logical and physical data architecture.
+Modscape uses a schema designed for data analysis contexts.
 
 ```yaml
 # 1. Domains: Visual containers for grouping business logic
 domains:
   - id: core_sales
     name: Core Sales
-    description: "Optional description of the domain"
-    color: "rgba(59, 130, 246, 0.05)" # Container background color
-    tables: [orders, products] # List of table IDs
+    color: "#3b82f6"
+    tables: [orders, products]
 
 # 2. Tables: Entity definitions with multi-layer metadata
 tables:
   - id: orders
     name: ORDERS
     appearance:
-      type: fact    # fact | dimension | hub | link | satellite
-      # --- Analytics Metadata ---
-      sub_type: transaction # transaction | periodic | accumulating | factless
-      # (Use sub_type for SCD types in Dimensions: type0 | type1 | type2 | type3 | type4 | type5 | type6 | type7)
-      icon: 📦      # Custom emoji or character
-      color: "#f87171" # Custom theme color for this entity
-    
-    conceptual:
-      description: "Sales transaction records"
-      tags: ["WHO", "WHEN", "HOW MUCH"] # BEAM* or Grain identifiers
-    
-    physical:
-      name: STG_ORDERS     # Actual table name in DB
-      schema: ANALYTICS_DB # DB schema/namespace
-    
+      type: fact    # fact | dimension | mart | hub | link | satellite
+      sub_type: transaction 
+      scd: type2
+      icon: 📦
     columns:
       - id: order_id
         logical:
           name: ORDER_ID
           type: Int
-          description: "Unique identifier"
           isPrimaryKey: true
-          isForeignKey: false
-          isPartitionKey: false
-          # --- Analytics Metadata ---
-          isMetadata: false # Set true for audit columns (🕒 icon)
           additivity: fully # fully | semi | non (Σ icon)
-        physical:
-          name: O_ID
-          type: NUMBER(38,0)
-          constraints: ["NOT NULL"]
-      
-      - id: customer_id
-        logical: { name: CUSTOMER_ID, type: Int, isForeignKey: true }
-
-    # 3. Sample Data: Storytelling through data
-    sampleData:
-      - [1001, 501]
-      - [1002, 502]
-
-# 4. Relationships: Column-level connectivity
-relationships:
-  - from: { table: orders, column: customer_id }
-    to: { table: customers, column: id }
-    type: many-to-one # one-to-one | one-to-many | many-to-many
-
-# 5. Layout: Visual coordinates (Auto-managed)
-layout:
-  orders: { x: 100, y: 100, width: 320, height: 400 }
+          isMetadata: false # audit column (🕒 icon)
 ```
 
 ---
@@ -157,39 +117,32 @@ layout:
 ## Usage
 
 ### Development Mode (Interactive)
-Edit your YAML and arrange entities visually.
-
 ```bash
 modscape dev ./models
 ```
-- Opens `http://localhost:5173`.
-- **Persistence**: Layout and metadata changes are saved directly to your files.
+- **Persistence**: Layout and metadata changes are saved directly to your files (supports Auto-save).
 
 ### Build Mode (Static Site)
-Generate a standalone documentation site for your team.
-
 ```bash
 modscape build ./models -o docs-site
 ```
 
 ### Export Mode (Markdown)
-Generate documentation with Mermaid diagrams.
-
 ```bash
 modscape export ./models -o docs/ARCHITECTURE.md
 ```
 
-## AI Agent Integration
-
-Modscape is designed to be **AI-First**. By running `modscape init`, you establish a contract with your AI agent via `.modscape/rules.md`, ensuring consistent modeling patterns (naming conventions, data types, etc.) across your entire project.
-
 ## Credits
 
-Modscape is built upon:
-- **React Flow**: Interactive graph engine.
-- **Lucide**: Consistent iconography.
-- **Express**: Local dev server.
-- **Commander**: CLI framework.
+Modscape is made possible by these incredible open-source projects:
+
+- [React Flow](https://reactflow.dev/) - Interactive node-based UI framework.
+- [CodeMirror 6](https://codemirror.net/) - Next-generation code editor for the web.
+- [Lucide React](https://lucide.dev/) - Beautifully simple pixel-perfect icons.
+- [Zustand](https://github.com/pmndrs/zustand) - Bear necessities for state management.
+- [Express](https://expressjs.com/) - Fast, unopinionated web framework for Node.js.
+- [js-yaml](https://github.com/nodeca/js-yaml) - JavaScript YAML parser and dumper.
+- [Commander.js](https://github.com/tj/commander.js) - CLI framework.
 
 ## License
 MIT

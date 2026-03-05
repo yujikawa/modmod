@@ -20,25 +20,24 @@
 
 ## 主な機能
 
-- **YAML-as-Code**: データアーキテクチャ全体を人間が読みやすい単一のYAMLファイルで定義。Gitによる変更管理が可能。
-- **ローカルYAMLの即時可視化**: Modscapeのスキーマに従ったYAMLファイルを指定するだけで、即座にビジュアライズ。データベース接続やクラウド設定は一切不要で、すぐにモデリング結果を確認できます。
-- **データ分析特化のモデリング**: `fact`, `dimension`, `hub`, `link`, `satellite` などのエンティティタイプを標準サポート。
-- **サンプルデータ「ストーリー」**: エンティティに現実的なサンプルデータを紐付け、データの背後にある「物語」を解説。
+- **YAML-as-Code**: データアーキテクチャ全体を単一のYAMLファイルで定義。Gitによる変更管理が可能。
+- **統合プロフェッショナル・エディタ**: **CodeMirror 6** を内蔵。シンタックスハイライト対応のエディタをサイドバーで直接利用可能。
+- **統合 Undo/Redo & オートセーブ**: 
+  - ビジュアル操作（ドラッグ、リサイズ、編集）がエディタの履歴と同期。 `Ctrl+Z` で直前の操作を元に戻せます。
+  - **オートセーブ**をONにすれば、キャンバス上の変更が即座にローカルファイルに反映されます。
+- **ダーク/ライトモード対応**: 利用環境やドキュメント作成の用途に合わせて、ワンクリックでテーマを切り替え可能。
+- **データ分析特化のモデリング**: `fact`, `dimension`, `mart`, `hub`, `link`, `satellite` などのエンティティタイプを標準サポート。
 - **インタラクティブなビジュアルキャンバス**: 
-  - **ドラッグで接続**: カラム間のリレーションを直感的に作成。
-  - **自動レイアウト永続化**: キャンバス上の配置は、即座に元のYAMLファイルの座標情報として保存。
-  - **ドメイン・グルーピング**: テーブルをビジネスドメインごとに整理。
+  - **ドラッグで接続**: カラム間のリレーションを直感的に作成。吸着（Snapping）機能で快適な操作感。
+  - **データリネージ・モード**: データの流れをアニメーション付きの点線矢印で可視化。
+  - **ドメイン階層ナビゲーション**: テーブルをビジネスドメインごとに整理し、構造化されたサイドバーから素早くアクセス。
 - **分析メタデータ**: 
   - **ファクトテーブル・タイプ**: `transaction`, `periodic`, `accumulating`, `factless` といったデータの性質を定義。
-  - **SCD（徐変ディメンション）管理**: `SCD Type 2` などの履歴管理方式を可視化。
-  - **加算規則（Additivity）**: カラムが合計可能か（`fully`, `semi`, `non`）を明示し、BI開発をガイド。
-  - **メタデータ/監査追跡**: 監査用カラムを専用アイコンで識別。
+  - **SCD管理**: `SCD Type 2` などの履歴管理方式を可視化。
+  - **加算規則（Additivity）**: カラムが合計可能か（`fully`, `semi`, `non`）を明示 (Σ アイコン)。
 - **AIエージェント対応**: **Gemini, Claude, Codex** 用の雛形を内蔵。LLMを活用してモデリング作業を劇的に加速。
-- **ドキュメント・エクスポート**: 社内WikiやGitHub/GitLab Pagesで利用可能な、Mermaid図入りのMarkdownを生成。
 
 ## インストール
-
-npm経由でグローバルにインストールします：
 
 ```bash
 npm install -g modscape
@@ -49,107 +48,51 @@ npm install -g modscape
 ## はじめに
 
 ### A: AI駆動のモデリング（推奨）
-Gemini CLI, Claude Code, Codex などのAIアシスタントを活用してモデルを構築します。
-
-1.  **初期化**: 使用するAIエージェントに合わせてモデリングルールと手順書を生成します。
+1.  **初期化**: 使用するAIエージェントに合わせてモデリングルールを生成します。
     ```bash
-    # Gemini CLI の場合
-    modscape init --gemini
-
-    # Claude Code の場合
-    modscape init --claude
-
-    # Codex の場合
-    modscape init --codex
+    modscape init --gemini  # または --claude, --codex
     ```
 2.  **起動**: ビジュアライザーを起動します。
     ```bash
     modscape dev model.yaml
     ```
-3.  **AIに指示**: AIエージェントにこう伝えてください： *" .modscape/rules.md のルールに従って、model.yaml に新しい 'Marketing' ドメインと 'campaign_performance' ファクトテーブルを追加して。"*
+3.  **AIに指示**: AIにこう伝えてください： *" .modscape/rules.md のルールに従って、model.yaml に新しい 'Marketing' ドメインを追加して。"*
 
 ### B: 手動モデリング
-詳細な設計コントロールを行いたい場合に最適です。
-
-1.  **YAML作成**: `model.yaml` ファイルを作成します（[YAMLリファレンス](#モデルの定義-yaml)を参照）。
+1.  **YAML作成**: `model.yaml` ファイルを作成します。
 2.  **起動**: ビジュアライザーを起動します。
     ```bash
     modscape dev model.yaml
-    ```
-3.  **サンプルを試す**: 組み込みのパターンを確認できます：
-    ```bash
-    modscape dev samples/
     ```
 
 ---
 
 ## モデルの定義 (YAML)
 
-Modscapeは、データ分析のコンテキストに最適化されたスキーマを採用しています。この単一のファイルが、論理および物理データアーキテクチャの「信頼できる唯一の情報源（SSOT）」として機能します。
-
 ```yaml
-# 1. Domains: 関連するテーブルをグループ化する視覚的なコンテナ
+# 1. Domains: 関連するテーブルをグループ化するコンテナ
 domains:
   - id: core_sales
     name: 主要売上
-    description: "ドメインの任意の説明"
-    color: "rgba(59, 130, 246, 0.05)" # コンテナの背景色
-    tables: [orders, products] # 所属するテーブルIDのリスト
+    color: "#3b82f6"
+    tables: [orders, products]
 
-# 2. Tables: マルチレイヤーのメタデータを持つエンティティ定義
+# 2. Tables: エンティティ定義
 tables:
   - id: orders
     name: ORDERS
     appearance:
-      type: fact    # fact | dimension | hub | link | satellite
-      # --- 分析メタデータ ---
-      sub_type: transaction # transaction | periodic | accumulating | factless
-      # (Dimension用SCDタイプ: type0 | type1 | type2 | type3 | type4 | type5 | type6 | type7)
-      icon: 📦      # カスタム絵文字や文字
-      color: "#f87171" # エンティティのテーマカラー
-    
-    conceptual:
-      description: "販売取引記録"
-      tags: ["WHO", "WHEN", "HOW MUCH"] # 粒度の識別子（BEAM*等）
-    
-    physical:
-      name: STG_ORDERS     # 実際のDBテーブル名
-      schema: ANALYTICS_DB # DBスキーマ/名前空間
-    
+      type: fact    # fact | dimension | mart | hub | link | satellite
+      sub_type: transaction
+      scd: type2
+      icon: 📦
     columns:
       - id: order_id
         logical:
           name: ORDER_ID
-          type: Int
-          description: "ユニークな識別子"
           isPrimaryKey: true
-          isForeignKey: false
-          isPartitionKey: false
-          # --- 分析メタデータ ---
-          isMetadata: false # 監査用カラム等に true を設定 (🕒 アイコン)
           additivity: fully # fully | semi | non (Σ アイコン)
-        physical:
-          name: O_ID
-          type: NUMBER(38,0)
-          constraints: ["NOT NULL"]
-      
-      - id: customer_id
-        logical: { name: CUSTOMER_ID, type: Int, isForeignKey: true }
-
-    # 3. Sample Data: データを通じたストーリーの提示
-    sampleData:
-      - [1001, 501]
-      - [1002, 502]
-
-# 4. Relationships: カラムレベルの接続
-relationships:
-  - from: { table: orders, column: customer_id }
-    to: { table: customers, column: id }
-    type: many-to-one # one-to-one | one-to-many | many-to-many
-
-# 5. Layout: 座標情報 (自動管理)
-layout:
-  orders: { x: 100, y: 100, width: 320, height: 400 }
+          isMetadata: false # 監査用カラム等 (🕒 アイコン)
 ```
 
 ---
@@ -157,39 +100,32 @@ layout:
 ## 使い方
 
 ### 開発モード (インタラクティブ)
-YAMLを編集し、エンティティを視覚的に配置します。
-
 ```bash
 modscape dev ./models
 ```
-- `http://localhost:5173` が開きます。
-- **永続化**: レイアウトやメタデータの変更は、直接ファイルに書き戻されます。
+- **永続化**: レイアウトやメタデータの変更は、直接ファイルに書き戻されます（オートセーブ対応）。
 
 ### ビルドモード (静的サイト)
-チーム共有用のスタンドアロンなドキュメントサイトを生成します。
-
 ```bash
 modscape build ./models -o docs-site
 ```
 
 ### エクスポートモード (Markdown)
-Mermaid図を含むMarkdownドキュメントを生成します。
-
 ```bash
 modscape export ./models -o docs/ARCHITECTURE.md
 ```
 
-## AIエージェントとの統合
-
-Modscapeは **AI-First** を掲げて設計されています。 `modscape init` を実行することで、 `.modscape/rules.md` を通じてAIエージェントと「契約」を結び、プロジェクト全体で一貫したモデリングパターン（命名規則、データ型など）を維持できます。
-
 ## クレジット
 
-Modscapeは以下のプロジェクトによって支えられています：
-- **React Flow**: インタラクティブなグラフエンジン。
-- **Lucide**: 一貫性のあるアイコンセット。
-- **Express**: ローカル開発サーバー。
-- **Commander**: CLIフレームワーク。
+Modscape は以下の素晴らしいオープンソースプロジェクトによって支えられています：
+
+- [React Flow](https://reactflow.dev/) - インタラクティブなグラフ UI フレームワーク。
+- [CodeMirror 6](https://codemirror.net/) - 次世代のウェブベース・コードエディタ。
+- [Lucide React](https://lucide.dev/) - シンプルで美しいアイコンセット。
+- [Zustand](https://github.com/pmndrs/zustand) - React 用の状態管理ライブラリ。
+- [Express](https://expressjs.com/) - Node.js 用のウェブフレームワーク。
+- [js-yaml](https://github.com/nodeca/js-yaml) - JavaScript 用 YAML パーサー。
+- [Commander.js](https://github.com/tj/commander.js) - CLI フレームワーク。
 
 ## ライセンス
 MIT

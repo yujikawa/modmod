@@ -5,27 +5,25 @@
 - **Dimensional Modeling (Star Schema)**: Recommended for most analytical use cases. 
   - Use `appearance.type: fact` for central measurement tables.
   - Use `appearance.type: dimension` for descriptive attribute tables.
+  - Use `appearance.type: mart` for downstream reporting-ready tables (Data Marts).
 - **Data Vault 2.0**: For highly scalable enterprise data warehouses.
   - Use `appearance.type: hub`, `link`, or `satellite`.
 
 ## 2. Analytics Metadata
 Modscape supports attributes to communicate the "Story" and "Grain" of your data to humans and AI agents.
 
-### Fact Table Types / Dimension History (`appearance.sub_type`)
-- **For Fact Tables**:
-  - `transaction`: Standard fact table where one row = one event (e.g., an order).
-  - `periodic`: Snapshot fact table capturing state at set intervals (e.g., monthly inventory).
-  - `accumulating`: Fact table updated as a process moves through milestones (e.g., order → shipping → delivery).
-  - `factless`: Tables that record the occurrence of an event without numeric measures (e.g., event attendance).
-- **For Dimension Tables (SCD Types)**:
-  - `type0`: Fixed dimensions (no changes allowed).
-  - `type1`: Overwrite changes (no history maintained).
-  - `type2`: Add new row for changes (full history with timestamps).
-  - `type3`: Add new column for changes (partial history).
-  - `type4`: History table (separate table for history).
-  - `type5`: Hybrid (1 + 4).
-  - `type6`: Hybrid (1 + 2 + 3).
-  - `type7`: Hybrid (1 + 2).
+### Fact Table Types / Dimension History (`appearance.sub_type` and `appearance.scd`)
+Modscape separates a table's core nature from its history tracking method.
+
+- **`sub_type` (The "What")**:
+  - **For Fact Tables**: `transaction` (atomic event), `periodic` (state interval), `accumulating` (milestones), `factless` (occurrence only).
+  - **For Dimension Tables**: `conformed` (shared), `junk` (flags), `degenerate` (in-fact).
+- **`scd` (The "How it changes")**:
+  `type0` (fixed), `type1` (overwrite), `type2` (history row), `type3` (history col), `type4` (history table), `type5` (1+4), `type6` (1+2+3), `type7` (1+2).
+
+### Data Lineage (`lineage.upstream`)
+Explicitly define dependencies to communicate the data flow:
+- Use `lineage.upstream: [table_id1, table_id2]` to list source tables.
 
 ### Column Additivity (`logical.additivity`)
 - `fully`: Can be summed across all dimensions (e.g., sales amount). Displays as `Σ`.
@@ -37,7 +35,7 @@ Mark technical or audit columns (like `created_at`, `dbt_updated_at`) with `isMe
 
 ## 3. Naming Conventions
 - **Casing**: [Select one: snake_case / UPPER_SNAKE_CASE / camelCase]
-- **Prefixes**: (e.g., `f_` for facts, `d_` for dimensions)
+- **Prefixes**: (e.g., `f_` for facts, `d_` for dimensions, `m_` for marts)
 - **Suffixes**: (e.g., `_id` for primary keys, `_h` for history tables)
 
 ## 4. Standard Data Types
@@ -52,28 +50,36 @@ tables:
     name: Orders Fact
     appearance:
       type: fact
-      sub_type: transaction # transaction | periodic | accumulating | factless
+      sub_type: transaction
+      scd: type2 
     conceptual:
       description: "Records of customer purchases"
-      tags: ["WHO", "WHEN", "HOW MUCH"]
     columns:
       - id: order_id
         logical: { name: ID, type: Int, isPrimaryKey: true }
       - id: amount
-        logical: { name: Amount, type: Decimal, additivity: fully } # fully | semi | non
-      - id: updated_at
-        logical: { name: Updated At, type: Timestamp, isMetadata: true }
+        logical: { name: Amount, type: Decimal, additivity: fully } 
 
   - id: dim_customers
     name: Customers Dim
     appearance:
       type: dimension
-      sub_type: type2 # type0 | type1 | type2 | type3 | type6
+      sub_type: conformed
+      scd: type2
     columns:
       - id: customer_id
         logical: { name: ID, type: Int, isPrimaryKey: true }
-      - id: valid_from
-        logical: { name: Valid From, type: Timestamp, isMetadata: true }
+
+  - id: mart_daily_revenue
+    name: Daily Revenue Mart
+    appearance:
+      type: mart
+      sub_type: periodic
+    columns:
+      - id: report_date
+        logical: { name: Date, type: Date, isPrimaryKey: true }
+      - id: daily_amount
+        logical: { name: Revenue, type: Decimal, additivity: fully }
 ```
 
 ## 6. Layout Management
@@ -82,5 +88,5 @@ tables:
 
 ## 7. The Golden Rules
 - When updating `model.yaml`, always self-audit against these rules.
-- Set appropriate `appearance.type` and `sub_type` for new tables.
+- Set appropriate `appearance.type`, `sub_type`, and `scd` for new tables.
 - Use `additivity` for numeric measures to inform BI tools and analysts.

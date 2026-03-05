@@ -3,7 +3,7 @@ import { Database, ChevronDown, RefreshCcw } from 'lucide-react';
 import { useState } from 'react';
 
 const FileSelector = () => {
-  const { availableFiles, currentModelSlug, setCurrentModel, isSidebarOpen, fetchAvailableFiles } = useStore();
+  const { availableFiles, currentModelSlug, setCurrentModel, isSidebarOpen, fetchAvailableFiles, theme } = useStore();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   if (!isSidebarOpen || availableFiles.length <= 0) return null;
@@ -25,7 +25,9 @@ const FileSelector = () => {
         </div>
         <button
           onClick={handleRefresh}
-          className={`text-slate-500 hover:text-blue-400 transition-all p-0.5 rounded hover:bg-slate-800 ${isRefreshing ? 'animate-spin text-blue-400' : ''}`}
+          className={`transition-all p-0.5 rounded ${
+            isRefreshing ? 'animate-spin text-blue-400' : 'text-slate-500 hover:text-blue-400'
+          } ${theme === 'dark' ? 'hover:bg-slate-800' : 'hover:bg-slate-100'}`}
           title="Refresh model list"
         >
           <RefreshCcw size={12} />
@@ -35,16 +37,22 @@ const FileSelector = () => {
         <select
           value={activeSlug}
           onChange={(e) => setCurrentModel(e.target.value)}
-          className="w-full pl-9 pr-8 py-2 bg-slate-800 border border-slate-700 rounded-md text-sm text-slate-100 appearance-none focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition-all shadow-sm cursor-pointer hover:bg-slate-750"
+          className={`w-full pl-9 pr-8 py-2 rounded-md text-sm appearance-none focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition-all shadow-sm cursor-pointer ${
+            theme === 'dark' 
+              ? 'bg-slate-800 border-slate-700 text-slate-100 hover:bg-slate-750' 
+              : 'bg-white border-slate-200 text-slate-900 hover:bg-slate-50 shadow-slate-200/50'
+          }`}
         >
           {availableFiles.map((file) => (
-            <option key={file.slug} value={file.slug}>
+            <option key={file.slug} value={file.slug} className={theme === 'light' ? 'bg-white text-slate-900' : 'bg-slate-800 text-slate-100'}>
               {file.name}
             </option>
           ))}
         </select>
-        <Database size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400 pointer-events-none" />
-        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none group-hover:text-slate-300" />
+        <Database size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500 pointer-events-none" />
+        <ChevronDown size={14} className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
+          theme === 'dark' ? 'text-slate-500 group-hover:text-slate-300' : 'text-slate-400 group-hover:text-slate-600'
+        }`} />
       </div>
     </div>
   );

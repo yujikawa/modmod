@@ -41,12 +41,20 @@ export function normalizeSchema(data: any): Schema {
     }
 
     const appearance = table.appearance ? { ...table.appearance } : undefined;
+    if (appearance) {
+      // Compatibility mapping: sub_type (if type0-7) -> scd
+      if (appearance.sub_type && /^type[0-7]$/.test(appearance.sub_type) && !appearance.scd) {
+        appearance.scd = appearance.sub_type;
+        appearance.sub_type = undefined;
+      }
+    }
 
     return {
       ...table,
       id: table.id || 'unknown',
       name: table.name || table.id || 'Unnamed Table',
       appearance,
+      lineage: table.lineage ? { ...table.lineage } : undefined,
       columns: Array.isArray(table.columns) ? table.columns.map((col: any) => ({
         ...col,
         logical: col.logical ? { ...col.logical } : undefined,

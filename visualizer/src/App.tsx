@@ -8,7 +8,8 @@ import ReactFlow, {
   useEdgesState,
   type Connection,
   useReactFlow,
-  ReactFlowProvider
+  ReactFlowProvider,
+  MarkerType
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { useStore } from './store/useStore'
@@ -18,6 +19,7 @@ import DetailPanel from './components/DetailPanel'
 import Sidebar from './components/Sidebar/Sidebar'
 import CanvasToolbar from './components/CanvasToolbar'
 import ButtonEdge from './components/ButtonEdge'
+import LineageEdge from './components/LineageEdge'
 
 const nodeTypes = {
   table: TableNode,
@@ -26,6 +28,7 @@ const nodeTypes = {
 
 const edgeTypes = {
   button: ButtonEdge,
+  lineage: LineageEdge,
 }
 
 function Flow() {
@@ -36,7 +39,6 @@ function Flow() {
     selectedEdgeId,
     setSelectedEdgeId,
     updateNodePosition,
-    saveLayout,
     isCliMode,
     focusNodeId,
     setFocusNodeId,
@@ -44,12 +46,19 @@ function Flow() {
     removeNode,
     removeEdge,
     toggleTableSelection,
-    toggleEdgeSelection
+    toggleEdgeSelection,
+    showER,
+    showLineage,
+    addLineage,
+    setConnectionStartHandle,
+    theme
   } = useStore()
   
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const { setCenter, getNode } = useReactFlow()
+
+  const isEditingDisabled = showER && showLineage
 
   // Handle focusNodeId changes
   useEffect(() => {
@@ -186,58 +195,117 @@ function Flow() {
 
   // Sync Edges with dynamic highlighting
   useEffect(() => {
-    if (!schema || !schema.relationships) return
+    if (!schema) return
     
-    const HIGHLIGHT_STYLE = { stroke: '#4ade80', strokeWidth: 5 };
-    const NORMAL_STYLE = { stroke: '#334155', strokeWidth: 3 };
+    const newEdges: Edge[] = [];
 
-    const newEdges = schema.relationships.map((rel, index) => {
-      const edgeId = `e-${index}`;
-      const isConnectedToSelectedTable = selectedTableId === rel.from.table || selectedTableId === rel.to.table;
-      const isDirectlySelected = selectedEdgeId === edgeId;
-      const isHighlighted = isConnectedToSelectedTable || isDirectlySelected;
-      
-      return {
-        id: edgeId,
-        source: rel.from.table,
-        target: rel.to.table,
-        type: 'button',
-        data: { 
-          isConnectedToSelectedTable,
-          isDirectlySelected,
-          label: rel.type 
-        },
-        selected: isDirectlySelected,
-        animated: isHighlighted,
-        style: isHighlighted ? HIGHLIGHT_STYLE : NORMAL_STYLE,
-        zIndex: isHighlighted ? 10 : 1,
-      }
-    }) as Edge[]
+    // 1. Generate ER Edges
+    if (showER && schema.relationships) {
+      const HIGHLIGHT_STYLE = { stroke: theme === 'dark' ? '#f1f5f9' : '#0f172a', strokeWidth: 5 };
+      const NORMAL_STYLE = { stroke: theme === 'dark' ? '#94a3b8' : '#64748b', strokeWidth: 3 };
 
-    setEdges(newEdges)
-  }, [schema, selectedTableId, selectedEdgeId, setEdges])
+      const erEdges = schema.relationships.map((rel, index) => {
+        const edgeId = `e-${index}`;
+        const isConnectedToSelectedTable = selectedTableId === rel.from.table || selectedTableId === rel.to.table;
+        const isDirectlySelected = selectedEdgeId === edgeId;
+        const isHighlighted = isConnectedToSelectedTable || isDirectlySelected;
+        
+        return {
+          id: edgeId,
+          source: rel.from.table,
+          target: rel.to.table,
+          type: 'button',
+          data: { 
+            isConnectedToSelectedTable,
+            isDirectlySelected,
+            label: rel.type 
+          },
+          selected: isDirectlySelected,
+          animated: false,
+          style: isHighlighted ? HIGHLIGHT_STYLE : NORMAL_STYLE,
+          zIndex: isHighlighted ? 10 : 1,
+        }
+      });
+      newEdges.push(...erEdges);
+    }
+
+    // 2. Generate Lineage Edges
+    if (showLineage) {
+      schema.tables.forEach(table => {
+        if (table.lineage?.upstream) {
+          table.lineage.upstream.forEach((upstreamId, index) => {
+            const edgeId = `lin-${upstreamId}-${table.id}-${index}`;
+            const isConnectedToSelected = selectedTableId === table.id || selectedTableId === upstreamId;
+            const isDirectlySelected = selectedEdgeId === edgeId;
+            const isHighlighted = isConnectedToSelected || isDirectlySelected;
+
+            newEdges.push({
+              id: edgeId,
+              source: upstreamId,
+              target: table.id,
+              sourceHandle: `${upstreamId}-lineage-source`,
+              targetHandle: `${table.id}-lineage-target`,
+              type: 'lineage',
+              data: { isHighlighted },
+              selected: isDirectlySelected,
+              animated: true, // Lineage always flows
+              markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6', width: 20, height: 20 },
+              zIndex: isHighlighted ? 15 : 2, 
+            });
+          });
+        }
+      });
+    }
+
+    setEdges(newEdges);
+  }, [schema, selectedTableId, selectedEdgeId, setEdges, showER, showLineage, theme])
 
   const onConnect = useCallback(
     (params: Connection) => {
       if (params.source && params.target) {
-        addRelationship(params.source, params.target, params.sourceHandle, params.targetHandle);
+        // 1. Handle Lineage
+        const isLineage = params.sourceHandle?.includes('lineage') || params.targetHandle?.includes('lineage');
+        
+        if (isLineage) {
+          // For lineage, we assume source -> target is the flow
+          addLineage(params.source, params.target);
+          return;
+        }
+
+        // 2. Handle ER (Bidirectional Support)
+        // If user connects from a 'target' handle to a 'source' handle, swap them
+        let finalSource = params.source;
+        let finalTarget = params.target;
+        let finalSourceHandle = params.sourceHandle;
+        let finalTargetHandle = params.targetHandle;
+
+        const isSourceTargetRole = params.sourceHandle?.includes('target');
+        const isTargetSourceRole = params.targetHandle?.includes('source');
+
+        if (isSourceTargetRole || isTargetSourceRole) {
+          // Swap logic
+          finalSource = params.target;
+          finalTarget = params.source;
+          finalSourceHandle = params.targetHandle;
+          finalTargetHandle = params.sourceHandle;
+        }
+
+        addRelationship(finalSource, finalTarget, finalSourceHandle, finalTargetHandle);
       }
     },
-    [addRelationship]
+    [addRelationship, addLineage]
   )
 
   const onNodesDelete = useCallback((deletedNodes: Node[]) => {
     deletedNodes.forEach(node => removeNode(node.id));
-    saveLayout();
-  }, [removeNode, saveLayout]);
+  }, [removeNode]);
 
   const onEdgesDelete = useCallback((deletedEdges: Edge[]) => {
     deletedEdges.forEach(edge => {
       // Edge ID is e-INDEX, but removeEdge needs source and target
       removeEdge(edge.source, edge.target);
     });
-    saveLayout();
-  }, [removeEdge, saveLayout]);
+  }, [removeEdge]);
 
   const onPaneClick = useCallback(() => {
     setSelectedTableId(null);
@@ -252,45 +320,53 @@ function Flow() {
     toggleEdgeSelection(edge.id);
   }, [toggleEdgeSelection]);
 
+  const onConnectStart = useCallback((_: any, { nodeId, handleId, handleType }: any) => {
+    setConnectionStartHandle({ nodeId, handleId, handleType });
+  }, [setConnectionStartHandle]);
+
+  const onConnectEnd = useCallback(() => {
+    setConnectionStartHandle(null);
+  }, [setConnectionStartHandle]);
+
   const onNodeDragStop = useCallback((_: any, node: Node) => {
     if (!isCliMode) return;
 
-    // Detect if this is a table dropped into a domain
-    let parentId = node.parentNode;
-    
-    if (node.type === 'table') {
-      // Find domains that contain this node's current center position
-      const nodeCenterX = node.position.x + (node.width || 0) / 2;
-      const nodeCenterY = node.position.y + (node.height || 0) / 2;
-
-      const domains = nodes.filter(n => n.type === 'domain' && n.id !== node.id);
-      const targetDomain = domains.find(d => {
-        const dx = d.position.x;
-        const dy = d.position.y;
-        const dw = d.width || 600;
-        const dh = d.height || 400;
-        return (
-          nodeCenterX >= dx && 
-          nodeCenterX <= dx + dw && 
-          nodeCenterY >= dy && 
-          nodeCenterY <= dy + dh
-        );
-      });
-
-      parentId = targetDomain ? targetDomain.id : undefined;
-    }
+    // Domain assignment is now explicit via the Detail Panel.
+    // We preserve the current parentId if it exists.
+    const parentId = node.parentNode;
 
     updateNodePosition(node.id, node.position.x, node.position.y, parentId);
-    saveLayout();
-  }, [isCliMode, updateNodePosition, saveLayout, nodes, setSelectedTableId]);
+  }, [isCliMode, updateNodePosition]);
 
   const onSelectionChange = useCallback(() => {
     // We handle selection via onNodeClick and onEdgeClick to support toggle behavior.
   }, []);
 
+  const isValidConnection = useCallback((connection: Connection) => {
+    // Allow any connection as long as it's between different nodes
+    return connection.source !== connection.target;
+  }, []);
+
   return (
     <div className="flex-1 relative h-full">
       <CanvasToolbar />
+      
+      {/* Read-Only Badge */}
+      {isEditingDisabled && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-2 text-center">
+          <div className="flex flex-col items-center">
+            <div className="flex items-center gap-2 px-4 py-1.5 bg-amber-500/90 backdrop-blur-md text-slate-950 rounded-full shadow-2xl border border-amber-400/50">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">Connections Locked</span>
+              <div className="w-px h-3 bg-slate-900/20" />
+              <span className="text-[10px] font-medium text-slate-800">Viewing ER & Lineage simultaneously</span>
+            </div>
+            <p className="mt-1 text-[9px] font-bold text-amber-500 uppercase tracking-tighter drop-shadow-md">
+              Table editing and movement still active
+            </p>
+          </div>
+        </div>
+      )}
+
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -303,14 +379,18 @@ function Flow() {
         onEdgeClick={onEdgeClick}
         onPaneClick={onPaneClick}
         onConnect={onConnect}
+        onConnectStart={onConnectStart}
+        onConnectEnd={onConnectEnd}
         onSelectionChange={onSelectionChange}
+        isValidConnection={isValidConnection}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
+        connectionRadius={30}
         deleteKeyCode={['Backspace', 'Delete']}
         selectNodesOnDrag={true}
         fitView
       >
-        <Background color="#334155" gap={20} />
+        <Background color={theme === 'dark' ? '#334155' : '#e2e8f0'} gap={20} />
         <Controls />
       </ReactFlow>
     </div>
@@ -322,7 +402,8 @@ function App() {
     isCliMode, 
     fetchAvailableFiles, 
     setCurrentModel, 
-    setSchema
+    setSchema,
+    theme
   } = useStore()
 
   // Consistent detection for injected data
@@ -356,30 +437,33 @@ function App() {
     if (hasInjectedData) {
       const data = (window as any).__MODSCAPE_DATA__;
       
-      // Handle multi-file static build
-      if (data && data.isMultiFile && data.models) {
+      if (data && data.models && data.models.length > 0) {
         fetchAvailableFiles().then(() => {
           const params = new URLSearchParams(window.location.search)
           const modelSlug = params.get('model')
+          
           if (modelSlug) {
             setCurrentModel(modelSlug)
           } else {
             // Use first model by default
             setSchema(data.models[0].schema);
-            setCurrentModel(data.models[0].slug);
+            // Also set current slug so FileSelector/Sidebar know which one is active
+            if (data.models[0].slug) {
+              // We need a way to set the slug without triggering a fetch
+              // Since setCurrentModel usually fetches, let's ensure store handles this.
+              setCurrentModel(data.models[0].slug);
+            }
           }
         });
-      } else if (data && data.schema) {
-        setSchema(data.schema);
-      } else {
-        setSchema(data);
       }
     }
   }, [isCliMode, hasInjectedData, fetchAvailableFiles, setCurrentModel, setSchema]);
 
   return (
     <ReactFlowProvider>
-      <div className="flex h-screen w-screen overflow-hidden bg-slate-950 text-slate-100 font-sans">
+      <div className={`flex h-screen w-screen overflow-hidden font-sans transition-colors duration-300 ${
+        theme === 'dark' ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'
+      }`}>
         <Sidebar />
 
         {/* Main Area (Right Section) */}

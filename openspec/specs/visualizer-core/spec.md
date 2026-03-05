@@ -59,30 +59,51 @@ The system SHALL support deleting selected elements (nodes or edges) using stand
 - **THEN** the selected elements are removed from the model.
 
 ### Requirement: Contextual Toolbar Actions
-The system SHALL provide a centralized toolbar that displays information and actions for the currently selected element.
+The system SHALL provide a centralized toolbar that displays information and actions for the currently selected element. This toolbar SHALL be positioned in the top-right of the canvas, separate from permanent tool controls.
 
 #### Scenario: Toolbar Visibility
 - **WHEN** an element is selected
-- **THEN** the toolbar displays the element's name/type and a "Delete" action button.
+- **THEN** the toolbar displays the element's name/type, a "Delete" action button, and a "Clear Selection" (X) button.
+
+### Requirement: Permanent Vertical Toolbox
+The system SHALL provide a permanent vertical toolbox on the top-left of the canvas for core view and creation actions.
+
+#### Scenario: Toolbox Positioning
+- **WHEN** the visualizer is launched
+- **THEN** a vertical panel is fixed at the top-left, containing "View" and "Add" sections.
+
+### Requirement: Resizable Detail Panel
+The system SHALL allow users to manually adjust the height of the Detail Panel via a drag-and-drop interaction.
+
+#### Scenario: Vertical Resizing
+- **WHEN** the user drags the top border of the Detail Panel
+- **THEN** the panel's height updates in real-time, following the mouse position within specified constraints (150px to 90vh).
 
 ### Requirement: Advanced Table Metadata Rendering
-The system SHALL display specialized badges for Fact types and Dimension SCD types in the table header if defined. If undefined, the system SHALL only display the base type label.
+The system SHALL display both the table's nature (sub_type) and its history tracking method (scd) in the table header if defined.
 
-#### Scenario: Fact table with grain
-- **WHEN** a table has `appearance.type: fact` and `appearance.sub_type: periodic`
-- **THEN** the visualizer shows a badge labeled "FACT (Periodic)"
+#### Scenario: Fact table with both sub_type and scd
+- **WHEN** a table has `type: fact`, `sub_type: transaction`, and `scd: type2`
+- **THEN** the visualizer shows a badge or label indicating both (e.g., "FACT (Trans.) / SCD T2")
 
 #### Scenario: Fact table without grain
 - **WHEN** a table has `appearance.type: fact` and `appearance.sub_type` is undefined
 - **THEN** the visualizer shows a badge labeled "FACT"
 
-#### Scenario: Dimension table with SCD type
-- **WHEN** a table has `appearance.type: dimension` and `appearance.sub_type: type2`
-- **THEN** the visualizer shows a badge labeled "DIM (SCD T2)"
+#### Scenario: Dimension table with scd only
+- **WHEN** a table has `type: dimension` and `scd: type2` (with no sub_type)
+- **THEN** the visualizer shows "DIM (SCD T2)"
 
 #### Scenario: Dimension table without SCD type
 - **WHEN** a table has `appearance.type: dimension` and `appearance.sub_type` is undefined
 - **THEN** the visualizer shows a badge labeled "DIM"
+
+### Requirement: Cross-Table SCD Assignment
+The system SHALL allow users to assign an SCD Type to ANY table type (Fact, Dimension, Hub, Link, Satellite).
+
+#### Scenario: Assigning SCD to a Fact table
+- **WHEN** the user selects "SCD Type 2" for a Fact table in the Detail Panel
+- **THEN** the `scd` property is set to `type2` while preserving the existing `sub_type` (e.g., `transaction`)
 
 ### Requirement: Optional Metadata Selection
 The system SHALL allow users to explicitly deselect or leave analytics metadata (sub_type, additivity) as undefined via the UI.
