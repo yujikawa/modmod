@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Layout, Grid, Trash2, Tag, Database, GitGraph, Network, X, Eye, Plus, CircleHelp, Command, Undo2, Redo2, Lock, Move } from 'lucide-react'
+import { Layout, Grid, Trash2, Tag, Database, GitGraph, Network, X, Eye, Plus, CircleHelp, Command, Undo2, Redo2, Lock, Move, LayoutTemplate } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { useReactFlow } from 'reactflow'
 
@@ -18,6 +18,7 @@ const CanvasToolbar = () => {
     setShowLineage,
     setSelectedTableId,
     setSelectedEdgeId,
+    calculateAutoLayout,
     theme
   } = useStore()
 
@@ -138,6 +139,27 @@ const CanvasToolbar = () => {
               >
                 <Grid size={20} />
                 {isEditingDisabled && <Lock size={10} className="absolute bottom-1 right-1 text-slate-500" />}
+              </button>
+            </div>
+          </div>
+
+          <div className={`mx-2 border-t ${theme === 'dark' ? 'border-slate-800' : 'border-slate-100'}`} />
+
+          {/* Format Section */}
+          <div className="flex flex-col items-center py-3 gap-2">
+            <div className="flex flex-col items-center text-[8px] font-bold text-slate-500 uppercase tracking-tighter opacity-80">
+              <LayoutTemplate size={12} />
+              <span>Format</span>
+            </div>
+            <div className="flex flex-col gap-1 px-1.5 w-full">
+              <button
+                onClick={() => calculateAutoLayout()}
+                className={`flex items-center justify-center w-full aspect-square rounded-xl transition-all group ${
+                  theme === 'dark' ? 'text-slate-500 hover:text-blue-400 hover:bg-slate-800' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-100'
+                }`}
+                title="Auto-format Layout (Relation-driven flow)"
+              >
+                <LayoutTemplate size={20} />
               </button>
             </div>
           </div>
