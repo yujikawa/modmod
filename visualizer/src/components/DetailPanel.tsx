@@ -504,6 +504,20 @@ const DetailPanel = () => {
         {/* Quick Access Metadata Selectors */}
         <div style={{ display: 'flex', gap: '8px', marginRight: '16px' }}>
           <select 
+            value={table!.appearance?.type || 'fact'}
+            onChange={(e) => handleUpdateTable({ appearance: { ...table!.appearance, type: e.target.value as any } })}
+            className="bg-slate-800 border border-slate-700 text-slate-300 text-[10px] px-2 py-1 rounded outline-none"
+            title="Table Type"
+          >
+            <option value="fact">Fact</option>
+            <option value="dimension">Dimension</option>
+            <option value="mart">Mart</option>
+            <option value="hub">Hub</option>
+            <option value="link">Link</option>
+            <option value="satellite">Satellite</option>
+          </select>
+
+          <select 
             value={table!.appearance?.sub_type || ''}
             onChange={(e) => handleUpdateTable({ appearance: { ...table!.appearance, sub_type: (e.target.value || undefined) as any } })}
             className="bg-slate-800 border border-slate-700 text-slate-300 text-[10px] px-2 py-1 rounded outline-none"
