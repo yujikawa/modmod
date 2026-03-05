@@ -57,6 +57,8 @@ function Flow() {
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const { setCenter, getNode } = useReactFlow()
 
+  const isEditingDisabled = showER && showLineage
+
   // Handle focusNodeId changes
   useEffect(() => {
     if (focusNodeId) {
@@ -347,6 +349,23 @@ function Flow() {
   return (
     <div className="flex-1 relative h-full">
       <CanvasToolbar />
+      
+      {/* Read-Only Badge */}
+      {isEditingDisabled && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-2 text-center">
+          <div className="flex flex-col items-center">
+            <div className="flex items-center gap-2 px-4 py-1.5 bg-amber-500/90 backdrop-blur-md text-slate-950 rounded-full shadow-2xl border border-amber-400/50">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">Connections Locked</span>
+              <div className="w-px h-3 bg-slate-900/20" />
+              <span className="text-[10px] font-medium text-slate-800">Viewing ER & Lineage simultaneously</span>
+            </div>
+            <p className="mt-1 text-[9px] font-bold text-amber-500 uppercase tracking-tighter drop-shadow-md">
+              Table editing and movement still active
+            </p>
+          </div>
+        </div>
+      )}
+
       <ReactFlow
         nodes={nodes}
         edges={edges}

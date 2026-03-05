@@ -89,6 +89,18 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
     return 'handle-dim';
   };
 
+  // Helper to determine handle style
+  const getHandleStyle = (baseColor: string, isVisible: boolean): React.CSSProperties => {
+    if (isEditingDisabled && isVisible) {
+      return {
+        background: '#ef4444', // Red-500 for locked state
+        cursor: 'not-allowed',
+        border: '1px solid #7f1d1d'
+      };
+    }
+    return { background: baseColor };
+  };
+
   return (
     <div 
       className={isNew ? 'animate-creation' : ''}
@@ -123,12 +135,12 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
         id={`${id}-target`} 
         className={getHandleClass('target', false)}
         style={{ 
-          background: '#94a3b8', 
+          ...getHandleStyle('#94a3b8', showER),
           width: '8px', 
           height: '8px', 
           zIndex: 10, 
           opacity: showER ? 1 : 0,
-          pointerEvents: (showER && !isEditingDisabled) ? 'all' : 'none'
+          pointerEvents: showER ? 'all' : 'none'
         }} 
       />
 
@@ -138,14 +150,20 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
         position={Position.Left}
         id={`${id}-lineage-target`}
         className={getHandleClass('target', true)}
-        style={{ top: '50%', left: '-4px', background: '#3b82f6', width: '10px', height: '10px', zIndex: 20, opacity: showLineage ? 1 : 0, pointerEvents: (showLineage && !isEditingDisabled) ? 'all' : 'none' }}
+        style={{ 
+          ...getHandleStyle('#3b82f6', showLineage),
+          top: '50%', left: '-4px', width: '10px', height: '10px', zIndex: 20, opacity: showLineage ? 1 : 0, pointerEvents: showLineage ? 'all' : 'none' 
+        }}
       />
       <Handle
         type="source"
         position={Position.Right}
         id={`${id}-lineage-source`}
         className={getHandleClass('source', true)}
-        style={{ top: '50%', right: '-4px', background: '#3b82f6', width: '10px', height: '10px', zIndex: 20, opacity: showLineage ? 1 : 0, pointerEvents: (showLineage && !isEditingDisabled) ? 'all' : 'none' }}
+        style={{ 
+          ...getHandleStyle('#3b82f6', showLineage),
+          top: '50%', right: '-4px', width: '10px', height: '10px', zIndex: 20, opacity: showLineage ? 1 : 0, pointerEvents: showLineage ? 'all' : 'none' 
+        }}
       />
       
       <div 
@@ -252,7 +270,10 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
                         position={Position.Left}
                         id={`${id}-${col.id}-target`}
                         className={`column-handle ${getHandleClass('target', false)}`}
-                        style={{ left: '-4px', opacity: 0, pointerEvents: (showER && !isEditingDisabled) ? 'all' : 'none' }}
+                        style={{ 
+                          ...getHandleStyle('#3b82f6', showER),
+                          left: '-4px', opacity: 0, pointerEvents: showER ? 'all' : 'none' 
+                        }}
                       />
                       <div style={{ display: 'flex', alignItems: 'center' }}>
                         <span style={{ color: '#475569', marginRight: '6px', fontSize: '9px', fontFamily: 'monospace', width: '14px', textAlign: 'right' }}>{index + 1}.</span>
@@ -285,7 +306,10 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
                         position={Position.Right}
                         id={`${id}-${col.id}-source`}
                         className={`column-handle ${getHandleClass('source', false)}`}
-                        style={{ right: '-4px', opacity: 0, pointerEvents: (showER && !isEditingDisabled) ? 'all' : 'none' }}
+                        style={{ 
+                          ...getHandleStyle('#3b82f6', showER),
+                          right: '-4px', opacity: 0, pointerEvents: showER ? 'all' : 'none' 
+                        }}
                       />
                     </td>
                   </tr>
@@ -303,12 +327,12 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
         id={`${id}-source`} 
         className={getHandleClass('source', false)}
         style={{ 
-          background: '#94a3b8', 
+          ...getHandleStyle('#94a3b8', showER),
           width: '8px', 
           height: '8px', 
           zIndex: 10, 
           opacity: showER ? 1 : 0,
-          pointerEvents: (showER && !isEditingDisabled) ? 'all' : 'none'
+          pointerEvents: showER ? 'all' : 'none'
         }} 
       />
     </div>

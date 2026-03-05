@@ -1,4 +1,5 @@
-import { Layout, Grid, Trash2, Tag, Database, GitGraph, Network, X, Eye, Plus } from 'lucide-react'
+import { useState } from 'react'
+import { Layout, Grid, Trash2, Tag, Database, GitGraph, Network, X, Eye, Plus, CircleHelp, Command, Undo2, Redo2, MousePointer2 } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { useReactFlow } from 'reactflow'
 
@@ -20,21 +21,26 @@ const CanvasToolbar = () => {
   } = useStore()
 
   const { screenToFlowPosition } = useReactFlow()
+  const [showHelp, setShowHelp] = useState(false)
+
+  const isEditingDisabled = showER && showLineage
 
   const handleAddDomain = () => {
+    if (isEditingDisabled) return
     const center = screenToFlowPosition({
       x: window.innerWidth / 2,
       y: window.innerHeight / 2,
     })
-    addDomain(center.x - 300, center.y - 200) // Adjust for default domain size
+    addDomain(center.x - 300, center.y - 200)
   }
 
   const handleAddTable = () => {
+    if (isEditingDisabled) return
     const center = screenToFlowPosition({
       x: window.innerWidth / 2,
       y: window.innerHeight / 2,
     })
-    addTable(center.x - 160, center.y - 125) // Adjust for default table size
+    addTable(center.x - 160, center.y - 125)
   }
 
   const table = getSelectedTable()
@@ -60,8 +66,8 @@ const CanvasToolbar = () => {
 
   return (
     <>
-      {/* 1. Permanent Vertical Toolbox (Left side - Top aligned to avoid DetailPanel collision) */}
-      <div className="absolute top-4 left-4 z-10">
+      {/* 1. Permanent Vertical Toolbox (Left side) */}
+      <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
         <div className="flex flex-col bg-slate-900/85 backdrop-blur-md border border-slate-700 rounded-2xl shadow-2xl overflow-hidden w-14">
           
           {/* View Section */}
@@ -78,7 +84,7 @@ const CanvasToolbar = () => {
                     ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
                     : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800 border border-transparent'
                 }`}
-                title={showER ? "Hide ER Relationships" : "Show ER Relationships"}
+                title={showER ? "Hide ER Relationships" : "Show ER Relationships (Disables editing if Lineage is also ON)"}
               >
                 <Network size={20} />
               </button>
@@ -89,7 +95,7 @@ const CanvasToolbar = () => {
                     ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
                     : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800 border border-transparent'
                 }`}
-                title={showLineage ? "Hide Data Lineage" : "Show Data Lineage"}
+                title={showLineage ? "Hide Data Lineage" : "Show Data Lineage (Disables editing if ER is also ON)"}
               >
                 <GitGraph size={20} />
               </button>
@@ -122,7 +128,78 @@ const CanvasToolbar = () => {
               </button>
             </div>
           </div>
+
+          <div className="border-t border-slate-800 mx-2" />
+
+          {/* Help Section */}
+          <div className="flex flex-col items-center py-3">
+            <button
+              onClick={() => setShowHelp(!showHelp)}
+              className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all ${
+                showHelp ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-800 hover:text-slate-300'
+              }`}
+              title="Keyboard Shortcuts & Help"
+            >
+              <CircleHelp size={20} />
+            </button>
+          </div>
         </div>
+
+        {/* Shortcut Guide Overlay */}
+        {showHelp && (
+          <div className="flex flex-col bg-slate-900/95 backdrop-blur-xl border border-slate-700 rounded-2xl shadow-2xl p-5 w-64 animate-in zoom-in-95 fade-in duration-200 origin-top-left">
+            <div className="flex items-center gap-2 mb-4 border-b border-slate-800 pb-3">
+              <Command size={16} className="text-blue-400" />
+              <h4 className="text-xs font-bold uppercase tracking-widest text-slate-200">Shortcuts</h4>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between group">
+                <div className="flex items-center gap-2 text-slate-400">
+                  <Undo2 size={14} />
+                  <span className="text-xs font-medium">Undo</span>
+                </div>
+                <kbd className="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-[10px] font-mono text-slate-300">Ctrl Z</kbd>
+              </div>
+
+              <div className="flex items-center justify-between group">
+                <div className="flex items-center gap-2 text-slate-400">
+                  <Redo2 size={14} />
+                  <span className="text-xs font-medium">Redo</span>
+                </div>
+                <kbd className="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-[10px] font-mono text-slate-300">Ctrl Y</kbd>
+              </div>
+
+              <div className="flex items-center justify-between group">
+                <div className="flex items-center gap-2 text-slate-400">
+                  <Trash2 size={14} />
+                  <span className="text-xs font-medium text-red-400/80">Delete</span>
+                </div>
+                <kbd className="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-[10px] font-mono text-slate-300 text-red-400/80">Del</kbd>
+              </div>
+
+              <div className="flex items-center justify-between group">
+                <div className="flex items-center gap-2 text-slate-400">
+                  <X size={14} />
+                  <span className="text-xs font-medium">Clear Focus</span>
+                </div>
+                <kbd className="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-[10px] font-mono text-slate-300">Esc</kbd>
+              </div>
+
+              <div className="flex items-center justify-between group">
+                <div className="flex items-center gap-2 text-slate-400">
+                  <MousePointer2 size={14} />
+                  <span className="text-xs font-medium">Multi-select</span>
+                </div>
+                <span className="text-[10px] font-mono text-slate-500">Shift + Drag</span>
+              </div>
+            </div>
+
+            <div className="mt-5 pt-3 border-t border-slate-800 text-[10px] text-slate-500 italic leading-relaxed">
+              * Edits are saved to local YAML files in real-time if Auto-save is enabled.
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 2. Contextual Selection Bar (Top Right) */}

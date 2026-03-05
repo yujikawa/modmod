@@ -16,19 +16,6 @@ tables:
           name: Customer ID (BK)
           type: Int
     sampleData: []
-  - id: hub_products
-    name: HUB_PRODUCTS
-    appearance:
-      type: hub
-      layer: raw_vault
-      icon: 📦
-    columns:
-      - id: product_hk
-        logical:
-          name: Product Hash Key
-          type: String
-          isPrimaryKey: true
-    sampleData: []
   - id: link_orders
     name: LINK_ORDERS
     appearance:
@@ -280,7 +267,6 @@ domains:
       - sat_customer_details
       - hub_customers
       - link_orders
-      - hub_products
     color: rgba(59, 130, 246, 0.05)
   - id: new_domain_1772665422430
     name: Conformed tables
@@ -305,9 +291,6 @@ layout:
   link_orders:
     x: 155
     'y': 316
-  hub_products:
-    x: 166
-    'y': 114
   dim_customers:
     x: 91
     'y': 86
