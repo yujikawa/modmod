@@ -437,23 +437,24 @@ function App() {
     if (hasInjectedData) {
       const data = (window as any).__MODSCAPE_DATA__;
       
-      // Handle multi-file static build
-      if (data && data.isMultiFile && data.models) {
+      if (data && data.models && data.models.length > 0) {
         fetchAvailableFiles().then(() => {
           const params = new URLSearchParams(window.location.search)
           const modelSlug = params.get('model')
+          
           if (modelSlug) {
             setCurrentModel(modelSlug)
           } else {
             // Use first model by default
             setSchema(data.models[0].schema);
-            setCurrentModel(data.models[0].slug);
+            // Also set current slug so FileSelector/Sidebar know which one is active
+            if (data.models[0].slug) {
+              // We need a way to set the slug without triggering a fetch
+              // Since setCurrentModel usually fetches, let's ensure store handles this.
+              setCurrentModel(data.models[0].slug);
+            }
           }
         });
-      } else if (data && data.schema) {
-        setSchema(data.schema);
-      } else {
-        setSchema(data);
       }
     }
   }, [isCliMode, hasInjectedData, fetchAvailableFiles, setCurrentModel, setSchema]);
