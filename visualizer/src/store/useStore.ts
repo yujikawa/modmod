@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import yaml from 'js-yaml'
+import dagre from 'dagre'
 import type { Schema, Table, Relationship, Domain } from '../types/schema'
 import { parseYAML, normalizeSchema } from '../lib/parser'
 
@@ -77,6 +78,7 @@ interface AppState {
   setFocusNodeId: (id: string | null) => void;
   setConnectionStartHandle: (handle: { nodeId: string; handleId: string | null; handleType: string | null } | null) => void;
   toggleTheme: () => void;
+  calculateAutoLayout: () => void;
   
   // Computed (helpers)
   getSelectedTable: () => Table | null;
@@ -152,9 +154,137 @@ export const useStore = create<AppState>((set, get) => ({
     set({ theme: nextTheme });
     localStorage.setItem('modscape-theme', nextTheme);
   },
-  
-  fetchAvailableFiles: async () => {
-    const injectedData = (window as any).__MODSCAPE_DATA__;
+
+  calculateAutoLayout: () => {
+    const { schema } = get();
+    if (!schema) return;
+
+    const newLayout = { ...(schema.layout || {}) };
+    const TABLE_WIDTH = 320;
+    const TABLE_HEIGHT = 220; 
+    const NODE_SPACING = 80;
+    const DOMAIN_PADDING = 120;
+
+    // Pass 1: Inner Pass (Tables inside each Domain)
+    const domainLayouts: Record<string, { width: number, height: number, tableOffsets: Record<string, { x: number, y: number }> }> = {};
+
+    schema.domains?.forEach(domain => {
+      const tablesInDomain = domain.tables;
+      if (tablesInDomain.length === 0) {
+        domainLayouts[domain.id] = { width: 400, height: 200, tableOffsets: {} };
+        return;
+      }
+
+      const g = new dagre.graphlib.Graph();
+      g.setGraph({ rankdir: 'TB', nodesep: NODE_SPACING, ranksep: NODE_SPACING });
+      g.setDefaultEdgeLabel(() => ({}));
+
+      tablesInDomain.forEach(id => {
+        const layout = schema.layout?.[id];
+        g.setNode(id, { width: layout?.width || TABLE_WIDTH, height: layout?.height || TABLE_HEIGHT });
+      });
+
+      // Inner relationships
+      (schema.relationships || []).forEach(rel => {
+        if (tablesInDomain.includes(rel.from.table) && tablesInDomain.includes(rel.to.table)) {
+          g.setEdge(rel.from.table, rel.to.table);
+        }
+      });
+
+      // Inner lineage
+      schema.tables.forEach(table => {
+        if (tablesInDomain.includes(table.id) && table.lineage?.upstream) {
+          table.lineage.upstream.forEach(upId => {
+            if (tablesInDomain.includes(upId)) g.setEdge(upId, table.id);
+          });
+        }
+      });
+
+      dagre.layout(g);
+
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      const tableOffsets: Record<string, { x: number, y: number }> = {};
+
+      g.nodes().forEach(v => {
+        const node = g.node(v);
+        tableOffsets[v] = { x: node.x, y: node.y };
+        minX = Math.min(minX, node.x - node.width / 2);
+        minY = Math.min(minY, node.y - node.height / 2);
+        maxX = Math.max(maxX, node.x + node.width / 2);
+        maxY = Math.max(maxY, node.y + node.height / 2);
+      });
+
+      const width = (maxX - minX) + DOMAIN_PADDING;
+      const height = (maxY - minY) + DOMAIN_PADDING;
+
+      // Make relative to top-left
+      tablesInDomain.forEach(tid => {
+        tableOffsets[tid].x = Math.round(tableOffsets[tid].x - minX - (g.node(tid).width / 2) + DOMAIN_PADDING / 2);
+        tableOffsets[tid].y = Math.round(tableOffsets[tid].y - minY - (g.node(tid).height / 2) + DOMAIN_PADDING / 2);
+      });
+
+      domainLayouts[domain.id] = { width, height, tableOffsets };
+    });
+
+    // Pass 2: Outer Pass (Domains and Unassigned Tables)
+    const topLevelIds = [
+      ...(schema.domains?.map(d => d.id) || []),
+      ...schema.tables.filter(t => !schema.domains?.some(d => d.tables.includes(t.id))).map(t => t.id)
+    ];
+
+    const gGlobal = new dagre.graphlib.Graph();
+    gGlobal.setGraph({ rankdir: 'LR', nodesep: 200, ranksep: 300 });
+    gGlobal.setDefaultEdgeLabel(() => ({}));
+
+    topLevelIds.forEach(id => {
+      const isDomain = schema.domains?.some(d => d.id === id);
+      const w = isDomain ? domainLayouts[id].width : (schema.layout?.[id]?.width || TABLE_WIDTH);
+      const h = isDomain ? domainLayouts[id].height : (schema.layout?.[id]?.height || TABLE_HEIGHT);
+      gGlobal.setNode(id, { width: w, height: h });
+    });
+
+    const getContainerId = (tid: string) => schema.domains?.find(d => d.tables.includes(tid))?.id || tid;
+
+    schema.relationships?.forEach(rel => {
+      const src = getContainerId(rel.from.table);
+      const dst = getContainerId(rel.to.table);
+      if (src !== dst) gGlobal.setEdge(src, dst);
+    });
+
+    schema.tables.forEach(table => {
+      if (table.lineage?.upstream) {
+        const dst = getContainerId(table.id);
+        table.lineage.upstream.forEach(upId => {
+          const src = getContainerId(upId);
+          if (src !== dst) gGlobal.setEdge(src, dst);
+        });
+      }
+    });
+
+    dagre.layout(gGlobal);
+
+    gGlobal.nodes().forEach(v => {
+      const node = gGlobal.node(v);
+      const absX = Math.round(node.x - node.width / 2);
+      const absY = Math.round(node.y - node.height / 2);
+
+      const domain = schema.domains?.find(d => d.id === v);
+      if (domain) {
+        newLayout[v] = { x: absX, y: absY, width: domainLayouts[v].width, height: domainLayouts[v].height };
+        domain.tables.forEach(tid => {
+          newLayout[tid] = { x: domainLayouts[v].tableOffsets[tid].x, y: domainLayouts[v].tableOffsets[tid].y };
+        });
+      } else {
+        newLayout[v] = { x: absX, y: absY }; // No need to set width/height for unassigned tables unless manually resized
+      }
+    });
+
+    set({ schema: { ...schema, layout: newLayout }, lastUpdateSource: 'visual' });
+    get().syncToYamlInput();
+    get().saveSchema(true);
+  },
+
+  fetchAvailableFiles: async () => {    const injectedData = (window as any).__MODSCAPE_DATA__;
     if (injectedData && injectedData.models) {
       const files = injectedData.models.map((m: any) => ({
         slug: m.slug,
@@ -393,8 +523,19 @@ export const useStore = create<AppState>((set, get) => ({
       finalTargetHandle = sourceHandle;
     }
 
-    const sourceCol = finalSourceHandle ? (finalSourceHandle.replace(`${finalSource}-`, '').replace('-source', '') || undefined) : undefined;
-    const targetCol = finalTargetHandle ? (finalTargetHandle.replace(`${finalTarget}-`, '').replace('-target', '') || undefined) : undefined;
+    // New Parsing Logic for Descriptive IDs
+    // Format is either "[node]-[col]-er-source-right" or "[node]-er-source-bottom"
+    const parseColumn = (nodeId: string, handleId: string | null | undefined) => {
+      if (!handleId) return undefined;
+      const baseId = handleId.replace(`${nodeId}-`, '');
+      // If it starts with er- or lin-, it's a table-level handle
+      if (baseId.startsWith('er-') || baseId.startsWith('lin-')) return undefined;
+      // Otherwise, extract column name from [col]-er-...
+      return baseId.split('-')[0] || undefined;
+    };
+
+    const sourceCol = parseColumn(finalSource, finalSourceHandle);
+    const targetCol = parseColumn(finalTarget, finalTargetHandle);
 
     const isDuplicate = (schema.relationships || []).some(rel => 
       rel.from.table === finalSource && 

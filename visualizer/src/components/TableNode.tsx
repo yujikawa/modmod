@@ -69,21 +69,21 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
     updateNodeDimensions(id, params.width, params.height)
   }
 
-  // Helper to determine handle state
-  const getHandleClass = (handleType: string, isLineage: boolean = false) => {
+  // Helper to determine handle state - STRICT VERSION
+  const getHandleClass = (handleType: string, isER: boolean) => {
     if (!connectionStartHandle) return '';
     
     const isSourceNode = connectionStartHandle.nodeId === id;
-    const startingHandleType = connectionStartHandle.handleType;
-    const isStartingLineage = connectionStartHandle.handleId?.includes('lineage');
+    const startingHandleType = connectionStartHandle.handleType; // 'source' or 'target'
+    const isStartingER = !connectionStartHandle.handleId?.includes('lin-');
 
-    // 1. Same Node check
+    // 1. Same Node check (cannot connect to self)
     if (isSourceNode) return 'handle-dim';
 
-    // 2. Type Mismatch (Lineage vs ER)
-    if (isLineage !== isStartingLineage) return 'handle-dim';
+    // 2. Type Mismatch check (ER cannot connect to Lineage)
+    if (isER !== isStartingER) return 'handle-dim';
 
-    // 3. Match logic
+    // 3. Match logic (Source must connect to Target, and vice versa)
     if (startingHandleType === 'source' && handleType === 'target') return 'handle-pulse';
     if (startingHandleType === 'target' && handleType === 'source') return 'handle-pulse';
 
@@ -129,12 +129,12 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
         }}
       />
 
-      {/* ER Top Handle */}
+      {/* ER Top Handle (Target only) */}
       <Handle 
         type="target" 
         position={Position.Top} 
-        id={`${id}-target`} 
-        className={getHandleClass('target', false)}
+        id={`${id}-er-target-top`} 
+        className={getHandleClass('target', true)}
         style={{ 
           ...getHandleStyle(theme === 'dark' ? '#94a3b8' : '#64748b', showER),
           width: '8px', 
@@ -145,25 +145,31 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
         }} 
       />
 
-      {/* Lineage Handles (Sides) */}
+      {/* Lineage Left Handle (Target only) */}
       <Handle
         type="target"
         position={Position.Left}
-        id={`${id}-lineage-target`}
-        className={getHandleClass('target', true)}
+        id={`${id}-lin-target-left`}
+        className={getHandleClass('target', false)}
         style={{ 
           ...getHandleStyle('#3b82f6', showLineage),
-          top: '50%', left: '-4px', width: '10px', height: '10px', zIndex: 20, opacity: showLineage ? 1 : 0, pointerEvents: showLineage ? 'all' : 'none' 
+          top: '50%', left: '-4px', width: '10px', height: '10px', zIndex: 20, 
+          opacity: showLineage ? 1 : 0, 
+          pointerEvents: showLineage ? 'all' : 'none' 
         }}
       />
+      
+      {/* Lineage Right Handle (Source only) */}
       <Handle
         type="source"
         position={Position.Right}
-        id={`${id}-lineage-source`}
-        className={getHandleClass('source', true)}
+        id={`${id}-lin-source-right`}
+        className={getHandleClass('source', false)}
         style={{ 
           ...getHandleStyle('#3b82f6', showLineage),
-          top: '50%', right: '-4px', width: '10px', height: '10px', zIndex: 20, opacity: showLineage ? 1 : 0, pointerEvents: showLineage ? 'all' : 'none' 
+          top: '50%', right: '-4px', width: '10px', height: '10px', zIndex: 20, 
+          opacity: showLineage ? 1 : 0, 
+          pointerEvents: showLineage ? 'all' : 'none' 
         }}
       />
       
@@ -271,11 +277,12 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
                       maxWidth: '350px',
                       position: 'relative'
                     }}>
+                      {/* ER Column Target (Left) */}
                       <Handle
                         type="target"
                         position={Position.Left}
-                        id={`${id}-${col.id}-target`}
-                        className={`column-handle ${getHandleClass('target', false)}`}
+                        id={`${id}-${col.id}-er-target-left`}
+                        className={`column-handle ${getHandleClass('target', true)}`}
                         style={{ 
                           ...getHandleStyle('#3b82f6', showER),
                           left: '-4px', opacity: 0, pointerEvents: showER ? 'all' : 'none' 
@@ -308,11 +315,12 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
                       opacity: 0.8
                     }}>
                       {col.logical?.type || 'Unknown'}
+                      {/* ER Column Source (Right) */}
                       <Handle
                         type="source"
                         position={Position.Right}
-                        id={`${id}-${col.id}-source`}
-                        className={`column-handle ${getHandleClass('source', false)}`}
+                        id={`${id}-${col.id}-er-source-right`}
+                        className={`column-handle ${getHandleClass('source', true)}`}
                         style={{ 
                           ...getHandleStyle('#3b82f6', showER),
                           right: '-4px', opacity: 0, pointerEvents: showER ? 'all' : 'none' 
@@ -327,12 +335,12 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
         )}
       </div>
 
-      {/* ER Bottom Handle */}
+      {/* ER Bottom Handle (Source only) */}
       <Handle 
         type="source" 
         position={Position.Bottom} 
-        id={`${id}-source`} 
-        className={getHandleClass('source', false)}
+        id={`${id}-er-source-bottom`} 
+        className={getHandleClass('source', true)}
         style={{ 
           ...getHandleStyle(theme === 'dark' ? '#94a3b8' : '#64748b', showER),
           width: '8px', 
