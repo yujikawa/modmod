@@ -1,9 +1,11 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useStore } from '../../store/useStore'
-import { AlertCircle, Save, Play, CheckCircle2, Loader2, Info } from 'lucide-react'
+import { AlertCircle, Save, Play, CheckCircle2, Loader2, Info, Undo2, Redo2 } from 'lucide-react'
 import CodeMirror, { type ReactCodeMirrorRef } from '@uiw/react-codemirror'
 import { yaml } from '@codemirror/lang-yaml'
 import { oneDark } from '@codemirror/theme-one-dark'
+import { Transaction } from '@codemirror/state'
+import { undo, redo } from '@codemirror/commands'
 
 const EditorTab = () => {
   const { 
@@ -22,28 +24,40 @@ const EditorTab = () => {
   const [localYaml, setLocalYaml] = useState(yamlInput)
   const timerRef = useRef<any>(null)
   const editorRef = useRef<ReactCodeMirrorRef>(null)
+  const isFirstLoadRef = useRef(true)
 
   // Sync store -> editor (for visual edits)
   useEffect(() => {
-    if (lastUpdateSource === 'visual' && editorRef.current?.view) {
-      const view = editorRef.current.view;
-      const currentDoc = view.state.doc.toString();
-      
-      if (currentDoc !== yamlInput) {
-        // Dispatch as a transaction that adds to history
-        view.dispatch({
-          changes: { from: 0, to: currentDoc.length, insert: yamlInput },
-          userEvent: 'visual-edit'
-        });
-        setLocalYaml(yamlInput);
-      }
+    if (!editorRef.current?.view) return;
+    const view = editorRef.current.view;
+    const currentDoc = view.state.doc.toString();
+
+    // 1. Initial Load: Set content without adding to history (base state)
+    if (isFirstLoadRef.current && yamlInput) {
+      view.dispatch({
+        changes: { from: 0, to: currentDoc.length, insert: yamlInput },
+        annotations: Transaction.addToHistory.of(false)
+      });
+      setLocalYaml(yamlInput);
+      isFirstLoadRef.current = false;
+      return;
+    }
+
+    // 2. Subsequent Visual Edits: Add to history
+    if (lastUpdateSource === 'visual' && currentDoc !== yamlInput) {
+      view.dispatch({
+        changes: { from: 0, to: currentDoc.length, insert: yamlInput },
+        userEvent: 'visual-edit'
+      });
+      setLocalYaml(yamlInput);
     }
   }, [yamlInput, lastUpdateSource])
 
   // Handle local changes (typing or undo/redo in editor)
   const handleChange = useCallback((value: string) => {
     setLocalYaml(value)
-    
+    if (!value || value.trim() === '') return; // Guard against empty or whitespace only
+
     // Auto-parse with debounce
     if (timerRef.current) clearTimeout(timerRef.current)
     
@@ -59,6 +73,18 @@ const EditorTab = () => {
       await saveSchema(true); // Force save
     }
   }
+
+  const handleUndo = () => {
+    if (editorRef.current?.view) {
+      undo(editorRef.current.view);
+    }
+  };
+
+  const handleRedo = () => {
+    if (editorRef.current?.view) {
+      redo(editorRef.current.view);
+    }
+  };
 
   return (
     <div className="flex-1 flex flex-col gap-3 overflow-hidden p-4 pt-2 h-full">
@@ -103,9 +129,30 @@ const EditorTab = () => {
           </div>
         )}
         
-        <div className="flex items-center gap-1 text-slate-600" title="Pro Tip: Use Ctrl+Z to undo visual changes!">
-          <Info size={12} />
-          <span className="text-[9px] font-bold uppercase tracking-tighter">Undo Support Active</span>
+        <div className="flex items-center gap-3">
+          {/* Undo/Redo Buttons */}
+          <div className="flex bg-slate-800/50 rounded-lg p-0.5 border border-slate-700/50">
+            <button 
+              onClick={handleUndo}
+              className="p-1.5 hover:bg-slate-700 text-slate-400 hover:text-slate-100 rounded-md transition-all active:scale-95"
+              title="Undo (Ctrl+Z)"
+            >
+              <Undo2 size={14} />
+            </button>
+            <div className="w-px h-4 bg-slate-700/50 self-center mx-0.5" />
+            <button 
+              onClick={handleRedo}
+              className="p-1.5 hover:bg-slate-700 text-slate-400 hover:text-slate-100 rounded-md transition-all active:scale-95"
+              title="Redo (Ctrl+Y)"
+            >
+              <Redo2 size={14} />
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1 text-slate-600 cursor-help" title="Pro Tip: Use Ctrl+Z to undo visual changes!">
+            <Info size={12} />
+            <span className="text-[9px] font-bold uppercase tracking-tighter">Undo Active</span>
+          </div>
         </div>
       </div>
       

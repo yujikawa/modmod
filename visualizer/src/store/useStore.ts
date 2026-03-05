@@ -207,6 +207,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   parseAndSetSchema: (yamlInput) => {
+    if (!yamlInput || yamlInput.trim() === '') return;
     try {
       const schema = parseYAML(yamlInput)
       set({ schema, error: null })
