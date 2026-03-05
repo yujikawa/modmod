@@ -4,28 +4,32 @@ import EntitiesTab from './EntitiesTab'
 import SidebarToggle from './SidebarToggle'
 import FileSelector from './FileSelector'
 import { useStore } from '../../store/useStore'
-import { Edit3, ListTree } from 'lucide-react'
+import { Edit3, ListTree, Sun, Moon } from 'lucide-react'
 import logo from '/favicon.svg?url' // Use ?url to get the string path
 
 const Sidebar = () => {
-  const { isSidebarOpen, activeTab, setActiveTab, isCliMode } = useStore()
+  const { isSidebarOpen, activeTab, setActiveTab, isCliMode, theme, toggleTheme } = useStore()
 
   return (
     <div 
-      className={`relative h-full flex flex-col border-r border-slate-800 bg-slate-900 transition-all duration-300 ease-in-out shadow-2xl z-50 ${
+      className={`relative h-full flex flex-col border-r transition-all duration-300 ease-in-out shadow-2xl z-50 ${
         isSidebarOpen ? 'w-[400px]' : 'w-[50px]'
+      } ${
+        theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
       }`}
     >
       <SidebarToggle />
 
       {/* Header */}
-      <div className={`p-4 border-b border-slate-800 flex items-center justify-between ${!isSidebarOpen && 'hidden'}`}>
+      <div className={`p-4 border-b flex items-center justify-between ${!isSidebarOpen && 'hidden'} ${
+        theme === 'dark' ? 'border-slate-800' : 'border-slate-100'
+      }`}>
         <div className="flex items-center gap-2">
           <img src={logo} alt="Modscape Logo" className="w-5 h-5 rounded-md" />
-          <h1 className="text-base font-bold text-white tracking-tight">Modscape</h1>
+          <h1 className={`text-base font-bold tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Modscape</h1>
         </div>
         {isCliMode && (
-          <span className="px-1.5 py-0.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold rounded uppercase">
+          <span className="px-1.5 py-0.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 text-[10px] font-bold rounded uppercase">
             Live
           </span>
         )}
@@ -43,10 +47,16 @@ const Sidebar = () => {
         className={`flex-1 flex flex-col overflow-hidden ${!isSidebarOpen && 'items-center py-4'}`}
       >
         <div className={`px-4 pt-4 ${!isSidebarOpen && 'px-0'}`}>
-          <TabsList className={`w-full bg-slate-800/50 p-1 border border-slate-700/50 ${!isSidebarOpen && 'flex-col h-auto w-10 gap-2 p-0 bg-transparent border-none'}`}>
+          <TabsList className={`w-full p-1 border ${
+            theme === 'dark' ? 'bg-slate-800/50 border-slate-700/50' : 'bg-slate-100 border-slate-200'
+          } ${!isSidebarOpen && 'flex-col h-auto w-10 gap-2 p-0 bg-transparent border-none'}`}>
             <TabsTrigger 
               value="editor" 
-              className={`flex-1 gap-2 ${!isSidebarOpen && 'w-9 h-9 p-0 rounded-md bg-slate-800/50 hover:bg-slate-800 text-slate-400 data-[state=active]:bg-blue-600 data-[state=active]:text-white shadow-sm transition-all'}`}
+              className={`flex-1 gap-2 ${!isSidebarOpen && 'w-9 h-9 p-0 rounded-md shadow-sm transition-all'} ${
+                theme === 'dark' 
+                  ? 'text-slate-400 data-[state=active]:bg-blue-600 data-[state=active]:text-white' 
+                  : 'text-slate-500 data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm'
+              }`}
               title="Editor"
             >
               <Edit3 size={14} />
@@ -54,7 +64,11 @@ const Sidebar = () => {
             </TabsTrigger>
             <TabsTrigger 
               value="entities" 
-              className={`flex-1 gap-2 ${!isSidebarOpen && 'w-9 h-9 p-0 rounded-md bg-slate-800/50 hover:bg-slate-800 text-slate-400 data-[state=active]:bg-blue-600 data-[state=active]:text-white shadow-sm transition-all'}`}
+              className={`flex-1 gap-2 ${!isSidebarOpen && 'w-9 h-9 p-0 rounded-md shadow-sm transition-all'} ${
+                theme === 'dark' 
+                  ? 'text-slate-400 data-[state=active]:bg-blue-600 data-[state=active]:text-white' 
+                  : 'text-slate-500 data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm'
+              }`}
               title="Entities"
             >
               <ListTree size={14} />
@@ -75,12 +89,26 @@ const Sidebar = () => {
         )}
       </Tabs>
 
-      {/* Footer / Status */}
+      {/* Footer / Status / Theme Toggle */}
       {isSidebarOpen && (
-        <div className="p-3 border-t border-slate-800 bg-slate-950/20">
-          <p className="text-[10px] text-slate-500 text-center font-medium">
+        <div className={`p-3 border-t flex items-center justify-between ${
+          theme === 'dark' ? 'border-slate-800 bg-slate-950/20' : 'border-slate-100 bg-slate-50/50'
+        }`}>
+          <p className="text-[10px] text-slate-500 font-medium px-1">
             Modscape v1.0.0
           </p>
+          
+          <button
+            onClick={toggleTheme}
+            className={`p-1.5 rounded-lg transition-all ${
+              theme === 'dark' 
+                ? 'text-slate-400 hover:bg-slate-800 hover:text-yellow-400' 
+                : 'text-slate-500 hover:bg-slate-200 hover:text-blue-600'
+            }`}
+            title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+          >
+            {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+          </button>
         </div>
       )}
     </div>

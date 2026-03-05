@@ -4,7 +4,7 @@ import { Search, ArrowUpRight, ChevronDown, ChevronRight, HelpCircle } from 'luc
 import type { Table } from '../../types/schema'
 
 const EntitiesTab = () => {
-  const { schema, setSelectedTableId, setFocusNodeId } = useStore()
+  const { schema, setSelectedTableId, setFocusNodeId, theme } = useStore()
   const [search, setSearch] = useState('')
   const [collapsedDomains, setCollapsedDomains] = useState<Set<string>>(new Set())
 
@@ -80,7 +80,9 @@ const EntitiesTab = () => {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search entities..."
-          className="w-full pl-9 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-md text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition-all shadow-sm"
+          className={`w-full pl-9 pr-4 py-2 rounded-md text-sm transition-all shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 ${
+            theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900 shadow-slate-200/50'
+          }`}
         />
       </div>
 
@@ -91,7 +93,9 @@ const EntitiesTab = () => {
           return (
             <section key={d.id} className="flex flex-col">
               <div 
-                className="flex items-center justify-between group px-1 py-1.5 cursor-pointer hover:bg-slate-800/30 rounded transition-colors"
+                className={`flex items-center justify-between group px-1 py-1.5 cursor-pointer rounded transition-colors ${
+                  theme === 'dark' ? 'hover:bg-slate-800/30' : 'hover:bg-slate-100'
+                }`}
                 onClick={() => toggleDomain(d.id)}
               >
                 <div className="flex items-center gap-2 overflow-hidden">
@@ -100,16 +104,20 @@ const EntitiesTab = () => {
                     className="w-2 h-2 rounded-full shrink-0" 
                     style={{ backgroundColor: d.color || '#3b82f6' }}
                   />
-                  <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-300 truncate">
+                  <h3 className={`text-[10px] font-bold uppercase tracking-wider truncate ${
+                    theme === 'dark' ? 'text-slate-300' : 'text-slate-600'
+                  }`}>
                     {d.name}
                   </h3>
-                  <span className="text-[9px] font-medium text-slate-600 bg-slate-800/50 px-1.5 py-0.5 rounded-full">
+                  <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${
+                    theme === 'dark' ? 'text-slate-600 bg-slate-800/50' : 'text-slate-400 bg-slate-100'
+                  }`}>
                     {d.tables.length}
                   </span>
                 </div>
                 <button 
                   onClick={(e) => { e.stopPropagation(); handleFocus(d.id); }}
-                  className="opacity-0 group-hover:opacity-100 p-1 hover:text-blue-400 text-slate-500 transition-all"
+                  className="opacity-0 group-hover:opacity-100 p-1 hover:text-blue-500 text-slate-500 transition-all"
                   title="Focus on Domain"
                 >
                   <ArrowUpRight size={12} />
@@ -117,19 +125,23 @@ const EntitiesTab = () => {
               </div>
 
               {!isCollapsed && (
-                <div className="ml-4 mt-1 space-y-0.5 border-l border-slate-800 pl-2">
+                <div className={`ml-4 mt-1 space-y-0.5 border-l pl-2 ${
+                  theme === 'dark' ? 'border-slate-800' : 'border-slate-100'
+                }`}>
                   {d.tables.map(t => (
                     <button
                       key={t.id}
                       onClick={() => handleFocus(t.id)}
-                      className="w-full flex items-center justify-between group p-1.5 text-xs rounded border border-transparent hover:bg-slate-800/50 text-slate-400 hover:text-slate-200 transition-all text-left"
+                      className={`w-full flex items-center justify-between group p-1.5 text-xs rounded border border-transparent transition-all text-left ${
+                        theme === 'dark' ? 'hover:bg-slate-800/50 text-slate-400 hover:text-slate-200' : 'hover:bg-blue-50 text-slate-500 hover:text-blue-600'
+                      }`}
                     >
                       <span className="truncate">{t.name}</span>
-                      <ArrowUpRight size={10} className="opacity-0 group-hover:opacity-100 text-slate-600" />
+                      <ArrowUpRight size={10} className="opacity-0 group-hover:opacity-100" />
                     </button>
                   ))}
                   {d.tables.length === 0 && (
-                    <div className="p-2 text-[10px] text-slate-600 italic">No tables in this domain</div>
+                    <div className="p-2 text-[10px] text-slate-500 italic">No tables in this domain</div>
                   )}
                 </div>
               )}
@@ -141,31 +153,41 @@ const EntitiesTab = () => {
         {groupedData.unassigned.length > 0 && (
           <section className="flex flex-col">
             <div 
-              className="flex items-center justify-between group px-1 py-1.5 cursor-pointer hover:bg-slate-800/30 rounded transition-colors"
+              className={`flex items-center justify-between group px-1 py-1.5 cursor-pointer rounded transition-colors ${
+                theme === 'dark' ? 'hover:bg-slate-800/30' : 'hover:bg-slate-100'
+              }`}
               onClick={() => toggleDomain('unassigned')}
             >
               <div className="flex items-center gap-2 overflow-hidden">
                 {collapsedDomains.has('unassigned') ? <ChevronRight size={12} className="text-slate-500" /> : <ChevronDown size={12} className="text-slate-500" />}
                 <HelpCircle size={12} className="text-slate-500 shrink-0" />
-                <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 truncate">
+                <h3 className={`text-[10px] font-bold uppercase tracking-wider truncate ${
+                  theme === 'dark' ? 'text-slate-500' : 'text-slate-400'
+                }`}>
                   Unassigned
                 </h3>
-                <span className="text-[9px] font-medium text-slate-600 bg-slate-800/50 px-1.5 py-0.5 rounded-full">
+                <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${
+                  theme === 'dark' ? 'text-slate-600 bg-slate-800/50' : 'text-slate-400 bg-slate-100'
+                }`}>
                   {groupedData.unassigned.length}
                 </span>
               </div>
             </div>
 
             {!collapsedDomains.has('unassigned') && (
-              <div className="ml-4 mt-1 space-y-0.5 border-l border-slate-800 pl-2">
+              <div className={`ml-4 mt-1 space-y-0.5 border-l pl-2 ${
+                theme === 'dark' ? 'border-slate-800' : 'border-slate-100'
+              }`}>
                 {groupedData.unassigned.map(t => (
                   <button
                     key={t.id}
                     onClick={() => handleFocus(t.id)}
-                    className="w-full flex items-center justify-between group p-1.5 text-xs rounded border border-transparent hover:bg-slate-800/50 text-slate-400 hover:text-slate-200 transition-all text-left"
+                    className={`w-full flex items-center justify-between group p-1.5 text-xs rounded border border-transparent transition-all text-left ${
+                      theme === 'dark' ? 'hover:bg-slate-800/50 text-slate-400 hover:text-slate-200' : 'hover:bg-blue-50 text-slate-500 hover:text-blue-600'
+                    }`}
                   >
                     <span className="truncate">{t.name}</span>
-                    <ArrowUpRight size={10} className="opacity-0 group-hover:opacity-100 text-slate-600" />
+                    <ArrowUpRight size={10} className="opacity-0 group-hover:opacity-100" />
                   </button>
                 ))}
               </div>

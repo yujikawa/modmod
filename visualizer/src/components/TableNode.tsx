@@ -26,7 +26,8 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
     hoveredColumnId,
     showER,
     showLineage,
-    connectionStartHandle
+    connectionStartHandle,
+    theme
   } = useStore()
 
   const isActuallySelected = selected;
@@ -98,7 +99,7 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
         border: '1px solid #7f1d1d'
       };
     }
-    return { background: baseColor };
+    return { background: baseColor, cursor: 'crosshair' };
   };
 
   return (
@@ -135,7 +136,7 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
         id={`${id}-target`} 
         className={getHandleClass('target', false)}
         style={{ 
-          ...getHandleStyle('#94a3b8', showER),
+          ...getHandleStyle(theme === 'dark' ? '#94a3b8' : '#64748b', showER),
           width: '8px', 
           height: '8px', 
           zIndex: 10, 
@@ -170,18 +171,21 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
         style={{ 
           width: '100%',
           height: '100%',
-          backgroundColor: '#1e293b', 
-          borderLeft: `2px solid ${isActuallySelected ? '#3b82f6' : '#334155'}`,
-          borderRight: `2px solid ${isActuallySelected ? '#3b82f6' : '#334155'}`,
-          borderBottom: `2px solid ${isActuallySelected ? '#3b82f6' : '#334155'}`,
+          backgroundColor: 'var(--node-bg)', 
+          borderLeft: `2px solid ${isActuallySelected ? '#3b82f6' : 'var(--border-main)'}`,
+          borderRight: `2px solid ${isActuallySelected ? '#3b82f6' : 'var(--border-main)'}`,
+          borderBottom: `2px solid ${isActuallySelected ? '#3b82f6' : 'var(--border-main)'}`,
           borderTop: `4px solid ${themeColor}`,
           borderRadius: '8px',
           overflow: 'hidden',
-          color: '#f1f5f9',
-          boxShadow: isActuallySelected ? '0 0 0 4px rgba(59, 130, 246, 0.2)' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+          color: 'var(--text-primary)',
+          boxShadow: isActuallySelected 
+            ? '0 0 0 4px rgba(59, 130, 246, 0.2)' 
+            : (theme === 'dark' ? '0 4px 6px -1px rgba(0, 0, 0, 0.3)' : '0 4px 12px -2px rgba(0, 0, 0, 0.1)'),
           fontFamily: 'sans-serif',
           display: 'flex',
-          flexDirection: 'column'
+          flexDirection: 'column',
+          transition: 'background-color 0.3s, border-color 0.3s, color 0.3s'
         }}
       >
         {/* Header - Drag Handle */}
@@ -189,8 +193,8 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
           className="table-drag-handle"
           style={{ 
             padding: '10px 12px', 
-            backgroundColor: 'rgba(15, 23, 42, 0.8)', 
-            borderBottom: hasColumns ? '1px solid #334155' : 'none', 
+            backgroundColor: theme === 'dark' ? 'rgba(15, 23, 42, 0.8)' : 'rgba(241, 245, 249, 0.9)', 
+            borderBottom: hasColumns ? '1px solid var(--border-main)' : 'none', 
             flexShrink: 0,
             cursor: 'grab'
           }}
@@ -200,7 +204,7 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
             {icon && <span style={{ fontSize: '14px' }}>{icon}</span>}
             <div style={{ 
               fontSize: '10px', 
-              color: '#94a3b8', 
+              color: 'var(--text-secondary)', 
               textTransform: 'uppercase', 
               fontFamily: 'monospace',
               letterSpacing: '0.05em',
@@ -217,14 +221,14 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
           <div style={{ 
             fontSize: '14px', 
             fontWeight: 'bold', 
-            color: '#ffffff',
+            color: 'var(--text-primary)',
             lineHeight: '1.2',
             wordBreak: 'break-all'
           }}>
             {table.name}
           </div>
 
-          {/* Metadata Row: Type, Sub-type, and SCD (Moved here) */}
+          {/* Metadata Row: Type, Sub-type, and SCD */}
           {typeLabel && (
             <div style={{ 
               fontSize: '9px', 
@@ -250,15 +254,17 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
                     key={col.id} 
                     className="column-row"
                     style={{ 
-                      borderBottom: '1px solid #334155',
-                      backgroundColor: hoveredColumnId === col.id ? 'rgba(30, 58, 138, 0.6)' : 'transparent',
+                      borderBottom: '1px solid var(--border-main)',
+                      backgroundColor: hoveredColumnId === col.id 
+                        ? (theme === 'dark' ? 'rgba(30, 58, 138, 0.6)' : 'rgba(191, 219, 254, 0.4)') 
+                        : 'transparent',
                       position: 'relative'
                     }}
                   >
                     <td style={{ 
                       padding: '6px 12px', 
                       fontWeight: 500, 
-                      color: '#e2e8f0',
+                      color: 'var(--text-primary)',
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -276,7 +282,7 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
                         }}
                       />
                       <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <span style={{ color: '#475569', marginRight: '6px', fontSize: '9px', fontFamily: 'monospace', width: '14px', textAlign: 'right' }}>{index + 1}.</span>
+                        <span style={{ color: 'var(--text-secondary)', marginRight: '6px', fontSize: '9px', fontFamily: 'monospace', width: '14px', textAlign: 'right', opacity: 0.6 }}>{index + 1}.</span>
                         {col.logical?.isPrimaryKey && <span style={{ color: '#eab308', marginRight: '4px' }}>🔑</span>}
                         {col.logical?.isForeignKey && <span style={{ marginRight: '4px' }}>🔩</span>}
                         {col.logical?.isPartitionKey && <span style={{ marginRight: '4px' }}>📂</span>}
@@ -293,12 +299,13 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
                       padding: '6px 12px', 
                       textAlign: 'right', 
                       fontStyle: 'italic', 
-                      color: '#94a3b8',
+                      color: 'var(--text-secondary)',
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       maxWidth: '150px',
-                      position: 'relative'
+                      position: 'relative',
+                      opacity: 0.8
                     }}>
                       {col.logical?.type || 'Unknown'}
                       <Handle
@@ -327,7 +334,7 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
         id={`${id}-source`} 
         className={getHandleClass('source', false)}
         style={{ 
-          ...getHandleStyle('#94a3b8', showER),
+          ...getHandleStyle(theme === 'dark' ? '#94a3b8' : '#64748b', showER),
           width: '8px', 
           height: '8px', 
           zIndex: 10, 

@@ -18,7 +18,7 @@ export default function LineageEdge({
   data,
   selected,
 }: EdgeProps) {
-  const { toggleEdgeSelection } = useStore();
+  const { toggleEdgeSelection, theme } = useStore();
   const [edgePath] = getBezierPath({
     sourceX,
     sourceY,
@@ -43,8 +43,8 @@ export default function LineageEdge({
         style={{ 
           ...style, 
           strokeWidth: isHighlighted ? 4 : 3, 
-          stroke: '#3b82f6', 
-          opacity: isHighlighted ? 1 : 0.4,
+          stroke: theme === 'dark' ? '#3b82f6' : '#2563eb', 
+          opacity: isHighlighted ? 1 : (theme === 'dark' ? 0.4 : 0.3),
           strokeDasharray: '8,4', // Always dashed
           cursor: 'pointer'
         }} 

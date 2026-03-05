@@ -4,6 +4,7 @@ import {
   getSmoothStepPath,
   type EdgeProps,
 } from 'reactflow';
+import { useStore } from '../store/useStore';
 
 export default function ButtonEdge({
   sourceX,
@@ -27,6 +28,7 @@ export default function ButtonEdge({
     targetPosition,
   });
 
+  const { theme } = useStore();
   const isDirectlySelected = data?.isDirectlySelected;
   const isConnectedToSelectedTable = data?.isConnectedToSelectedTable;
   const showLabel = isDirectlySelected || isConnectedToSelectedTable;
@@ -47,12 +49,16 @@ export default function ButtonEdge({
               flexDirection: 'column',
               alignItems: 'center',
               gap: '4px',
-              zIndex: 1000, // 確実に最前面に持ってくる
+              zIndex: 1000,
             }}
             className="nodrag nopan"
           >
             {displayLabel && (
-              <div className="bg-slate-800 px-2 py-1 rounded-md text-[10px] font-bold text-emerald-400 border border-emerald-500/30 shadow-lg shadow-black/50 whitespace-nowrap mb-1">
+              <div className={`px-2 py-1 rounded-md text-[10px] font-bold border shadow-lg whitespace-nowrap mb-1 transition-colors ${
+                theme === 'dark' 
+                  ? 'bg-slate-800 text-emerald-400 border-emerald-500/30 shadow-black/50' 
+                  : 'bg-white text-emerald-600 border-emerald-200 shadow-slate-200'
+              }`}>
                 {displayLabel}
               </div>
             )}

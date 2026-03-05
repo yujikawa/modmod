@@ -257,8 +257,8 @@ domains:
     name: Customer Support
     description: Domain purpose
     tables:
-      - new_table_1772543818647
       - new_table_1772543857480
+      - new_table_1772543818647
     color: rgba(59, 130, 246, 0.05)
   - id: new_domain_1772665360010
     name: RAW VALUT
@@ -283,14 +283,14 @@ domains:
     color: rgba(59, 130, 246, 0.05)
 layout:
   hub_customers:
-    x: 154
-    'y': 573
+    x: 174
+    'y': 595
   sat_customer_details:
     x: 172
     'y': 808
   link_orders:
-    x: 155
-    'y': 316
+    x: 162
+    'y': 288
   dim_customers:
     x: 91
     'y': 86
@@ -301,8 +301,8 @@ layout:
     x: 626
     'y': 39
   new_domain_1772543778995:
-    x: 818
-    'y': -392
+    x: 796
+    'y': -398
     width: 926
     height: 309
   new_table_1772543818647:

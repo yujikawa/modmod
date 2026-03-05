@@ -17,7 +17,8 @@ const CanvasToolbar = () => {
     setShowER,
     setShowLineage,
     setSelectedTableId,
-    setSelectedEdgeId
+    setSelectedEdgeId,
+    theme
   } = useStore()
 
   const { screenToFlowPosition } = useReactFlow()
@@ -68,7 +69,9 @@ const CanvasToolbar = () => {
     <>
       {/* 1. Permanent Vertical Toolbox (Left side) */}
       <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
-        <div className="flex flex-col bg-slate-900/85 backdrop-blur-md border border-slate-700 rounded-2xl shadow-2xl overflow-hidden w-14">
+        <div className={`flex flex-col border rounded-2xl shadow-2xl overflow-hidden w-14 transition-colors ${
+          theme === 'dark' ? 'bg-slate-900/85 backdrop-blur-md border-slate-700' : 'bg-white/90 backdrop-blur-md border-slate-200'
+        }`}>
           
           {/* View Section */}
           <div className="flex flex-col items-center py-3 gap-2">
@@ -81,8 +84,8 @@ const CanvasToolbar = () => {
                 onClick={() => setShowER(!showER)}
                 className={`flex items-center justify-center w-full aspect-square rounded-xl transition-all ${
                   showER 
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-                    : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800 border border-transparent'
+                    ? 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/30' 
+                    : theme === 'dark' ? 'text-slate-500 hover:text-slate-300 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
                 }`}
                 title={showER ? "Hide ER Relationships" : "Show ER Relationships (Disables editing if Lineage is also ON)"}
               >
@@ -92,8 +95,8 @@ const CanvasToolbar = () => {
                 onClick={() => setShowLineage(!showLineage)}
                 className={`flex items-center justify-center w-full aspect-square rounded-xl transition-all ${
                   showLineage 
-                    ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
-                    : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800 border border-transparent'
+                    ? 'bg-blue-500/20 text-blue-500 border border-blue-500/30' 
+                    : theme === 'dark' ? 'text-slate-500 hover:text-slate-300 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
                 }`}
                 title={showLineage ? "Hide Data Lineage" : "Show Data Lineage (Disables editing if ER is also ON)"}
               >
@@ -102,7 +105,7 @@ const CanvasToolbar = () => {
             </div>
           </div>
 
-          <div className="border-t border-slate-800 mx-2" />
+          <div className={`mx-2 border-t ${theme === 'dark' ? 'border-slate-800' : 'border-slate-100'}`} />
 
           {/* Add Section */}
           <div className="flex flex-col items-center py-3 gap-2">
@@ -113,7 +116,9 @@ const CanvasToolbar = () => {
             <div className="flex flex-col gap-1 px-1.5 w-full">
               <button
                 onClick={handleAddDomain}
-                className="flex items-center justify-center w-full aspect-square text-slate-500 hover:text-blue-400 hover:bg-slate-800 rounded-xl transition-all group"
+                className={`flex items-center justify-center w-full aspect-square rounded-xl transition-all group ${
+                  theme === 'dark' ? 'text-slate-500 hover:text-blue-400 hover:bg-slate-800' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-50'
+                }`}
                 title="Add new Domain"
               >
                 <Layout size={20} />
@@ -121,7 +126,9 @@ const CanvasToolbar = () => {
               
               <button
                 onClick={handleAddTable}
-                className="flex items-center justify-center w-full aspect-square text-slate-500 hover:text-emerald-400 hover:bg-slate-800 rounded-xl transition-all group"
+                className={`flex items-center justify-center w-full aspect-square rounded-xl transition-all group ${
+                  theme === 'dark' ? 'text-slate-500 hover:text-emerald-400 hover:bg-slate-800' : 'text-slate-400 hover:text-emerald-600 hover:bg-slate-50'
+                }`}
                 title="Add new Table"
               >
                 <Grid size={20} />
@@ -129,14 +136,16 @@ const CanvasToolbar = () => {
             </div>
           </div>
 
-          <div className="border-t border-slate-800 mx-2" />
+          <div className={`mx-2 border-t ${theme === 'dark' ? 'border-slate-800' : 'border-slate-100'}`} />
 
           {/* Help Section */}
           <div className="flex flex-col items-center py-3">
             <button
               onClick={() => setShowHelp(!showHelp)}
               className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all ${
-                showHelp ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-800 hover:text-slate-300'
+                showHelp 
+                  ? (theme === 'dark' ? 'bg-blue-600 text-white' : 'bg-blue-600 text-white shadow-md shadow-blue-500/20') 
+                  : (theme === 'dark' ? 'text-slate-500 hover:bg-slate-800 hover:text-slate-300' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600')
               }`}
               title="Keyboard Shortcuts & Help"
             >
@@ -147,55 +156,57 @@ const CanvasToolbar = () => {
 
         {/* Shortcut Guide Overlay */}
         {showHelp && (
-          <div className="flex flex-col bg-slate-900/95 backdrop-blur-xl border border-slate-700 rounded-2xl shadow-2xl p-5 w-64 animate-in zoom-in-95 fade-in duration-200 origin-top-left">
-            <div className="flex items-center gap-2 mb-4 border-b border-slate-800 pb-3">
-              <Command size={16} className="text-blue-400" />
-              <h4 className="text-xs font-bold uppercase tracking-widest text-slate-200">Shortcuts</h4>
+          <div className={`flex flex-col border rounded-2xl shadow-2xl p-5 w-64 animate-in zoom-in-95 fade-in duration-200 origin-top-left ${
+            theme === 'dark' ? 'bg-slate-900/95 backdrop-blur-xl border-slate-700' : 'bg-white/95 backdrop-blur-xl border-slate-200'
+          }`}>
+            <div className={`flex items-center gap-2 mb-4 border-b pb-3 ${theme === 'dark' ? 'border-slate-800' : 'border-slate-100'}`}>
+              <Command size={16} className="text-blue-500" />
+              <h4 className={`text-xs font-bold uppercase tracking-widest ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>Shortcuts</h4>
             </div>
             
             <div className="space-y-4">
               <div className="flex items-center justify-between group">
-                <div className="flex items-center gap-2 text-slate-400">
+                <div className="flex items-center gap-2 text-slate-500">
                   <Undo2 size={14} />
                   <span className="text-xs font-medium">Undo</span>
                 </div>
-                <kbd className="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-[10px] font-mono text-slate-300">Ctrl Z</kbd>
+                <kbd className={`px-1.5 py-0.5 border rounded text-[10px] font-mono ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>Ctrl Z</kbd>
               </div>
 
               <div className="flex items-center justify-between group">
-                <div className="flex items-center gap-2 text-slate-400">
+                <div className="flex items-center gap-2 text-slate-500">
                   <Redo2 size={14} />
                   <span className="text-xs font-medium">Redo</span>
                 </div>
-                <kbd className="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-[10px] font-mono text-slate-300">Ctrl Y</kbd>
+                <kbd className={`px-1.5 py-0.5 border rounded text-[10px] font-mono ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>Ctrl Y</kbd>
               </div>
 
               <div className="flex items-center justify-between group">
-                <div className="flex items-center gap-2 text-slate-400">
+                <div className="flex items-center gap-2 text-slate-500">
                   <Trash2 size={14} />
-                  <span className="text-xs font-medium text-red-400/80">Delete</span>
+                  <span className="text-xs font-medium text-red-500/80">Delete</span>
                 </div>
-                <kbd className="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-[10px] font-mono text-slate-300 text-red-400/80">Del</kbd>
+                <kbd className={`px-1.5 py-0.5 border rounded text-[10px] font-mono ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-300 text-red-400/80' : 'bg-slate-50 border-slate-200 text-red-600/80'}`}>Del</kbd>
               </div>
 
               <div className="flex items-center justify-between group">
-                <div className="flex items-center gap-2 text-slate-400">
+                <div className="flex items-center gap-2 text-slate-500">
                   <X size={14} />
                   <span className="text-xs font-medium">Clear Focus</span>
                 </div>
-                <kbd className="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-[10px] font-mono text-slate-300">Esc</kbd>
+                <kbd className={`px-1.5 py-0.5 border rounded text-[10px] font-mono ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>Esc</kbd>
               </div>
 
               <div className="flex items-center justify-between group">
-                <div className="flex items-center gap-2 text-slate-400">
+                <div className="flex items-center gap-2 text-slate-500">
                   <MousePointer2 size={14} />
                   <span className="text-xs font-medium">Multi-select</span>
                 </div>
-                <span className="text-[10px] font-mono text-slate-500">Shift + Drag</span>
+                <span className="text-[10px] font-mono text-slate-400">Shift + Drag</span>
               </div>
             </div>
 
-            <div className="mt-5 pt-3 border-t border-slate-800 text-[10px] text-slate-500 italic leading-relaxed">
+            <div className={`mt-5 pt-3 border-t text-[10px] text-slate-400 italic leading-relaxed ${theme === 'dark' ? 'border-slate-800' : 'border-slate-100'}`}>
               * Edits are saved to local YAML files in real-time if Auto-save is enabled.
             </div>
           </div>
@@ -204,21 +215,23 @@ const CanvasToolbar = () => {
 
       {/* 2. Contextual Selection Bar (Top Right) */}
       {activeSelection && (
-        <div className="absolute top-4 right-4 z-10 flex items-center gap-3 bg-slate-900/90 backdrop-blur-md border border-blue-500/30 rounded-xl shadow-2xl p-1.5 px-4 animate-in fade-in slide-in-from-top-4 duration-300">
-          <div className="flex items-center gap-2 border-r border-slate-700 pr-4 mr-1">
-            {table && <Database size={16} className="text-emerald-400" />}
-            {domain && <Layout size={16} className="text-blue-400" />}
+        <div className={`absolute top-4 right-4 z-10 flex items-center gap-3 border rounded-xl shadow-2xl p-1.5 px-4 animate-in fade-in slide-in-from-top-4 duration-300 ${
+          theme === 'dark' ? 'bg-slate-900/90 backdrop-blur-md border-blue-500/30' : 'bg-white/90 backdrop-blur-md border-blue-200 shadow-blue-500/5'
+        }`}>
+          <div className={`flex items-center gap-2 border-r pr-4 mr-1 ${theme === 'dark' ? 'border-slate-700' : 'border-slate-100'}`}>
+            {table && <Database size={16} className="text-emerald-500" />}
+            {domain && <Layout size={16} className="text-blue-500" />}
             {relationshipData && (
               ((relationshipData.relationship.type as any) === 'lineage') 
-                ? <GitGraph size={16} className="text-blue-400" />
-                : <Tag size={16} className="text-amber-400" />
+                ? <GitGraph size={16} className="text-blue-500" />
+                : <Tag size={16} className="text-amber-500" />
             )}
             
             <div className="flex flex-col leading-tight">
               <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
                 Selected {table ? 'Table' : domain ? 'Domain' : (((relationshipData?.relationship.type as any) === 'lineage') ? 'Lineage' : 'Relation')}
               </span>
-              <span className="text-xs font-semibold text-slate-200 truncate max-w-[180px]">
+              <span className={`text-xs font-semibold truncate max-w-[180px] ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>
                 {table ? table.name : domain ? domain.name : relationshipData ? `${relationshipData.relationship.from.table} → ${relationshipData.relationship.to.table}` : ''}
               </span>
             </div>
@@ -227,14 +240,16 @@ const CanvasToolbar = () => {
           <div className="flex items-center gap-1">
             <button
               onClick={handleDelete}
-              className="flex items-center justify-center w-8 h-8 hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded-lg transition-all group"
+              className="flex items-center justify-center w-8 h-8 hover:bg-red-500/20 text-slate-400 hover:text-red-500 rounded-lg transition-all group"
               title="Delete Selected (Del)"
             >
               <Trash2 size={16} />
             </button>
             <button
               onClick={handleClearSelection}
-              className="flex items-center justify-center w-8 h-8 hover:bg-slate-800 text-slate-500 hover:text-slate-300 rounded-lg transition-all"
+              className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all ${
+                theme === 'dark' ? 'hover:bg-slate-800 text-slate-500 hover:text-slate-300' : 'hover:bg-slate-100 text-slate-400 hover:text-slate-600'
+              }`}
               title="Clear Selection"
             >
               <X size={16} />

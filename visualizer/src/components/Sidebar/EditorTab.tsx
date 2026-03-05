@@ -18,7 +18,8 @@ const EditorTab = () => {
     setIsAutoSaveEnabled,
     savingStatus,
     saveSchema,
-    lastUpdateSource
+    lastUpdateSource,
+    theme
   } = useStore()
 
   const [localYaml, setLocalYaml] = useState(yamlInput)
@@ -98,12 +99,12 @@ const EditorTab = () => {
           <div className="flex items-center gap-4">
             <label className="flex items-center gap-2 cursor-pointer group">
               <div 
-                className={`relative w-7 h-4 rounded-full transition-colors ${isAutoSaveEnabled ? 'bg-blue-600' : 'bg-slate-700'}`}
+                className={`relative w-7 h-4 rounded-full transition-colors ${isAutoSaveEnabled ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'}`}
                 onClick={() => setIsAutoSaveEnabled(!isAutoSaveEnabled)}
               >
                 <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${isAutoSaveEnabled ? 'translate-x-3' : 'translate-x-0'}`} />
               </div>
-              <span className="text-[10px] font-bold text-slate-500 group-hover:text-slate-400 uppercase tracking-widest">Auto-save</span>
+              <span className={`text-[10px] font-bold uppercase tracking-widest ${theme === 'dark' ? 'text-slate-500 group-hover:text-slate-400' : 'text-slate-400 group-hover:text-slate-600'}`}>Auto-save</span>
             </label>
             
             <div className="flex items-center gap-1.5 min-w-[60px]">
@@ -114,13 +115,13 @@ const EditorTab = () => {
                 </div>
               )}
               {savingStatus === 'saved' && (
-                <div className="flex items-center gap-1 text-emerald-400">
+                <div className="flex items-center gap-1 text-emerald-500">
                   <CheckCircle2 size={10} />
                   <span className="text-[9px] font-bold uppercase tracking-wider">Saved</span>
                 </div>
               )}
               {savingStatus === 'error' && (
-                <div className="flex items-center gap-1 text-red-400">
+                <div className="flex items-center gap-1 text-red-500">
                   <AlertCircle size={10} />
                   <span className="text-[9px] font-bold uppercase">Error</span>
                 </div>
@@ -131,37 +132,43 @@ const EditorTab = () => {
         
         <div className="flex items-center gap-3">
           {/* Undo/Redo Buttons */}
-          <div className="flex bg-slate-800/50 rounded-lg p-0.5 border border-slate-700/50">
+          <div className={`flex rounded-lg p-0.5 border ${theme === 'dark' ? 'bg-slate-800/50 border-slate-700/50' : 'bg-slate-100 border-slate-200'}`}>
             <button 
               onClick={handleUndo}
-              className="p-1.5 hover:bg-slate-700 text-slate-400 hover:text-slate-100 rounded-md transition-all active:scale-95"
+              className={`p-1.5 rounded-md transition-all active:scale-95 ${
+                theme === 'dark' ? 'text-slate-400 hover:bg-slate-700 hover:text-slate-100' : 'text-slate-500 hover:bg-white hover:text-blue-600 hover:shadow-sm'
+              }`}
               title="Undo (Ctrl+Z)"
             >
               <Undo2 size={14} />
             </button>
-            <div className="w-px h-4 bg-slate-700/50 self-center mx-0.5" />
+            <div className={`w-px h-4 self-center mx-0.5 ${theme === 'dark' ? 'bg-slate-700/50' : 'bg-slate-200'}`} />
             <button 
               onClick={handleRedo}
-              className="p-1.5 hover:bg-slate-700 text-slate-400 hover:text-slate-100 rounded-md transition-all active:scale-95"
+              className={`p-1.5 rounded-md transition-all active:scale-95 ${
+                theme === 'dark' ? 'text-slate-400 hover:bg-slate-700 hover:text-slate-100' : 'text-slate-500 hover:bg-white hover:text-blue-600 hover:shadow-sm'
+              }`}
               title="Redo (Ctrl+Y)"
             >
               <Redo2 size={14} />
             </button>
           </div>
 
-          <div className="flex items-center gap-1 text-slate-600 cursor-help" title="Pro Tip: Use Ctrl+Z to undo visual changes!">
+          <div className="flex items-center gap-1 text-slate-400 dark:text-slate-600 cursor-help" title="Pro Tip: Use Ctrl+Z to undo visual changes!">
             <Info size={12} />
             <span className="text-[9px] font-bold uppercase tracking-tighter">Undo Active</span>
           </div>
         </div>
       </div>
       
-      <div className="relative flex-1 flex flex-col min-h-0 border border-slate-700 rounded-md overflow-hidden bg-[#282c34]">
+      <div className={`relative flex-1 flex flex-col min-h-0 border rounded-md overflow-hidden transition-colors ${
+        theme === 'dark' ? 'border-slate-700 bg-[#282c34]' : 'border-slate-200 bg-white'
+      }`}>
         <CodeMirror
           ref={editorRef}
           value={localYaml}
           height="100%"
-          theme={oneDark}
+          theme={theme === 'dark' ? oneDark : 'light'}
           extensions={[yaml()]}
           onChange={handleChange}
           basicSetup={{
@@ -189,7 +196,7 @@ const EditorTab = () => {
           disabled={savingStatus === 'saving'}
           className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium text-sm transition-all shadow-lg shrink-0 ${
             isCliMode 
-              ? (isAutoSaveEnabled ? 'bg-slate-700 text-slate-400 cursor-not-allowed opacity-50' : 'bg-blue-600 hover:bg-blue-700 text-white') 
+              ? (isAutoSaveEnabled ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed opacity-50' : 'bg-blue-600 hover:bg-blue-700 text-white') 
               : 'bg-emerald-600 hover:bg-emerald-700 text-white'
           }`}
         >

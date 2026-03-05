@@ -50,7 +50,8 @@ function Flow() {
     showER,
     showLineage,
     addLineage,
-    setConnectionStartHandle
+    setConnectionStartHandle,
+    theme
   } = useStore()
   
   const [nodes, setNodes, onNodesChange] = useNodesState([])
@@ -200,8 +201,8 @@ function Flow() {
 
     // 1. Generate ER Edges
     if (showER && schema.relationships) {
-      const HIGHLIGHT_STYLE = { stroke: '#f1f5f9', strokeWidth: 5 }; // Silver-White (Slate-100)
-      const NORMAL_STYLE = { stroke: '#94a3b8', strokeWidth: 3 }; // Silver-Slate (Slate-400)
+      const HIGHLIGHT_STYLE = { stroke: theme === 'dark' ? '#f1f5f9' : '#0f172a', strokeWidth: 5 };
+      const NORMAL_STYLE = { stroke: theme === 'dark' ? '#94a3b8' : '#64748b', strokeWidth: 3 };
 
       const erEdges = schema.relationships.map((rel, index) => {
         const edgeId = `e-${index}`;
@@ -257,7 +258,7 @@ function Flow() {
     }
 
     setEdges(newEdges);
-  }, [schema, selectedTableId, selectedEdgeId, setEdges, showER, showLineage])
+  }, [schema, selectedTableId, selectedEdgeId, setEdges, showER, showLineage, theme])
 
   const onConnect = useCallback(
     (params: Connection) => {
@@ -389,7 +390,7 @@ function Flow() {
         selectNodesOnDrag={true}
         fitView
       >
-        <Background color="#334155" gap={20} />
+        <Background color={theme === 'dark' ? '#334155' : '#e2e8f0'} gap={20} />
         <Controls />
       </ReactFlow>
     </div>
@@ -401,7 +402,8 @@ function App() {
     isCliMode, 
     fetchAvailableFiles, 
     setCurrentModel, 
-    setSchema
+    setSchema,
+    theme
   } = useStore()
 
   // Consistent detection for injected data
@@ -458,7 +460,9 @@ function App() {
 
   return (
     <ReactFlowProvider>
-      <div className="flex h-screen w-screen overflow-hidden bg-slate-950 text-slate-100 font-sans">
+      <div className={`flex h-screen w-screen overflow-hidden font-sans transition-colors duration-300 ${
+        theme === 'dark' ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'
+      }`}>
         <Sidebar />
 
         {/* Main Area (Right Section) */}

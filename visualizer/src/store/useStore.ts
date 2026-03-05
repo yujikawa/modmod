@@ -36,6 +36,7 @@ interface AppState {
   showER: boolean;
   showLineage: boolean;
   connectionStartHandle: { nodeId: string; handleId: string | null; handleType: string | null } | null;
+  theme: 'dark' | 'light';
   
   // Actions
   setSchema: (schema: any) => void;
@@ -75,6 +76,7 @@ interface AppState {
   setActiveTab: (tab: 'editor' | 'entities') => void;
   setFocusNodeId: (id: string | null) => void;
   setConnectionStartHandle: (handle: { nodeId: string; handleId: string | null; handleType: string | null } | null) => void;
+  toggleTheme: () => void;
   
   // Computed (helpers)
   getSelectedTable: () => Table | null;
@@ -117,6 +119,8 @@ export const useStore = create<AppState>((set, get) => ({
   showER: true,
   showLineage: true,
   connectionStartHandle: null,
+  theme: (typeof window !== 'undefined' && (localStorage.getItem('modscape-theme') as any)) || 
+         (window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark'),
 
   setSchema: (data) => {
     try {
@@ -141,6 +145,13 @@ export const useStore = create<AppState>((set, get) => ({
   setActiveTab: (tab) => set({ activeTab: tab }),
   setFocusNodeId: (id) => set({ focusNodeId: id }),
   setConnectionStartHandle: (handle) => set({ connectionStartHandle: handle }),
+  
+  toggleTheme: () => {
+    const { theme } = get();
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    set({ theme: nextTheme });
+    localStorage.setItem('modscape-theme', nextTheme);
+  },
   
   fetchAvailableFiles: async () => {
     const injectedData = (window as any).__MODSCAPE_DATA__;
