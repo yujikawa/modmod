@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Layout, Grid, Trash2, Tag, Database, GitGraph, Network, X, Eye, Plus, CircleHelp, Command, Undo2, Redo2, Lock } from 'lucide-react'
+import { Layout, Grid, Trash2, Tag, Database, GitGraph, Network, X, Eye, Plus, CircleHelp, Command, Undo2, Redo2, Lock, Move } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { useReactFlow } from 'reactflow'
 
@@ -201,6 +201,14 @@ const CanvasToolbar = () => {
                   <span className="text-xs font-medium">Clear Focus</span>
                 </div>
                 <kbd className={`px-1.5 py-0.5 border rounded text-[10px] font-mono ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>Esc</kbd>
+              </div>
+
+              <div className="flex items-center justify-between group">
+                <div className="flex items-center gap-2 text-slate-500">
+                  <Move size={14} />
+                  <span className="text-xs font-medium">Pan Canvas</span>
+                </div>
+                <span className={`px-1.5 py-0.5 border rounded text-[10px] font-mono ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>Arrow Keys</span>
               </div>
             </div>
 

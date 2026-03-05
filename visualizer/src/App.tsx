@@ -56,22 +56,53 @@ function Flow() {
   
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
-  const { fitView } = useReactFlow()
+  const { fitView, getViewport, setViewport } = useReactFlow()
 
   const isEditingDisabled = showER && showLineage
   const isViewingDisabled = !showER && !showLineage
 
-  // Handle Escape key to clear focus
+  // Handle global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // 1. Clear selection on Escape
       if (e.key === 'Escape') {
         setSelectedTableId(null);
         setSelectedEdgeId(null);
+        return;
+      }
+
+      // 2. Pan canvas with arrow keys
+      // Guard: Don't pan if typing in an input, textarea, or CodeMirror
+      const activeEl = document.activeElement;
+      const isTyping = activeEl?.tagName === 'INPUT' || 
+                       activeEl?.tagName === 'TEXTAREA' || 
+                       activeEl?.hasAttribute('contenteditable') ||
+                       activeEl?.classList.contains('cm-content');
+
+      if (isTyping) return;
+
+      // Guard: Only pan if nothing is selected (prevents conflict with node nudging)
+      if (selectedTableId || selectedEdgeId) return;
+
+      if (e.key.startsWith('Arrow')) {
+        const { x, y, zoom } = getViewport();
+        const MOVE_STEP = 100;
+
+        if (e.key === 'ArrowUp') {
+          setViewport({ x, y: y + MOVE_STEP, zoom }, { duration: 150 });
+        } else if (e.key === 'ArrowDown') {
+          setViewport({ x, y: y - MOVE_STEP, zoom }, { duration: 150 });
+        } else if (e.key === 'ArrowLeft') {
+          setViewport({ x: x + MOVE_STEP, y, zoom }, { duration: 150 });
+        } else if (e.key === 'ArrowRight') {
+          setViewport({ x: x - MOVE_STEP, y, zoom }, { duration: 150 });
+        }
       }
     };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [setSelectedTableId, setSelectedEdgeId]);
+  }, [setSelectedTableId, setSelectedEdgeId, getViewport, setViewport, selectedTableId, selectedEdgeId]);
 
   // Handle focusNodeId changes
   useEffect(() => {
