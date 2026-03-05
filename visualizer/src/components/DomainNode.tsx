@@ -1,8 +1,15 @@
-import { memo } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { type NodeProps, NodeResizer } from 'reactflow'
 import { useStore } from '../store/useStore'
 
 const DomainNode = ({ id, data, selected }: NodeProps) => {
+  const [isNew, setIsNew] = useState(true)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsNew(false), 1000)
+    return () => clearTimeout(timer)
+  }, [])
+
   const { 
     updateNodeDimensions
   } = useStore()
@@ -18,6 +25,7 @@ const DomainNode = ({ id, data, selected }: NodeProps) => {
 
   return (
     <div
+      className={isNew ? 'animate-creation' : ''}
       style={{
         width: '100%',
         height: '100%',

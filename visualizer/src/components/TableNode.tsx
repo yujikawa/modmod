@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { Handle, Position, type NodeProps, NodeResizer } from 'reactflow'
 import type { Table } from '../types/schema'
 import { useStore } from '../store/useStore'
@@ -14,6 +14,13 @@ const TYPE_CONFIG: Record<string, { color: string; icon: string; label: string }
 
 const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
   const { table } = data
+  const [isNew, setIsNew] = useState(true)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsNew(false), 1000)
+    return () => clearTimeout(timer)
+  }, [])
+
   const { 
     updateNodeDimensions, 
     hoveredColumnId,
@@ -84,6 +91,7 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
 
   return (
     <div 
+      className={isNew ? 'animate-creation' : ''}
       style={{ 
         width: '100%',
         height: '100%',

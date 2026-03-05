@@ -1,5 +1,6 @@
 import { Layout, Grid, Trash2, Tag, Database, GitGraph, Network, X, Eye, Plus } from 'lucide-react'
 import { useStore } from '../store/useStore'
+import { useReactFlow } from 'reactflow'
 
 const CanvasToolbar = () => {
   const { 
@@ -17,6 +18,24 @@ const CanvasToolbar = () => {
     setSelectedTableId,
     setSelectedEdgeId
   } = useStore()
+
+  const { screenToFlowPosition } = useReactFlow()
+
+  const handleAddDomain = () => {
+    const center = screenToFlowPosition({
+      x: window.innerWidth / 2,
+      y: window.innerHeight / 2,
+    })
+    addDomain(center.x - 300, center.y - 200) // Adjust for default domain size
+  }
+
+  const handleAddTable = () => {
+    const center = screenToFlowPosition({
+      x: window.innerWidth / 2,
+      y: window.innerHeight / 2,
+    })
+    addTable(center.x - 160, center.y - 125) // Adjust for default table size
+  }
 
   const table = getSelectedTable()
   const domain = getSelectedDomain()
@@ -87,7 +106,7 @@ const CanvasToolbar = () => {
             </div>
             <div className="flex flex-col gap-1 px-1.5 w-full">
               <button
-                onClick={() => addDomain(100, 100)}
+                onClick={handleAddDomain}
                 className="flex items-center justify-center w-full aspect-square text-slate-500 hover:text-blue-400 hover:bg-slate-800 rounded-xl transition-all group"
                 title="Add new Domain"
               >
@@ -95,7 +114,7 @@ const CanvasToolbar = () => {
               </button>
               
               <button
-                onClick={() => addTable(200, 200)}
+                onClick={handleAddTable}
                 className="flex items-center justify-center w-full aspect-square text-slate-500 hover:text-emerald-400 hover:bg-slate-800 rounded-xl transition-all group"
                 title="Add new Table"
               >

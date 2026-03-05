@@ -313,7 +313,12 @@ export const useStore = create<AppState>((set, get) => ({
       }
     };
     
-    set({ schema: normalizeSchema(newSchema), error: null });
+    set({ 
+      schema: normalizeSchema(newSchema), 
+      error: null,
+      selectedTableId: newId,
+      selectedEdgeId: null
+    });
     get().syncToYamlInput();
     get().saveSchema();
   },
@@ -338,7 +343,12 @@ export const useStore = create<AppState>((set, get) => ({
       }
     };
     
-    set({ schema: normalizeSchema(newSchema), error: null });
+    set({ 
+      schema: normalizeSchema(newSchema), 
+      error: null,
+      selectedTableId: newId,
+      selectedEdgeId: null
+    });
     get().syncToYamlInput();
     get().saveSchema();
   },
