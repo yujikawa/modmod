@@ -9,7 +9,8 @@ const TYPE_CONFIG: Record<string, { color: string; icon: string; label: string }
   hub: { color: '#fbbf24', icon: '🌐', label: 'HUB' },
   link: { color: '#34d399', icon: '🔗', label: 'LINK' },
   satellite: { color: '#a78bfa', icon: '🛰️', label: 'SAT' },
-  mart: { color: '#f5700b', icon: '📈', label: 'MART' }
+  mart: { color: '#f5700b', icon: '📈', label: 'MART' },
+  table: { color: '#64748b', icon: '📋', label: 'TABLE' }
 };
 
 const DetailPanel = () => {
@@ -490,13 +491,13 @@ const DetailPanel = () => {
             )}
           </div>
 
-          {/* Primary Row: Editable Table Name */}
+          {/* Primary Row: Editable Conceptual Name */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <input 
               value={table!.name ?? ''}
               onChange={(e) => handleUpdateTable({ name: e.target.value })}
               onBlur={(e) => { if (!e.target.value) handleUpdateTable({ name: 'UNNAMED_TABLE' }) }}
-              title="Logical Table Name"
+              title="Conceptual Table Name"
               style={{ 
                 fontSize: '18px', 
                 fontWeight: 'bold', 
@@ -529,6 +530,7 @@ const DetailPanel = () => {
             <option value="fact">Fact</option>
             <option value="dimension">Dimension</option>
             <option value="mart">Mart</option>
+            <option value="table">Table</option>
             <option value="hub">Hub</option>
             <option value="link">Link</option>
             <option value="satellite">Satellite</option>
@@ -700,11 +702,27 @@ const DetailPanel = () => {
         
         {activeTab === 'logical' && (
           <div>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Logical Model</h3>
-              <button onClick={handleAddColumn} className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs transition-colors shadow-md shadow-blue-500/20 font-medium">
-                <Plus size={14} /> Add Column
-              </button>
+            <div className="flex flex-col gap-4 mb-6">
+              <section>
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Logical Table Name</h3>
+                <input 
+                  value={table!.logical_name || ''}
+                  onChange={(e) => handleUpdateTable({ logical_name: e.target.value })}
+                  placeholder={table!.name}
+                  className={`w-full border rounded text-sm p-2 outline-none transition-colors ${
+                    theme === 'dark' 
+                      ? 'bg-slate-800 border-slate-700 text-slate-200 focus:ring-blue-500' 
+                      : 'bg-white border-slate-200 text-slate-900 focus:ring-blue-400 focus:border-blue-400 shadow-sm'
+                  }`}
+                />
+              </section>
+              
+              <div className="flex justify-between items-center">
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Logical Schema (Columns)</h3>
+                <button onClick={handleAddColumn} className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs transition-colors shadow-md shadow-blue-500/20 font-medium">
+                  <Plus size={14} /> Add Column
+                </button>
+              </div>
             </div>
             
             <div style={{ border: '1px solid var(--border-main)', borderRadius: '8px', overflow: 'hidden' }}>
@@ -799,64 +817,78 @@ const DetailPanel = () => {
         
         {activeTab === 'physical' && (
           <div>
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 mb-6">
+              <section>
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Physical Table Name</h3>
+                <input 
+                  value={table!.physical_name || ''}
+                  onChange={(e) => handleUpdateTable({ physical_name: e.target.value })}
+                  placeholder={table!.id}
+                  className={`w-full border rounded font-mono text-sm p-2 outline-none transition-colors ${
+                    theme === 'dark' 
+                      ? 'bg-slate-800 border-slate-700 text-slate-300 focus:ring-blue-500' 
+                      : 'bg-white border-slate-200 text-slate-900 focus:ring-blue-400 focus:border-blue-400 shadow-sm'
+                  }`}
+                />
+              </section>
+
               <div className="flex justify-between items-center">
                 <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Physical Mappings</h3>
               </div>
-              
-              <div style={{ border: '1px solid var(--border-main)', borderRadius: '8px', overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-                  <thead style={{ backgroundColor: 'var(--header-bg)', borderBottom: '1px solid var(--border-main)', textAlign: 'left' }}>
-                    <tr>
-                      <th style={{ padding: '10px 16px', color: 'var(--text-secondary)', width: '25%' }}>Logical Column</th>
-                      <th style={{ padding: '10px 16px', color: 'var(--text-secondary)', width: '30%' }}>DB Column Name</th>
-                      <th style={{ padding: '10px 16px', color: 'var(--text-secondary)', width: '20%' }}>DB Type</th>
-                      <th style={{ padding: '10px 16px', color: 'var(--text-secondary)', width: '25%' }}>Constraints</th>
+            </div>
+            
+            <div style={{ border: '1px solid var(--border-main)', borderRadius: '8px', overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                <thead style={{ backgroundColor: 'var(--header-bg)', borderBottom: '1px solid var(--border-main)', textAlign: 'left' }}>
+                  <tr>
+                    <th style={{ padding: '10px 16px', color: 'var(--text-secondary)', width: '25%' }}>Logical Column</th>
+                    <th style={{ padding: '10px 16px', color: 'var(--text-secondary)', width: '30%' }}>DB Column Name</th>
+                    <th style={{ padding: '10px 16px', color: 'var(--text-secondary)', width: '20%' }}>DB Type</th>
+                    <th style={{ padding: '10px 16px', color: 'var(--text-secondary)', width: '25%' }}>Constraints</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(table!.columns || []).map(col => (
+                    <tr key={col.id} style={{ borderBottom: '1px solid var(--border-main)', backgroundColor: 'var(--node-bg)' }}>
+                      <td style={{ padding: '6px 16px', color: 'var(--text-secondary)', borderRight: '1px solid var(--border-main)' }}>
+                        <div className="text-[11px] font-medium truncate" title={col.logical?.name || col.id}>
+                          {col.logical?.name || col.id}
+                        </div>
+                      </td>
+                      <td style={{ padding: '6px 16px' }}>
+                        <input 
+                          value={col.physical?.name ?? ''}
+                          onChange={(e) => handleUpdatePhysicalColumn(col.id, { name: e.target.value })}
+                          placeholder={col.logical?.name.toLowerCase().replace(/ /g, '_')}
+                          className={`bg-transparent border-none font-mono text-[11px] w-full outline-none p-1 rounded transition-colors ${
+                            theme === 'dark' ? 'text-blue-400 focus:bg-slate-800' : 'text-blue-600 focus:bg-slate-50'
+                          }`}
+                        />
+                      </td>
+                      <td style={{ padding: '6px 16px' }}>
+                        <input 
+                          value={col.physical?.type ?? ''}
+                          onChange={(e) => handleUpdatePhysicalColumn(col.id, { type: e.target.value })}
+                          placeholder={col.logical?.type.toUpperCase()}
+                          className={`bg-transparent border-none font-mono text-[11px] w-full outline-none p-1 rounded transition-colors ${
+                            theme === 'dark' ? 'text-slate-400 focus:bg-slate-800' : 'text-slate-500 focus:bg-slate-50'
+                          }`}
+                        />
+                      </td>
+                      <td style={{ padding: '6px 16px' }}>
+                        <input 
+                          value={col.physical?.constraints?.join(', ') || ''}
+                          onChange={(e) => handleUpdatePhysicalColumn(col.id, { constraints: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+                          placeholder="e.g. NOT NULL"
+                          className={`bg-transparent border-none text-[11px] w-full outline-none p-1 rounded transition-colors ${
+                            theme === 'dark' ? 'text-slate-500 focus:bg-slate-800' : 'text-slate-400 focus:bg-slate-50'
+                          }`}
+                        />
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {(table!.columns || []).map(col => (
-                      <tr key={col.id} style={{ borderBottom: '1px solid var(--border-main)', backgroundColor: 'var(--node-bg)' }}>
-                        <td style={{ padding: '6px 16px', color: 'var(--text-secondary)', borderRight: '1px solid var(--border-main)' }}>
-                          <div className="text-[11px] font-medium truncate" title={col.logical?.name || col.id}>
-                            {col.logical?.name || col.id}
-                          </div>
-                        </td>
-                        <td style={{ padding: '6px 16px' }}>
-                          <input 
-                            value={col.physical?.name ?? ''}
-                            onChange={(e) => handleUpdatePhysicalColumn(col.id, { name: e.target.value })}
-                            placeholder={col.logical?.name.toLowerCase().replace(/ /g, '_')}
-                            className={`bg-transparent border-none font-mono text-[11px] w-full outline-none p-1 rounded transition-colors ${
-                              theme === 'dark' ? 'text-blue-400 focus:bg-slate-800' : 'text-blue-600 focus:bg-slate-50'
-                            }`}
-                          />
-                        </td>
-                        <td style={{ padding: '6px 16px' }}>
-                          <input 
-                            value={col.physical?.type ?? ''}
-                            onChange={(e) => handleUpdatePhysicalColumn(col.id, { type: e.target.value })}
-                            placeholder={col.logical?.type.toUpperCase()}
-                            className={`bg-transparent border-none font-mono text-[11px] w-full outline-none p-1 rounded transition-colors ${
-                              theme === 'dark' ? 'text-slate-400 focus:bg-slate-800' : 'text-slate-500 focus:bg-slate-50'
-                            }`}
-                          />
-                        </td>
-                        <td style={{ padding: '6px 16px' }}>
-                          <input 
-                            value={col.physical?.constraints?.join(', ') || ''}
-                            onChange={(e) => handleUpdatePhysicalColumn(col.id, { constraints: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
-                            placeholder="e.g. NOT NULL"
-                            className={`bg-transparent border-none text-[11px] w-full outline-none p-1 rounded transition-colors ${
-                              theme === 'dark' ? 'text-slate-500 focus:bg-slate-800' : 'text-slate-400 focus:bg-slate-50'
-                            }`}
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}

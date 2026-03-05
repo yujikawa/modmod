@@ -440,7 +440,7 @@ export const useStore = create<AppState>((set, get) => ({
     const newTable: Table = {
       id: newId,
       name: 'NEW_TABLE',
-      appearance: { type: 'fact' },
+      appearance: { type: 'table' },
       columns: [
         { id: 'id', logical: { name: 'ID', type: 'Integer', isPrimaryKey: true } }
       ]

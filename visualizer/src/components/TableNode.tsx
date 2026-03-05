@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from 'react'
-import { Handle, Position, type NodeProps, NodeResizer } from 'reactflow'
+import { Handle, Position, type NodeProps, NodeResizer, useUpdateNodeInternals } from 'reactflow'
 import type { Table } from '../types/schema'
 import { useStore } from '../store/useStore'
 
@@ -9,17 +9,21 @@ const TYPE_CONFIG: Record<string, { color: string; icon: string; label: string }
   hub: { color: '#fbbf24', icon: '🌐', label: 'HUB' },
   link: { color: '#34d399', icon: '🔗', label: 'LINK' },
   satellite: { color: '#a78bfa', icon: '🛰️', label: 'SAT' },
-  mart: { color: '#f5700b', icon: '📈', label: 'MART' }
+  mart: { color: '#f5700b', icon: '📈', label: 'MART' },
+  table: { color: '#64748b', icon: '📋', label: 'TABLE' }
 };
 
 const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
   const { table } = data
   const [isNew, setIsNew] = useState(true)
+  const updateNodeInternals = useUpdateNodeInternals()
 
   useEffect(() => {
+    // Notify React Flow that handles might have shifted due to dynamic header content
+    updateNodeInternals(id)
     const timer = setTimeout(() => setIsNew(false), 1000)
     return () => clearTimeout(timer)
-  }, [])
+  }, [id, table.name, table.logical_name, table.physical_name, updateNodeInternals])
 
   const { 
     updateNodeDimensions, 
@@ -129,6 +133,33 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
         }}
       />
 
+      {/* Index Tab (Entity Type) */}
+      {typeLabel && (
+        <div 
+          style={{
+            position: 'absolute',
+            top: '-12px',
+            left: '12px',
+            height: '14px',
+            padding: '0 6px',
+            backgroundColor: themeColor,
+            color: '#ffffff',
+            fontSize: '8px',
+            fontWeight: 900,
+            borderRadius: '4px 4px 0 0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            boxShadow: '0 -2px 4px rgba(0,0,0,0.1)',
+            zIndex: 1
+          }}
+        >
+          {typeLabel}
+        </div>
+      )}
+
       {/* ER Top Handle (Target only) */}
       <Handle 
         type="target" 
@@ -198,56 +229,61 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
         <div 
           className="table-drag-handle"
           style={{ 
-            padding: '10px 12px', 
+            padding: '12px', 
             backgroundColor: theme === 'dark' ? 'rgba(15, 23, 42, 0.8)' : 'rgba(241, 245, 249, 0.9)', 
             borderBottom: hasColumns ? '1px solid var(--border-main)' : 'none', 
             flexShrink: 0,
-            cursor: 'grab'
+            cursor: 'grab',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '2px'
           }}
         >
-          {/* Top Row: Icon and ID */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
-            {icon && <span style={{ fontSize: '14px' }}>{icon}</span>}
+          {/* Layer 1: Conceptual Name (Primary) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {icon && <span style={{ fontSize: '18px' }}>{icon}</span>}
             <div style={{ 
-              fontSize: '10px', 
-              color: 'var(--text-secondary)', 
-              textTransform: 'uppercase', 
-              fontFamily: 'monospace',
-              letterSpacing: '0.05em',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
+              fontSize: '16px', 
+              fontWeight: 800, 
+              color: 'var(--text-primary)',
+              lineHeight: '1.2',
+              wordBreak: 'break-all'
             }}>
-              {table.id}
-              <span style={{ opacity: 0.5, fontSize: '9px' }}>({table.columns?.length || 0})</span>
+              {table.name}
             </div>
           </div>
 
-          {/* Primary Row: Table Name */}
-          <div style={{ 
-            fontSize: '14px', 
-            fontWeight: 'bold', 
-            color: 'var(--text-primary)',
-            lineHeight: '1.2',
-            wordBreak: 'break-all'
-          }}>
-            {table.name}
-          </div>
-
-          {/* Metadata Row: Type, Sub-type, and SCD */}
-          {typeLabel && (
+          {/* Layer 2: Logical Name (Secondary) - Hidden if redundant */}
+          {table.logical_name && table.logical_name !== table.name && (
             <div style={{ 
-              fontSize: '9px', 
-              fontWeight: 700, 
-              color: themeColor,
-              marginTop: '4px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.02em',
-              opacity: 0.9
+              fontSize: '11px', 
+              fontWeight: 500,
+              color: 'var(--text-secondary)',
+              paddingLeft: icon ? '26px' : '0',
+              opacity: 0.8
             }}>
-              {typeLabel}
+              {table.logical_name}
             </div>
           )}
+
+          {/* Layer 3: Physical Name (Technical) */}
+          <div 
+            title={table.physical_name || table.id}
+            style={{ 
+              fontSize: '9px', 
+              color: theme === 'dark' ? '#94a3b8' : '#64748b', 
+              fontFamily: 'monospace',
+              letterSpacing: '0.02em',
+              paddingLeft: icon ? '26px' : '0',
+              marginTop: '2px',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              maxWidth: '100%'
+            }}
+          >
+            {table.physical_name || table.id}
+          </div>
         </div>
         
         {/* Columns - Non-draggable area */}

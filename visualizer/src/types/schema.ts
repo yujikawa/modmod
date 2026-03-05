@@ -15,9 +15,11 @@ export interface Domain {
 
 export interface Table {
   id: string; // Internal name/key
-  name: string; // Display name (Logical name)
+  name: string; // Display name (Conceptual name)
+  logical_name?: string; // Formal logical name
+  physical_name?: string; // Actual database table name
   appearance?: {
-    type?: 'fact' | 'dimension' | 'hub' | 'link' | 'satellite' | 'mart';
+    type?: 'fact' | 'dimension' | 'hub' | 'link' | 'satellite' | 'mart' | 'table';
     sub_type?: string; // Generic sub-classification (e.g. transaction, periodic, etc.)
     scd?: string; // History tracking (e.g. type0, type1, type2, etc.)
     icon?: string;

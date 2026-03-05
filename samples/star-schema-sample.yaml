@@ -1,0 +1,136 @@
+tables:
+  - id: dim_products
+    name: Products
+    logical_name: Product Master List
+    physical_name: dim_products_v2
+    appearance:
+      type: dimension
+      icon: 📦
+    columns:
+      - id: product_key
+        logical:
+          name: Product Key
+          type: Int
+          isPrimaryKey: true
+      - id: product_name
+        logical:
+          name: Name
+          type: String
+    sampleData: []
+  - id: dim_dates
+    name: Calendar
+    logical_name: Enterprise Date Dimension
+    physical_name: dim_date_spine
+    appearance:
+      type: dimension
+      icon: 📅
+    columns:
+      - id: date_key
+        logical:
+          name: Date Key
+          type: Date
+          isPrimaryKey: true
+    sampleData: []
+  - id: fct_sales
+    name: Sales
+    logical_name: Retail Sales Transactions
+    physical_name: fct_retail_sales_incremental
+    appearance:
+      type: fact
+      sub_type: transaction
+      icon: 💰
+    columns:
+      - id: sale_id
+        logical:
+          name: ID
+          type: Int
+          isPrimaryKey: true
+      - id: product_key
+        logical:
+          name: Product Key
+          type: Int
+          isForeignKey: true
+      - id: date_key
+        logical:
+          name: Date Key
+          type: Date
+          isForeignKey: true
+      - id: amount
+        logical:
+          name: Total Amount
+          type: Decimal
+          additivity: fully
+    sampleData: []
+  - id: mart_monthly_revenue
+    name: Monthly Revenue
+    logical_name: Executive Revenue Summary
+    physical_name: mart_finance_monthly_revenue_agg
+    appearance:
+      type: mart
+      icon: 📈
+    lineage:
+      upstream:
+        - fct_sales
+    columns:
+      - id: month_key
+        logical:
+          name: Month
+          type: String
+          isPrimaryKey: true
+      - id: total_revenue
+        logical:
+          name: Revenue
+          type: Decimal
+          additivity: fully
+    sampleData: []
+relationships:
+  - from:
+      table: dim_products
+      column: product_key
+    to:
+      table: fct_sales
+      column: product_key
+    type: one-to-many
+  - from:
+      table: dim_dates
+      column: date_key
+    to:
+      table: fct_sales
+      column: date_key
+    type: one-to-many
+domains:
+  - id: sales_ops
+    name: Sales Operations
+    color: rgba(239, 68, 68, 0.1)
+    tables:
+      - fct_sales
+      - dim_products
+      - dim_dates
+  - id: analytics_marts
+    name: Analytics & Insights
+    color: rgba(245, 158, 11, 0.1)
+    tables:
+      - mart_monthly_revenue
+layout:
+  sales_ops:
+    x: 0
+    'y': 0
+    width: 840
+    height: 640
+  fct_sales:
+    x: 260
+    'y': 360
+  dim_products:
+    x: 60
+    'y': 60
+  dim_dates:
+    x: 460
+    'y': 60
+  analytics_marts:
+    x: 906
+    'y': 131
+    width: 440
+    height: 340
+  mart_monthly_revenue:
+    x: 60
+    'y': 60
