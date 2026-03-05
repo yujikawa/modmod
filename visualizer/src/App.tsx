@@ -56,23 +56,66 @@ function Flow() {
   
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
-  const { setCenter, getNode } = useReactFlow()
+  const { fitView, getViewport, setViewport } = useReactFlow()
 
   const isEditingDisabled = showER && showLineage
+  const isViewingDisabled = !showER && !showLineage
+
+  // Handle global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 1. Clear selection on Escape
+      if (e.key === 'Escape') {
+        setSelectedTableId(null);
+        setSelectedEdgeId(null);
+        return;
+      }
+
+      // 2. Pan canvas with arrow keys
+      // Guard: Don't pan if typing in an input, textarea, or CodeMirror
+      const activeEl = document.activeElement;
+      const isTyping = activeEl?.tagName === 'INPUT' || 
+                       activeEl?.tagName === 'TEXTAREA' || 
+                       activeEl?.hasAttribute('contenteditable') ||
+                       activeEl?.classList.contains('cm-content');
+
+      if (isTyping) return;
+
+      // Guard: Only pan if nothing is selected (prevents conflict with node nudging)
+      if (selectedTableId || selectedEdgeId) return;
+
+      if (e.key.startsWith('Arrow')) {
+        const { x, y, zoom } = getViewport();
+        const MOVE_STEP = 100;
+
+        if (e.key === 'ArrowUp') {
+          setViewport({ x, y: y + MOVE_STEP, zoom }, { duration: 150 });
+        } else if (e.key === 'ArrowDown') {
+          setViewport({ x, y: y - MOVE_STEP, zoom }, { duration: 150 });
+        } else if (e.key === 'ArrowLeft') {
+          setViewport({ x: x + MOVE_STEP, y, zoom }, { duration: 150 });
+        } else if (e.key === 'ArrowRight') {
+          setViewport({ x: x - MOVE_STEP, y, zoom }, { duration: 150 });
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [setSelectedTableId, setSelectedEdgeId, getViewport, setViewport, selectedTableId, selectedEdgeId]);
 
   // Handle focusNodeId changes
   useEffect(() => {
     if (focusNodeId) {
-      const node = getNode(focusNodeId)
-      if (node) {
-        const x = node.position.x + (node.width || 0) / 2
-        const y = node.position.y + (node.height || 0) / 2
-        setCenter(x, y, { zoom: 1.2, duration: 800 })
-      }
+      fitView({ 
+        nodes: [{ id: focusNodeId }], 
+        duration: 800, 
+        padding: 0.5 
+      });
       // Reset focusNodeId after focusing
-      setFocusNodeId(null)
+      setFocusNodeId(null);
     }
-  }, [focusNodeId, getNode, setCenter, setFocusNodeId])
+  }, [focusNodeId, fitView, setFocusNodeId]);
 
   // Sync Nodes (including selection state)
   useEffect(() => {
@@ -353,16 +396,30 @@ function Flow() {
       
       {/* Read-Only Badge */}
       {isEditingDisabled && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-2 text-center">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-2 text-center pointer-events-none">
           <div className="flex flex-col items-center">
-            <div className="flex items-center gap-2 px-4 py-1.5 bg-amber-500/90 backdrop-blur-md text-slate-950 rounded-full shadow-2xl border border-amber-400/50">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">Connections Locked</span>
-              <div className="w-px h-3 bg-slate-900/20" />
-              <span className="text-[10px] font-medium text-slate-800">Viewing ER & Lineage simultaneously</span>
+            <div className={`flex items-center gap-2 px-4 py-1.5 backdrop-blur-md rounded-full shadow-xl border transition-colors ${
+              theme === 'dark' ? 'bg-slate-950/60 border-amber-500/50' : 'bg-white/60 border-amber-500/40'
+            }`}>
+              <span className={`text-[10px] font-black uppercase tracking-widest ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`}>Connections Locked</span>
+              <div className={`w-px h-3 ${theme === 'dark' ? 'bg-amber-500/20' : 'bg-amber-500/30'}`} />
+              <span className={`text-[10px] font-bold ${theme === 'dark' ? 'text-amber-400/70' : 'text-amber-600/70'}`}>ER & Lineage active</span>
             </div>
-            <p className="mt-1 text-[9px] font-bold text-amber-500 uppercase tracking-tighter drop-shadow-md">
-              Table editing and movement still active
-            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden Connections Guidance Badge */}
+      {isViewingDisabled && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-2 text-center pointer-events-none">
+          <div className="flex flex-col items-center">
+            <div className={`flex items-center gap-2 px-4 py-1.5 backdrop-blur-md rounded-full shadow-xl border transition-colors ${
+              theme === 'dark' ? 'bg-slate-950/60 border-blue-500/50' : 'bg-white/60 border-blue-500/40'
+            }`}>
+              <span className={`text-[10px] font-black uppercase tracking-widest ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>Connections Hidden</span>
+              <div className={`w-px h-3 ${theme === 'dark' ? 'bg-blue-500/20' : 'bg-blue-500/30'}`} />
+              <span className={`text-[10px] font-bold ${theme === 'dark' ? 'text-blue-400/70' : 'text-blue-600/70'}`}>Enable a View Mode to draw edges</span>
+            </div>
           </div>
         </div>
       )}
