@@ -275,7 +275,7 @@ export const useStore = create<AppState>((set, get) => ({
           newLayout[tid] = { x: domainLayouts[v].tableOffsets[tid].x, y: domainLayouts[v].tableOffsets[tid].y };
         });
       } else {
-        newLayout[v] = { x: absX, y: absY, width: node.width, height: node.height };
+        newLayout[v] = { x: absX, y: absY }; // No need to set width/height for unassigned tables unless manually resized
       }
     });
 
@@ -523,8 +523,19 @@ export const useStore = create<AppState>((set, get) => ({
       finalTargetHandle = sourceHandle;
     }
 
-    const sourceCol = finalSourceHandle ? (finalSourceHandle.replace(`${finalSource}-`, '').replace('-source', '') || undefined) : undefined;
-    const targetCol = finalTargetHandle ? (finalTargetHandle.replace(`${finalTarget}-`, '').replace('-target', '') || undefined) : undefined;
+    // New Parsing Logic for Descriptive IDs
+    // Format is either "[node]-[col]-er-source-right" or "[node]-er-source-bottom"
+    const parseColumn = (nodeId: string, handleId: string | null | undefined) => {
+      if (!handleId) return undefined;
+      const baseId = handleId.replace(`${nodeId}-`, '');
+      // If it starts with er- or lin-, it's a table-level handle
+      if (baseId.startsWith('er-') || baseId.startsWith('lin-')) return undefined;
+      // Otherwise, extract column name from [col]-er-...
+      return baseId.split('-')[0] || undefined;
+    };
+
+    const sourceCol = parseColumn(finalSource, finalSourceHandle);
+    const targetCol = parseColumn(finalTarget, finalTargetHandle);
 
     const isDuplicate = (schema.relationships || []).some(rel => 
       rel.from.table === finalSource && 

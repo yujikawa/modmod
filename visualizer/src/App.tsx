@@ -253,10 +253,21 @@ function Flow() {
         const isDirectlySelected = selectedEdgeId === edgeId;
         const isHighlighted = isConnectedToSelectedTable || isDirectlySelected;
         
+        // Explicit Handle Mapping
+        const sourceHandle = rel.from.column 
+          ? `${rel.from.table}-${rel.from.column}-er-source-right` 
+          : `${rel.from.table}-er-source-bottom`;
+        
+        const targetHandle = rel.to.column 
+          ? `${rel.to.table}-${rel.to.column}-er-target-left` 
+          : `${rel.to.table}-er-target-top`;
+
         return {
           id: edgeId,
           source: rel.from.table,
+          sourceHandle,
           target: rel.to.table,
+          targetHandle,
           type: 'button',
           data: { 
             isConnectedToSelectedTable,
@@ -286,8 +297,8 @@ function Flow() {
               id: edgeId,
               source: upstreamId,
               target: table.id,
-              sourceHandle: `${upstreamId}-lineage-source`,
-              targetHandle: `${table.id}-lineage-target`,
+              sourceHandle: `${upstreamId}-lin-source-right`,
+              targetHandle: `${table.id}-lin-target-left`,
               type: 'lineage',
               data: { isHighlighted },
               selected: isDirectlySelected,
@@ -307,26 +318,27 @@ function Flow() {
     (params: Connection) => {
       if (params.source && params.target) {
         // 1. Handle Lineage
-        const isLineage = params.sourceHandle?.includes('lineage') || params.targetHandle?.includes('lineage');
+        const isLinConnection = params.sourceHandle?.includes('lin-') || params.targetHandle?.includes('lin-');
         
-        if (isLineage) {
-          // For lineage, we assume source -> target is the flow
+        if (isLinConnection) {
+          // Lineage only makes sense from source-right to target-left
+          // But we'll accept any lineage handle to lineage handle
           addLineage(params.source, params.target);
           return;
         }
 
-        // 2. Handle ER (Bidirectional Support)
-        // If user connects from a 'target' handle to a 'source' handle, swap them
+        // 2. Handle ER (Bidirectional & Multi-directional Support)
         let finalSource = params.source;
         let finalTarget = params.target;
         let finalSourceHandle = params.sourceHandle;
         let finalTargetHandle = params.targetHandle;
 
+        // If user connects from a 'target' handle to a 'source' handle, swap them
+        // This allows dragging FROM a PK/FK TO another PK/FK in any order.
         const isSourceTargetRole = params.sourceHandle?.includes('target');
         const isTargetSourceRole = params.targetHandle?.includes('source');
 
         if (isSourceTargetRole || isTargetSourceRole) {
-          // Swap logic
           finalSource = params.target;
           finalTarget = params.source;
           finalSourceHandle = params.targetHandle;
