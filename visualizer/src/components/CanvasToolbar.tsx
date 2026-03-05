@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Layout, Grid, Trash2, Tag, Database, GitGraph, Network, X, Eye, Plus, CircleHelp, Command, Undo2, Redo2 } from 'lucide-react'
+import { Layout, Grid, Trash2, Tag, Database, GitGraph, Network, X, Eye, Plus, CircleHelp, Command, Undo2, Redo2, Lock } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { useReactFlow } from 'reactflow'
 
@@ -116,22 +116,28 @@ const CanvasToolbar = () => {
             <div className="flex flex-col gap-1 px-1.5 w-full">
               <button
                 onClick={handleAddDomain}
-                className={`flex items-center justify-center w-full aspect-square rounded-xl transition-all group ${
-                  theme === 'dark' ? 'text-slate-500 hover:text-blue-400 hover:bg-slate-800' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-50'
+                className={`flex items-center justify-center w-full aspect-square rounded-xl transition-all group relative ${
+                  isEditingDisabled 
+                    ? 'opacity-40 cursor-not-allowed text-slate-500' 
+                    : theme === 'dark' ? 'text-slate-500 hover:text-blue-400 hover:bg-slate-800' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-100'
                 }`}
-                title="Add new Domain"
+                title={isEditingDisabled ? "Addition locked while ER & Lineage are both active" : "Add new Domain"}
               >
                 <Layout size={20} />
+                {isEditingDisabled && <Lock size={10} className="absolute bottom-1 right-1 text-slate-500" />}
               </button>
               
               <button
                 onClick={handleAddTable}
-                className={`flex items-center justify-center w-full aspect-square rounded-xl transition-all group ${
-                  theme === 'dark' ? 'text-slate-500 hover:text-emerald-400 hover:bg-slate-800' : 'text-slate-400 hover:text-emerald-600 hover:bg-slate-50'
+                className={`flex items-center justify-center w-full aspect-square rounded-xl transition-all group relative ${
+                  isEditingDisabled 
+                    ? 'opacity-40 cursor-not-allowed text-slate-500' 
+                    : theme === 'dark' ? 'text-slate-500 hover:text-emerald-400 hover:bg-slate-800' : 'text-slate-400 hover:text-emerald-600 hover:bg-slate-100'
                 }`}
-                title="Add new Table"
+                title={isEditingDisabled ? "Addition locked while ER & Lineage are both active" : "Add new Table"}
               >
                 <Grid size={20} />
+                {isEditingDisabled && <Lock size={10} className="absolute bottom-1 right-1 text-slate-500" />}
               </button>
             </div>
           </div>
@@ -145,7 +151,7 @@ const CanvasToolbar = () => {
               className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all ${
                 showHelp 
                   ? (theme === 'dark' ? 'bg-blue-600 text-white' : 'bg-blue-600 text-white shadow-md shadow-blue-500/20') 
-                  : (theme === 'dark' ? 'text-slate-500 hover:bg-slate-800 hover:text-slate-300' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600')
+                  : (theme === 'dark' ? 'text-slate-500 hover:bg-slate-800 hover:text-slate-300' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600')
               }`}
               title="Keyboard Shortcuts & Help"
             >

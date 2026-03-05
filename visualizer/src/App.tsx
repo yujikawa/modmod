@@ -59,6 +59,19 @@ function Flow() {
   const { fitView } = useReactFlow()
 
   const isEditingDisabled = showER && showLineage
+  const isViewingDisabled = !showER && !showLineage
+
+  // Handle Escape key to clear focus
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedTableId(null);
+        setSelectedEdgeId(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [setSelectedTableId, setSelectedEdgeId]);
 
   // Handle focusNodeId changes
   useEffect(() => {
@@ -352,16 +365,30 @@ function Flow() {
       
       {/* Read-Only Badge */}
       {isEditingDisabled && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-2 text-center">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-2 text-center pointer-events-none">
           <div className="flex flex-col items-center">
-            <div className="flex items-center gap-2 px-4 py-1.5 bg-amber-500/90 backdrop-blur-md text-slate-950 rounded-full shadow-2xl border border-amber-400/50">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">Connections Locked</span>
-              <div className="w-px h-3 bg-slate-900/20" />
-              <span className="text-[10px] font-medium text-slate-800">Viewing ER & Lineage simultaneously</span>
+            <div className={`flex items-center gap-2 px-4 py-1.5 backdrop-blur-md rounded-full shadow-xl border transition-colors ${
+              theme === 'dark' ? 'bg-slate-950/60 border-amber-500/50' : 'bg-white/60 border-amber-500/40'
+            }`}>
+              <span className={`text-[10px] font-black uppercase tracking-widest ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`}>Connections Locked</span>
+              <div className={`w-px h-3 ${theme === 'dark' ? 'bg-amber-500/20' : 'bg-amber-500/30'}`} />
+              <span className={`text-[10px] font-bold ${theme === 'dark' ? 'text-amber-400/70' : 'text-amber-600/70'}`}>ER & Lineage active</span>
             </div>
-            <p className="mt-1 text-[9px] font-bold text-amber-500 uppercase tracking-tighter drop-shadow-md">
-              Table editing and movement still active
-            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden Connections Guidance Badge */}
+      {isViewingDisabled && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-2 text-center pointer-events-none">
+          <div className="flex flex-col items-center">
+            <div className={`flex items-center gap-2 px-4 py-1.5 backdrop-blur-md rounded-full shadow-xl border transition-colors ${
+              theme === 'dark' ? 'bg-slate-950/60 border-blue-500/50' : 'bg-white/60 border-blue-500/40'
+            }`}>
+              <span className={`text-[10px] font-black uppercase tracking-widest ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>Connections Hidden</span>
+              <div className={`w-px h-3 ${theme === 'dark' ? 'bg-blue-500/20' : 'bg-blue-500/30'}`} />
+              <span className={`text-[10px] font-bold ${theme === 'dark' ? 'text-blue-400/70' : 'text-blue-600/70'}`}>Enable a View Mode to draw edges</span>
+            </div>
           </div>
         </div>
       )}
