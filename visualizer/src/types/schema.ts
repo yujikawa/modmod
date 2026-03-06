@@ -11,6 +11,7 @@ export interface Domain {
   description?: string;
   tables: string[]; // List of table IDs
   color?: string;
+  isLocked?: boolean;
 }
 
 export interface Table {

@@ -51,6 +51,7 @@ interface AppState {
   setLastUpdateSource: (source: 'user' | 'visual' | 'undo') => void;
   parseAndSetSchema: (yaml: string) => void;
   updateNodePosition: (id: string, x: number, y: number, parentId?: string | null) => void;
+  updateNodesPosition: (nodes: { id: string, x: number, y: number, parentId?: string | null }[]) => void;
   updateNodeDimensions: (id: string, width: number, height: number) => void;
   saveSchema: (force?: boolean) => Promise<void>;
   
@@ -64,6 +65,7 @@ interface AppState {
   removeNode: (id: string) => void;
   updateTable: (id: string, updates: Partial<Table>) => void;
   updateDomain: (id: string, updates: Partial<Domain>) => void;
+  toggleDomainLock: (id: string) => void;
   assignTableToDomain: (tableId: string, domainId?: string | null) => void;
   toggleTableSelection: (id: string) => void;
   toggleEdgeSelection: (id: string) => void;
@@ -391,6 +393,26 @@ export const useStore = create<AppState>((set, get) => ({
     get().saveSchema();
   },
 
+  updateNodesPosition: (nodes) => {
+    const schema = get().schema;
+    if (!schema || nodes.length === 0) return;
+
+    const newLayout = { ...(schema.layout || {}) };
+    
+    nodes.forEach(node => {
+      const currentLayout = newLayout[node.id] || { x: 0, y: 0 };
+      newLayout[node.id] = { 
+        ...currentLayout, 
+        x: Math.round(node.x), 
+        y: Math.round(node.y) 
+      };
+    });
+
+    set({ schema: { ...schema, layout: newLayout }, lastUpdateSource: 'visual' });
+    get().syncToYamlInput();
+    get().saveSchema();
+  },
+
   updateNodeDimensions: (id, width, height) => {
     const schema = get().schema;
     if (!schema) return;
@@ -694,6 +716,22 @@ export const useStore = create<AppState>((set, get) => ({
 
     const newSchema = { ...schema, domains: newDomains };
     set({ schema: normalizeSchema(newSchema) });
+    get().syncToYamlInput();
+    get().saveSchema();
+  },
+
+  toggleDomainLock: (id) => {
+    const { schema } = get();
+    if (!schema || !schema.domains) return;
+
+    const newDomains = schema.domains.map(domain => {
+      if (domain.id === id) {
+        return { ...domain, isLocked: !domain.isLocked };
+      }
+      return domain;
+    });
+
+    set({ schema: { ...schema, domains: newDomains } });
     get().syncToYamlInput();
     get().saveSchema();
   },
