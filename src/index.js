@@ -7,6 +7,7 @@ import { startDevServer } from './dev.js';
 import { build } from './build.js';
 import { initProject } from './init.js';
 import { exportModel } from './export.js';
+import { createModel } from './create.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const VISUALIZER_PATH = path.resolve(__dirname, '../visualizer');
@@ -15,7 +16,7 @@ const program = new Command();
 program
   .name('modscape')
   .description('Modscape: A YAML-driven data modeling visualizer CLI')
-  .version('1.0.6');
+  .version('1.0.7');
 
 program
   .command('init')
@@ -26,6 +27,14 @@ program
   .option('-a, --all', 'Scaffold for all agents')
   .action((options) => {
     initProject(options);
+  });
+
+program
+  .command('new')
+  .description('Create a new YAML model file from template')
+  .argument('<path>', 'path to the new YAML file')
+  .action((path) => {
+    createModel(path);
   });
 
 program

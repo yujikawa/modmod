@@ -1,0 +1,38 @@
+# Modscape Data Model
+# Use 'modscape dev <filename>' to visualize and edit this model.
+
+domains:
+  - id: sample_domain
+    name: Sample Domain
+    color: "rgba(59, 130, 246, 0.1)"
+    description: "A logical grouping of related business entities."
+    tables: [sample_table]
+
+tables:
+  - id: sample_table
+    name: Sample Table
+    logical_name: "Sample Business Entity"
+    physical_name: "sample_table"
+    appearance:
+      type: table
+      icon: "📋"
+    conceptual:
+      description: "An example table to showcase tri-layer naming and sample data."
+    columns:
+      - id: id
+        logical: { name: ID, type: Int, isPrimaryKey: true }
+        physical: { name: id, type: BIGINT }
+      - id: name
+        logical: { name: Name, type: String }
+        physical: { name: name, type: VARCHAR(255) }
+      - id: created_at
+        logical: { name: Created At, type: Timestamp, isMetadata: true }
+        physical: { name: created_at, type: TIMESTAMP_NTZ }
+    sampleData:
+      - [id, name, created_at]
+      - [1, "Example Record A", "2024-01-01 10:00:00"]
+      - [2, "Example Record B", "2024-01-02 11:30:00"]
+
+relationships: []
+
+lineage: []
