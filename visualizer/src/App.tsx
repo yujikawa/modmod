@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
 import ReactFlow, { 
   Background, 
   Controls, 
@@ -51,13 +51,15 @@ function Flow() {
     showLineage,
     addLineage,
     setConnectionStartHandle,
-    theme
+    theme,
+    currentModelSlug
   } = useStore()
   
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const { fitView, getViewport, setViewport } = useReactFlow()
   const [edgeSyncTrigger, setEdgeSyncTrigger] = useState(0)
+  const lastLoadedModel = useRef<string | null>(null)
 
   const isEditingDisabled = showER && showLineage
   const isViewingDisabled = !showER && !showLineage
@@ -227,15 +229,23 @@ function Flow() {
     setNodes(newNodes)
 
     // Robust Snapping Booster: 
-    // Wait for nodes to finish layout rendering, then trigger fitView and a edge re-sync
-    const timer = setTimeout(() => {
-      fitView({ duration: 400, padding: 0.2 });
-      window.dispatchEvent(new Event('resize'));
-      // Trigger a secondary edge sync to catch finalized handle positions
+    // Wait for nodes to finish layout rendering, then trigger fitView and a edge re-sync.
+    // We only trigger fitView (zooming out to see everything) on the INITIAL LOAD of a model
+    // to prevent annoying viewport jumps during drags and edits.
+    if (lastLoadedModel.current !== currentModelSlug) {
+      const timer = setTimeout(() => {
+        fitView({ duration: 400, padding: 0.2 });
+        window.dispatchEvent(new Event('resize'));
+        // Trigger a secondary edge sync to catch finalized handle positions
+        setEdgeSyncTrigger(v => v + 1);
+      }, 400);
+      lastLoadedModel.current = currentModelSlug;
+      return () => clearTimeout(timer);
+    } else {
+      // For incremental updates (drags, edits), just re-sync edges without jumping the camera.
       setEdgeSyncTrigger(v => v + 1);
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [schema, setNodes, fitView])
+    }
+  }, [schema, setNodes, fitView, currentModelSlug])
 
   // Sync Store Selection to React Flow nodes state (without recreating all nodes)
   useEffect(() => {
