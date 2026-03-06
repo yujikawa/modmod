@@ -23,7 +23,7 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
     updateNodeInternals(id)
     const timer = setTimeout(() => setIsNew(false), 1000)
     return () => clearTimeout(timer)
-  }, [id, table.name, table.logical_name, table.physical_name, updateNodeInternals])
+  }, [id, table.name, table.logical_name, table.physical_name, table.columns, updateNodeInternals])
 
   const { 
     updateNodeDimensions, 
@@ -291,80 +291,102 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
           <div className="nodrag" style={{ padding: '0', overflowY: 'auto', flex: 1, cursor: 'default' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
               <tbody>
-                {table.columns!.map((col, index) => (
-                  <tr 
-                    key={col.id} 
-                    className="column-row"
-                    style={{ 
-                      borderBottom: '1px solid var(--border-main)',
-                      backgroundColor: hoveredColumnId === col.id 
-                        ? (theme === 'dark' ? 'rgba(30, 58, 138, 0.6)' : 'rgba(191, 219, 254, 0.4)') 
-                        : 'transparent',
-                      position: 'relative'
-                    }}
-                  >
-                    <td style={{ 
-                      padding: '6px 12px', 
-                      fontWeight: 500, 
-                      color: 'var(--text-primary)',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      maxWidth: '350px',
-                      position: 'relative'
-                    }}>
-                      {/* ER Column Target (Left) */}
-                      <Handle
-                        type="target"
-                        position={Position.Left}
-                        id={`${id}-${col.id}-er-target-left`}
-                        className={`column-handle ${getHandleClass('target', true)}`}
-                        style={{ 
-                          ...getHandleStyle('#3b82f6', showER),
-                          left: '-4px', opacity: 0, pointerEvents: showER ? 'all' : 'none' 
-                        }}
-                      />
-                      <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <span style={{ color: 'var(--text-secondary)', marginRight: '6px', fontSize: '9px', fontFamily: 'monospace', width: '14px', textAlign: 'right', opacity: 0.6 }}>{index + 1}.</span>
-                        {col.logical?.isPrimaryKey && <span style={{ color: '#eab308', marginRight: '4px' }}>🔑</span>}
-                        {col.logical?.isForeignKey && <span style={{ marginRight: '4px' }}>🔩</span>}
-                        {col.logical?.isPartitionKey && <span style={{ marginRight: '4px' }}>📂</span>}
-                        {col.logical?.isMetadata && <span style={{ marginRight: '4px' }} title="Metadata/Audit Column">🕒</span>}
-                        {col.logical?.additivity === 'fully' && <span style={{ color: '#4ade80', marginRight: '4px' }} title="Fully Additive">Σ</span>}
-                        {col.logical?.additivity === 'semi' && <span style={{ color: '#fbbf24', marginRight: '4px' }} title="Semi-Additive">Σ~</span>}
-                        {col.logical?.additivity === 'non' && <span style={{ color: '#f87171', marginRight: '4px' }} title="Non-Additive">⊘</span>}
-                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {col.logical?.name || col.id}
-                        </span>
-                      </div>
-                    </td>
-                    <td style={{ 
-                      padding: '6px 12px', 
-                      textAlign: 'right', 
-                      fontStyle: 'italic', 
-                      color: 'var(--text-secondary)',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      maxWidth: '150px',
-                      position: 'relative',
-                      opacity: 0.8
-                    }}>
-                      {col.logical?.type || 'Unknown'}
-                      {/* ER Column Source (Right) */}
-                      <Handle
-                        type="source"
-                        position={Position.Right}
-                        id={`${id}-${col.id}-er-source-right`}
-                        className={`column-handle ${getHandleClass('source', true)}`}
-                        style={{ 
-                          ...getHandleStyle('#3b82f6', showER),
-                          right: '-4px', opacity: 0, pointerEvents: showER ? 'all' : 'none' 
-                        }}
-                      />
-                    </td>
-                  </tr>
-                ))}
+                {table.columns!.map((col, index) => {
+                  const logicalName = col.logical?.name || col.id;
+                  const physicalName = col.physical?.name || col.id;
+                  const showPhysical = logicalName !== physicalName;
+
+                  return (
+                    <tr 
+                      key={col.id} 
+                      className="column-row"
+                      style={{ 
+                        borderBottom: '1px solid var(--border-main)',
+                        backgroundColor: hoveredColumnId === col.id 
+                          ? (theme === 'dark' ? 'rgba(30, 58, 138, 0.6)' : 'rgba(191, 219, 254, 0.4)') 
+                          : 'transparent',
+                        position: 'relative'
+                      }}
+                    >
+                      <td style={{ 
+                        padding: '6px 12px', 
+                        fontWeight: 500, 
+                        color: 'var(--text-primary)',
+                        position: 'relative'
+                      }}>
+                        {/* ER Column Target (Left) */}
+                        <Handle
+                          type="target"
+                          position={Position.Left}
+                          id={`${id}-${col.id}-er-target-left`}
+                          className={`column-handle ${getHandleClass('target', true)}`}
+                          style={{ 
+                            ...getHandleStyle('#3b82f6', showER),
+                            left: '-4px', opacity: 0, pointerEvents: showER ? 'all' : 'none' 
+                          }}
+                        />
+                        <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                          <span style={{ color: 'var(--text-secondary)', marginRight: '6px', fontSize: '9px', fontFamily: 'monospace', width: '14px', textAlign: 'right', opacity: 0.6, marginTop: '2px' }}>{index + 1}.</span>
+                          <div className="flex flex-col flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 overflow-hidden">
+                              {col.logical?.isPrimaryKey && <span style={{ color: '#eab308' }}>🔑</span>}
+                              {col.logical?.isForeignKey && <span style={{ opacity: 0.8 }}>🔩</span>}
+                              {col.logical?.isPartitionKey && <span style={{ opacity: 0.8 }}>📂</span>}
+                              {col.logical?.isMetadata && <span style={{ opacity: 0.8 }} title="Metadata/Audit Column">🕒</span>}
+                              {col.logical?.additivity === 'fully' && <span style={{ color: '#4ade80' }} title="Fully Additive">Σ</span>}
+                              {col.logical?.additivity === 'semi' && <span style={{ color: '#fbbf24' }} title="Semi-Additive">Σ~</span>}
+                              {col.logical?.additivity === 'non' && <span style={{ color: '#f87171' }} title="Non-Additive">⊘</span>}
+                              <span className="truncate" title={logicalName}>
+                                {logicalName}
+                              </span>
+                            </div>
+                            {showPhysical && (
+                              <div 
+                                style={{ 
+                                  fontSize: '8px', 
+                                  fontFamily: 'monospace', 
+                                  opacity: 0.6,
+                                  marginTop: '1px',
+                                  paddingLeft: '2px'
+                                }}
+                                className="truncate"
+                                title={physicalName}
+                              >
+                                {physicalName}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ 
+                        padding: '6px 12px', 
+                        textAlign: 'right', 
+                        fontStyle: 'italic', 
+                        color: 'var(--text-secondary)',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        maxWidth: '120px',
+                        position: 'relative',
+                        verticalAlign: 'top',
+                        opacity: 0.8
+                      }}>
+                        {col.logical?.type || 'Unknown'}
+                        {/* ER Column Source (Right) */}
+                        <Handle
+                          type="source"
+                          position={Position.Right}
+                          id={`${id}-${col.id}-er-source-right`}
+                          className={`column-handle ${getHandleClass('source', true)}`}
+                          style={{ 
+                            ...getHandleStyle('#3b82f6', showER),
+                            right: '-4px', opacity: 0, pointerEvents: showER ? 'all' : 'none' 
+                          }}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
