@@ -1,7 +1,7 @@
 import { memo, useEffect, useState } from 'react'
 import { type NodeProps, NodeResizer } from 'reactflow'
 import { useStore } from '../store/useStore'
-import { Lock, Unlock } from 'lucide-react'
+import { Lock, Unlock, GripVertical } from 'lucide-react'
 
 const DomainNode = ({ id, data, selected }: NodeProps) => {
   const [isNew, setIsNew] = useState(true)
@@ -19,7 +19,15 @@ const DomainNode = ({ id, data, selected }: NodeProps) => {
 
   const isActuallySelected = selected;
   const isLocked = data.isLocked;
-  const color = data.color || '#1e293b';
+  const color = data.color || '#3b82f6';
+  
+  // Calculate distinct background color for the tab based on theme and domain color
+  const tabBgColor = theme === 'dark' 
+    ? 'rgba(15, 23, 42, 0.98)' 
+    : 'rgba(255, 255, 255, 0.98)';
+  
+  const accentColor = color; // Domain's specific color (Blue, Green, etc.)
+  
   const hasAlpha = color.startsWith('rgba') || color.startsWith('hsla') || (color.startsWith('#') && color.length > 7);
   const opacity = hasAlpha ? 1 : 0.5;
 
@@ -71,7 +79,7 @@ const DomainNode = ({ id, data, selected }: NodeProps) => {
           opacity: opacity,
           borderRadius: '10px',
           zIndex: -1,
-          cursor: isLocked ? 'default' : 'grab'
+          cursor: 'default'
         }}
       />
       
@@ -79,24 +87,33 @@ const DomainNode = ({ id, data, selected }: NodeProps) => {
         className={isLocked ? "domain-locked-handle" : "domain-drag-handle"}
         style={{
           position: 'absolute',
-          top: '-25px',
+          top: '-30px',
           left: '0',
-          fontSize: '14px',
+          fontSize: '13px',
           fontWeight: 'bold',
           color: theme === 'dark' ? '#f1f5f9' : '#0f172a',
           whiteSpace: 'nowrap',
-          pointerEvents: 'all', // Handle is always clickable
+          pointerEvents: 'all', 
           cursor: isLocked ? 'default' : 'grab',
-          padding: '2px 8px',
-          backgroundColor: theme === 'dark' ? 'rgba(30, 41, 59, 0.8)' : 'rgba(241, 245, 249, 0.9)',
-          borderRadius: '4px 4px 0 0',
-          transition: 'color 0.3s, background-color 0.3s',
+          padding: '4px 12px 4px 10px',
+          backgroundColor: tabBgColor,
+          borderRadius: '6px 6px 0 0',
+          border: `1px solid ${isActuallySelected ? '#3b82f6' : (theme === 'dark' ? '#334155' : '#cbd5e1')}`,
+          borderLeft: `4px solid ${accentColor}`, // STRONG color indicator on the left
+          borderBottom: 'none',
+          transition: 'all 0.2s ease',
           display: 'flex',
           alignItems: 'center',
-          gap: '8px'
+          gap: '8px',
+          boxShadow: theme === 'dark' ? '0 -4px 12px rgba(0,0,0,0.4)' : '0 -2px 8px rgba(0,0,0,0.08)',
+          zIndex: 10
         }}
       >
-        <span>{data.label}</span>
+        {!isLocked && <GripVertical size={14} className={theme === 'dark' ? 'text-slate-400' : 'text-slate-500'} />}
+        <span className="truncate max-w-[200px]">{data.label}</span>
+        
+        <div className={`w-px h-3 mx-1 ${theme === 'dark' ? 'bg-slate-700' : 'bg-slate-200'}`} />
+        
         <button 
           onClick={(e) => {
             e.stopPropagation();
@@ -105,9 +122,9 @@ const DomainNode = ({ id, data, selected }: NodeProps) => {
           className={`p-0.5 rounded transition-colors ${
             isLocked 
               ? 'text-amber-500 hover:text-amber-400' 
-              : 'text-slate-400 hover:text-white'
+              : 'text-slate-400 hover:text-blue-500'
           }`}
-          title={isLocked ? "Unlock Domain" : "Lock Domain (Prevents selection/movement)"}
+          title={isLocked ? "Unlock Domain" : "Lock Domain"}
         >
           {isLocked ? <Lock size={12} /> : <Unlock size={12} />}
         </button>
