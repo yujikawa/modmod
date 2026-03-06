@@ -104,8 +104,8 @@ domains:
     color: rgba(239, 68, 68, 0.1)
     tables:
       - dim_dates
-      - fct_sales
       - dim_products
+      - fct_sales
   - id: analytics_marts
     name: Analytics & Insights
     color: rgba(245, 158, 11, 0.1)
@@ -118,8 +118,8 @@ layout:
     width: 840
     height: 640
   fct_sales:
-    x: 407
-    'y': 200
+    x: 473
+    'y': 205
   dim_products:
     x: 60
     'y': 60
