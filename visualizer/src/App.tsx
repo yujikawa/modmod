@@ -9,7 +9,8 @@ import ReactFlow, {
   type Connection,
   useReactFlow,
   ReactFlowProvider,
-  MarkerType
+  MarkerType,
+  SelectionMode
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { useStore } from './store/useStore'
@@ -39,6 +40,7 @@ function Flow() {
     selectedEdgeId,
     setSelectedEdgeId,
     updateNodePosition,
+    updateNodesPosition,
     isCliMode,
     focusNodeId,
     setFocusNodeId,
@@ -160,9 +162,21 @@ function Flow() {
           id: domain.id,
           type: 'domain',
           position: { x, y },
-          style: { width, height },
+          style: { 
+            width, 
+            height,
+            pointerEvents: domain.isLocked ? 'none' : 'auto' // FORCE transparency at the wrapper level
+          },
           selected: domain.id === selectedTableId,
-          data: { label: domain.name, color: domain.color },
+          draggable: !domain.isLocked,
+          selectable: !domain.isLocked,
+          deletable: !domain.isLocked,
+          dragHandle: domain.isLocked ? undefined : '.domain-drag-handle',
+          data: { 
+            label: domain.name, 
+            color: domain.color,
+            isLocked: domain.isLocked 
+          },
         });
 
         // Generate Table Nodes for this domain
@@ -414,9 +428,26 @@ function Flow() {
     updateNodePosition(node.id, node.position.x, node.position.y, parentId);
   }, [isCliMode, updateNodePosition]);
 
-  const onSelectionChange = useCallback(() => {
-    // We handle selection via onNodeClick and onEdgeClick to support toggle behavior.
-  }, []);
+  const onSelectionDragStop = useCallback((_: any, nodes: Node[]) => {
+    if (!isCliMode) return;
+
+    const updates = nodes.map(node => ({
+      id: node.id,
+      x: node.position.x,
+      y: node.position.y,
+      parentId: node.parentNode
+    }));
+
+    updateNodesPosition(updates);
+  }, [isCliMode, updateNodesPosition]);
+
+  const onSelectionChange = useCallback(({ nodes }: { nodes: Node[] }) => {
+    // If multiple nodes are selected, clear the detail panel focus
+    if (nodes.length > 1) {
+      setSelectedTableId(null);
+      setSelectedEdgeId(null);
+    }
+  }, [setSelectedTableId, setSelectedEdgeId]);
 
   const isValidConnection = useCallback((connection: Connection) => {
     // Allow any connection as long as it's between different nodes
@@ -472,11 +503,15 @@ function Flow() {
         onConnectStart={onConnectStart}
         onConnectEnd={onConnectEnd}
         onSelectionChange={onSelectionChange}
+        onSelectionDragStop={onSelectionDragStop}
         isValidConnection={isValidConnection}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         connectionRadius={30}
         deleteKeyCode={['Backspace', 'Delete']}
+        selectionMode={SelectionMode.Partial}
+        selectionOnDrag={true}
+        selectionKeyCode="Shift"
         selectNodesOnDrag={true}
         fitView
       >

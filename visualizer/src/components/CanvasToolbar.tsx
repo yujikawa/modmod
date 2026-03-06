@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Layout, Grid, Trash2, Tag, Database, GitGraph, Network, X, Eye, Plus, CircleHelp, Command, Undo2, Redo2, Lock, Move, LayoutTemplate } from 'lucide-react'
+import { Layout, Grid, Trash2, Tag, Database, GitGraph, Network, X, Eye, Plus, CircleHelp, Command, Undo2, Redo2, Lock, Move, LayoutTemplate, MousePointer2 } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { useReactFlow } from 'reactflow'
 
@@ -120,7 +120,7 @@ const CanvasToolbar = () => {
                 className={`flex items-center justify-center w-full aspect-square rounded-xl transition-all group relative ${
                   isEditingDisabled 
                     ? 'opacity-40 cursor-not-allowed text-slate-500' 
-                    : theme === 'dark' ? 'text-slate-500 hover:text-blue-400 hover:bg-slate-800' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-100'
+                    : theme === 'dark' ? 'text-slate-500 hover:text-blue-400 hover:bg-slate-800' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-50'
                 }`}
                 title={isEditingDisabled ? "Addition locked while ER & Lineage are both active" : "Add new Domain"}
               >
@@ -231,6 +231,14 @@ const CanvasToolbar = () => {
                   <span className="text-xs font-medium">Pan Canvas</span>
                 </div>
                 <span className={`px-1.5 py-0.5 border rounded text-[10px] font-mono ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>Arrow Keys</span>
+              </div>
+
+              <div className="flex items-center justify-between group">
+                <div className="flex items-center gap-2 text-slate-500">
+                  <MousePointer2 size={14} />
+                  <span className="text-xs font-medium">Multi-select</span>
+                </div>
+                <span className={`px-1.5 py-0.5 border rounded text-[10px] font-mono ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>Shift + Drag</span>
               </div>
             </div>
 
