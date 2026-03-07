@@ -104,8 +104,8 @@ domains:
     color: rgba(239, 68, 68, 0.1)
     tables:
       - dim_dates
-      - fct_sales
       - dim_products
+      - fct_sales
     isLocked: true
   - id: analytics_marts
     name: Analytics & Insights
@@ -113,18 +113,14 @@ domains:
     tables:
       - mart_monthly_revenue
 annotations:
-  - id: note_1772889280945
-    text: New Note
-    type: sticky
-    offset:
-      x: 159.27290723124509
-      'y': 14.992392660633428
   - id: note_1772889296128
-    text: New Note
+    text: これはいっぱいあるよ
     type: sticky
     offset:
-      x: 58.63243292968343
-      'y': 364.8256256407388
+      x: 211.10238120430745
+      'y': 34.302114936401345
+    targetId: sales_ops
+    targetType: domain
   - id: note_1772892844916
     text: New Note
     type: sticky
@@ -141,16 +137,28 @@ annotations:
     text: New Note
     type: sticky
     offset:
-      x: 731.7359528770415
-      'y': 314.4961963303167
+      x: 752.7071874109032
+      'y': -21.04355621147003
   - id: note_1772894212575
     targetId: dim_products
     targetType: table
     text: New Note
     type: sticky
     offset:
-      x: 50
-      'y': -50
+      x: -55.193078718380775
+      'y': 233.7985511910623
+  - id: note_1772900428462
+    text: New Note
+    type: sticky
+    offset:
+      x: 339.20710059171597
+      'y': 254.3009588488713
+  - id: note_1772900724704
+    text: New Note
+    type: sticky
+    offset:
+      x: 339.20710059171597
+      'y': 254.3009588488713
 layout:
   sales_ops:
     x: 0

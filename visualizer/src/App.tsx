@@ -19,7 +19,7 @@ import DomainNode from './components/DomainNode'
 import AnnotationNode from './components/AnnotationNode'
 import DetailPanel from './components/DetailPanel'
 import Sidebar from './components/Sidebar/Sidebar'
-import CanvasToolbar from './components/CanvasToolbar'
+import SelectionToolbar from './components/SelectionToolbar'
 import ButtonEdge from './components/ButtonEdge'
 import LineageEdge from './components/LineageEdge'
 import AnnotationEdge from './components/AnnotationEdge'
@@ -557,7 +557,7 @@ function Flow() {
 
   return (
     <div className="flex-1 relative h-full">
-      <CanvasToolbar />
+      <SelectionToolbar />
       
       {/* Read-Only Badge */}
       {isEditingDisabled && (
