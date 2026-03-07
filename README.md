@@ -129,6 +129,13 @@ modscape dev ./models
 ```
 - **Persistence**: Layout and metadata changes are saved directly to your files (supports Auto-save).
 
+### Create New Model
+```bash
+modscape new models/sales/customer.yaml
+```
+- **Recursive Scaffolding**: Automatically creates parent directories if they don't exist.
+- **Boilerplate**: Generates a valid YAML model with examples of domains, tri-layer naming, relationships, and lineage.
+
 ### Build Mode (Static Site)
 ```bash
 modscape build ./models -o docs-site
