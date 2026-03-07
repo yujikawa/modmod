@@ -40,12 +40,14 @@ interface AppState {
   showAnnotations: boolean;
   connectionStartHandle: { nodeId: string; handleId: string | null; handleType: string | null } | null;
   theme: 'dark' | 'light';
+  isDetailPanelSuppressed: boolean;
   
   // Actions
   setSchema: (schema: any) => void;
   setSelectedTableId: (id: string | null) => void;
   setSelectedEdgeId: (id: string | null) => void;
   setSelectedAnnotationId: (id: string | null) => void;
+  setIsDetailPanelSuppressed: (suppressed: boolean) => void;
   setHoveredColumnId: (id: string | null) => void;
   setIsCliMode: (isCli: boolean) => void;
   setShowER: (show: boolean) => void;
@@ -138,6 +140,7 @@ export const useStore = create<AppState>((set, get) => ({
   connectionStartHandle: null,
   theme: (typeof window !== 'undefined' && (localStorage.getItem('modscape-theme') as any)) || 
          (window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark'),
+  isDetailPanelSuppressed: false,
 
   setSchema: (data) => {
     try {
@@ -155,9 +158,10 @@ export const useStore = create<AppState>((set, get) => ({
   setIsAutoSaveEnabled: (enabled) => set({ isAutoSaveEnabled: enabled }),
   setLastUpdateSource: (source) => set({ lastUpdateSource: source }),
   
-  setSelectedTableId: (id) => set({ selectedTableId: id, selectedEdgeId: null, selectedAnnotationId: null }),
-  setSelectedEdgeId: (id) => set({ selectedEdgeId: id, selectedTableId: null, selectedAnnotationId: null }),
-  setSelectedAnnotationId: (id) => set({ selectedAnnotationId: id, selectedTableId: null, selectedEdgeId: null }),
+  setSelectedTableId: (id) => set({ selectedTableId: id, selectedEdgeId: null, selectedAnnotationId: null, isDetailPanelSuppressed: false }),
+  setSelectedEdgeId: (id) => set({ selectedEdgeId: id, selectedTableId: null, selectedAnnotationId: null, isDetailPanelSuppressed: false }),
+  setSelectedAnnotationId: (id) => set({ selectedAnnotationId: id, selectedTableId: null, selectedEdgeId: null, isDetailPanelSuppressed: false }),
+  setIsDetailPanelSuppressed: (suppressed) => set({ isDetailPanelSuppressed: suppressed }),
   setHoveredColumnId: (id) => set({ hoveredColumnId: id }),
   setIsCliMode: (isCli) => set({ isCliMode: isCli }),
   setIsSidebarOpen: (isOpen) => set({ isSidebarOpen: isOpen }),
@@ -791,27 +795,33 @@ export const useStore = create<AppState>((set, get) => ({
   toggleTableSelection: (id) => {
     const { selectedTableId } = get();
     if (selectedTableId === id) {
-      set({ selectedTableId: null });
+      set({ selectedTableId: null, isDetailPanelSuppressed: false });
     } else {
-      set({ selectedTableId: id, selectedEdgeId: null, selectedAnnotationId: null });
+      set({ selectedTableId: id, selectedEdgeId: null, selectedAnnotationId: null, isDetailPanelSuppressed: false });
     }
   },
 
   toggleEdgeSelection: (id) => {
     const { selectedEdgeId } = get();
     if (selectedEdgeId === id) {
-      set({ selectedEdgeId: null });
+      set({ selectedEdgeId: null, isDetailPanelSuppressed: false });
     } else {
-      set({ selectedEdgeId: id, selectedTableId: null, selectedAnnotationId: null });
+      set({ selectedEdgeId: id, selectedTableId: null, selectedAnnotationId: null, isDetailPanelSuppressed: false });
     }
   },
 
   toggleAnnotationSelection: (id) => {
-    const { selectedAnnotationId } = get();
+    const { selectedAnnotationId, isDetailPanelSuppressed } = get();
     if (selectedAnnotationId === id) {
-      set({ selectedAnnotationId: null });
+      if (isDetailPanelSuppressed) {
+        // If it was already selected but panel was hidden (after adding), 
+        // just show the panel on first click instead of deselecting.
+        set({ isDetailPanelSuppressed: false });
+      } else {
+        set({ selectedAnnotationId: null, isDetailPanelSuppressed: false });
+      }
     } else {
-      set({ selectedAnnotationId: id, selectedTableId: null, selectedEdgeId: null });
+      set({ selectedAnnotationId: id, selectedTableId: null, selectedEdgeId: null, isDetailPanelSuppressed: false });
     }
   },
 
@@ -831,7 +841,19 @@ export const useStore = create<AppState>((set, get) => ({
       ...schema,
       annotations: [...(schema.annotations || []), newAnnotation]
     };
-    set({ schema: normalizeSchema(newSchema), selectedAnnotationId: newId });
+    set({ 
+      schema: normalizeSchema(newSchema), 
+      selectedAnnotationId: newId,
+      selectedTableId: null,
+      selectedEdgeId: null,
+      isDetailPanelSuppressed: true 
+    });
+    
+    // Focus camera on new annotation if it's independent (no target)
+    if (!targetId) {
+      get().setFocusNodeId(newId);
+    }
+
     get().syncToYamlInput();
     get().saveSchema();
   },

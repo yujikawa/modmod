@@ -104,32 +104,71 @@ domains:
     color: rgba(239, 68, 68, 0.1)
     tables:
       - dim_dates
-      - dim_products
       - fct_sales
+      - dim_products
     isLocked: true
   - id: analytics_marts
     name: Analytics & Insights
     color: rgba(245, 158, 11, 0.1)
     tables:
       - mart_monthly_revenue
+annotations:
+  - id: note_1772889280945
+    text: New Note
+    type: sticky
+    offset:
+      x: 159.27290723124509
+      'y': 14.992392660633428
+  - id: note_1772889296128
+    text: New Note
+    type: sticky
+    offset:
+      x: 58.63243292968343
+      'y': 364.8256256407388
+  - id: note_1772892844916
+    text: New Note
+    type: sticky
+    offset:
+      x: 364.141660705237
+      'y': 80.15220862474973
+  - id: note_1772894187342
+    text: New Note
+    type: sticky
+    offset:
+      x: 731.7359528770415
+      'y': 314.4961963303167
+  - id: note_1772894187841
+    text: New Note
+    type: sticky
+    offset:
+      x: 731.7359528770415
+      'y': 314.4961963303167
+  - id: note_1772894212575
+    targetId: dim_products
+    targetType: table
+    text: New Note
+    type: sticky
+    offset:
+      x: 50
+      'y': -50
 layout:
   sales_ops:
-    x: -65
-    'y': 54
+    x: 0
+    'y': 0
     width: 840
     height: 640
   fct_sales:
-    x: 511
-    'y': 156
+    x: 260
+    'y': 360
   dim_products:
-    x: 84
-    'y': 33
+    x: 60
+    'y': 60
   dim_dates:
-    x: 70
-    'y': 387
+    x: 460
+    'y': 60
   analytics_marts:
-    x: 822
-    'y': 72
+    x: 1140
+    'y': 150
     width: 440
     height: 340
   mart_monthly_revenue:

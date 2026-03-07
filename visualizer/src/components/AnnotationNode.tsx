@@ -4,15 +4,27 @@ import type { Annotation } from '../types/schema'
 import { useStore } from '../store/useStore'
 import { Trash2 } from 'lucide-react'
 
+// Track IDs that have already performed the entrance animation in this session
+const animatedIds = new Set<string>();
+
 const AnnotationNode = ({ id, data, selected }: NodeProps<{ annotation: Annotation }>) => {
   const { annotation } = data
   const { updateAnnotation, removeAnnotation, theme } = useStore()
   const [isEditing, setIsEditing] = useState(false)
   const [text, setText] = useState(annotation.text)
+  const [isNew, setIsNew] = useState(!animatedIds.has(id))
 
   useEffect(() => {
     setText(annotation.text)
   }, [annotation.text])
+
+  useEffect(() => {
+    if (isNew) {
+      animatedIds.add(id)
+      const timer = setTimeout(() => setIsNew(false), 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [id, isNew])
 
   const handleBlur = () => {
     setIsEditing(false)
@@ -29,19 +41,23 @@ const AnnotationNode = ({ id, data, selected }: NodeProps<{ annotation: Annotati
   const isCallout = annotation.type === 'callout'
   const bgColor = annotation.color || (theme === 'dark' ? '#334155' : '#fef3c7')
   const textColor = theme === 'dark' ? '#f1f5f9' : '#92400e'
+  const borderColor = selected ? '#3b82f6' : (theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)')
 
   return (
     <div 
-      className={`relative group ${selected ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}
+      className={`relative group ${isNew ? 'animate-creation' : ''}`}
       style={{
         padding: '12px',
         backgroundColor: bgColor,
         borderRadius: isCallout ? '16px' : '2px',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+        border: `2px solid ${borderColor}`,
+        boxShadow: selected
+          ? '0 0 0 4px rgba(59, 130, 246, 0.2)'
+          : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
         minWidth: '120px',
         maxWidth: '250px',
-        transition: 'all 0.2s ease-in-out',
-        cursor: 'default',
+        transition: 'background-color 0.3s, color 0.3s', // border-color を除外し、選択時の反応を高速化
+        cursor: isEditing ? 'text' : 'grab',
         color: textColor
       }}
       onDoubleClick={() => setIsEditing(true)}

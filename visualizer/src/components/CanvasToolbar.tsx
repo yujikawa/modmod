@@ -171,7 +171,7 @@ const CanvasToolbar = () => {
                   if (target) {
                     addAnnotation({ x: 50, y: -50 }, target.id, table ? 'table' : 'domain');
                   } else {
-                    addAnnotation({ x: center.x, y: center.y });
+                    addAnnotation({ x: center.x - 60, y: center.y - 40 });
                   }
                 }}
                 className={`flex items-center justify-center w-full aspect-square rounded-xl transition-all group relative ${

@@ -31,7 +31,8 @@ const DetailPanel = () => {
     updateRelationship,
     updateAnnotation,
     assignTableToDomain,
-    theme
+    theme,
+    isDetailPanelSuppressed
   } = useStore()
   
   const table = getSelectedTable()
@@ -67,6 +68,7 @@ const DetailPanel = () => {
     };
   }, [isResizing]);
 
+  if (isDetailPanelSuppressed) return null
   if (!selectedTableId && !selectedEdgeId && !selectedAnnotationId) return null
   if (!table && !domain && !relationshipData && !annotation) return null
 
