@@ -16,20 +16,24 @@ import 'reactflow/dist/style.css'
 import { useStore } from './store/useStore'
 import TableNode from './components/TableNode'
 import DomainNode from './components/DomainNode'
+import AnnotationNode from './components/AnnotationNode'
 import DetailPanel from './components/DetailPanel'
 import Sidebar from './components/Sidebar/Sidebar'
 import CanvasToolbar from './components/CanvasToolbar'
 import ButtonEdge from './components/ButtonEdge'
 import LineageEdge from './components/LineageEdge'
+import AnnotationEdge from './components/AnnotationEdge'
 
 const nodeTypes = {
   table: TableNode,
   domain: DomainNode,
+  annotation: AnnotationNode,
 }
 
 const edgeTypes = {
   button: ButtonEdge,
   lineage: LineageEdge,
+  annotation: AnnotationEdge,
 }
 
 function Flow() {
@@ -39,6 +43,8 @@ function Flow() {
     selectedTableId,
     selectedEdgeId,
     setSelectedEdgeId,
+    selectedAnnotationId,
+    setSelectedAnnotationId,
     updateNodePosition,
     updateNodesPosition,
     isCliMode,
@@ -49,10 +55,13 @@ function Flow() {
     removeEdge,
     toggleTableSelection,
     toggleEdgeSelection,
+    toggleAnnotationSelection,
     showER,
     showLineage,
+    showAnnotations,
     addLineage,
     setConnectionStartHandle,
+    updateAnnotation,
     theme,
     currentModelSlug
   } = useStore()
@@ -73,6 +82,7 @@ function Flow() {
       if (e.key === 'Escape') {
         setSelectedTableId(null);
         setSelectedEdgeId(null);
+        setSelectedAnnotationId(null);
         return;
       }
 
@@ -87,7 +97,7 @@ function Flow() {
       if (isTyping) return;
 
       // Guard: Only pan if nothing is selected (prevents conflict with node nudging)
-      if (selectedTableId || selectedEdgeId) return;
+      if (selectedTableId || selectedEdgeId || selectedAnnotationId) return;
 
       if (e.key.startsWith('Arrow')) {
         const { x, y, zoom } = getViewport();
@@ -107,7 +117,7 @@ function Flow() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [setSelectedTableId, setSelectedEdgeId, getViewport, setViewport, selectedTableId, selectedEdgeId]);
+  }, [setSelectedTableId, setSelectedEdgeId, setSelectedAnnotationId, getViewport, setViewport, selectedTableId, selectedEdgeId, selectedAnnotationId]);
 
   // Handle focusNodeId changes
   useEffect(() => {
@@ -240,6 +250,34 @@ function Flow() {
       });
     });
 
+    // 3. Generate Annotation Nodes
+    if (showAnnotations && schema.annotations) {
+      schema.annotations.forEach(annotation => {
+        let x = annotation.offset.x;
+        let y = annotation.offset.y;
+        let parentNode = undefined;
+
+        if (annotation.targetId) {
+          const targetNode = newNodes.find(n => n.id === annotation.targetId);
+          if (targetNode) {
+            // Relative positioning
+            x = targetNode.position.x + annotation.offset.x;
+            y = targetNode.position.y + annotation.offset.y;
+            parentNode = targetNode.parentNode;
+          }
+        }
+
+        newNodes.push({
+          id: annotation.id,
+          type: 'annotation',
+          position: { x, y },
+          selected: annotation.id === selectedAnnotationId,
+          data: { annotation },
+          parentNode,
+        });
+      });
+    }
+
     setNodes(newNodes)
 
     // Robust Snapping Booster: 
@@ -259,17 +297,17 @@ function Flow() {
       // For incremental updates (drags, edits), just re-sync edges without jumping the camera.
       setEdgeSyncTrigger(v => v + 1);
     }
-  }, [schema, setNodes, fitView, currentModelSlug])
+  }, [schema, setNodes, fitView, currentModelSlug, showAnnotations, selectedTableId, selectedAnnotationId])
 
   // Sync Store Selection to React Flow nodes state (without recreating all nodes)
   useEffect(() => {
     setNodes((nds) => 
       nds.map((node) => ({
         ...node,
-        selected: node.id === selectedTableId
+        selected: node.id === selectedTableId || node.id === selectedAnnotationId
       }))
     )
-  }, [selectedTableId, setNodes])
+  }, [selectedTableId, selectedAnnotationId, setNodes])
 
   // Sync Edges with dynamic highlighting
   useEffect(() => {
@@ -346,8 +384,23 @@ function Flow() {
       });
     }
 
+    // 3. Generate Annotation Edges (for Callouts)
+    if (showAnnotations && schema.annotations) {
+      schema.annotations.forEach(annotation => {
+        if (annotation.type === 'callout' && annotation.targetId) {
+          newEdges.push({
+            id: `e-ann-${annotation.id}`,
+            source: annotation.id,
+            target: annotation.targetId,
+            type: 'annotation',
+            zIndex: 0,
+          });
+        }
+      });
+    }
+
     setEdges(newEdges);
-  }, [schema, selectedTableId, selectedEdgeId, setEdges, showER, showLineage, theme, edgeSyncTrigger])
+  }, [schema, selectedTableId, selectedEdgeId, setEdges, showER, showLineage, showAnnotations, theme, edgeSyncTrigger])
 
   const onConnect = useCallback(
     (params: Connection) => {
@@ -400,11 +453,16 @@ function Flow() {
   const onPaneClick = useCallback(() => {
     setSelectedTableId(null);
     setSelectedEdgeId(null);
-  }, [setSelectedTableId, setSelectedEdgeId]);
+    setSelectedAnnotationId(null);
+  }, [setSelectedTableId, setSelectedEdgeId, setSelectedAnnotationId]);
 
   const onNodeClick = useCallback((_: any, node: Node) => {
-    toggleTableSelection(node.id);
-  }, [toggleTableSelection]);
+    if (node.type === 'annotation') {
+      toggleAnnotationSelection(node.id);
+    } else {
+      toggleTableSelection(node.id);
+    }
+  }, [toggleTableSelection, toggleAnnotationSelection]);
 
   const onEdgeClick = useCallback((_: any, edge: Edge) => {
     toggleEdgeSelection(edge.id);
@@ -418,15 +476,57 @@ function Flow() {
     setConnectionStartHandle(null);
   }, [setConnectionStartHandle]);
 
+  const onNodeDrag = useCallback((_: any, node: Node) => {
+    if (node.type === 'table' || node.type === 'domain') {
+      // Real-time "sticky" behavior: move annotations with their target
+      setNodes(nds => nds.map(n => {
+        if (n.type === 'annotation') {
+          const ann = schema?.annotations?.find(a => a.id === n.id);
+          if (ann && ann.targetId === node.id) {
+            return {
+              ...n,
+              position: {
+                x: node.position.x + ann.offset.x,
+                y: node.position.y + ann.offset.y
+              }
+            };
+          }
+        }
+        return n;
+      }));
+    }
+  }, [schema, setNodes]);
+
   const onNodeDragStop = useCallback((_: any, node: Node) => {
     if (!isCliMode) return;
+
+    if (node.type === 'annotation') {
+      const annotation = schema?.annotations?.find(a => a.id === node.id);
+      if (annotation) {
+        if (annotation.targetId) {
+          // Calculate new offset relative to target
+          const targetNode = nodes.find(n => n.id === annotation.targetId);
+          if (targetNode) {
+            const newOffset = {
+              x: node.position.x - targetNode.position.x,
+              y: node.position.y - targetNode.position.y
+            };
+            updateAnnotation(node.id, { offset: newOffset });
+          }
+        } else {
+          // No target: update absolute offset
+          updateAnnotation(node.id, { offset: { x: node.position.x, y: node.position.y } });
+        }
+      }
+      return;
+    }
 
     // Domain assignment is now explicit via the Detail Panel.
     // We preserve the current parentId if it exists.
     const parentId = node.parentNode;
 
     updateNodePosition(node.id, node.position.x, node.position.y, parentId);
-  }, [isCliMode, updateNodePosition]);
+  }, [isCliMode, updateNodePosition, updateAnnotation, schema, nodes]);
 
   const onSelectionDragStop = useCallback((_: any, nodes: Node[]) => {
     if (!isCliMode) return;
@@ -446,8 +546,9 @@ function Flow() {
     if (nodes.length > 1) {
       setSelectedTableId(null);
       setSelectedEdgeId(null);
+      setSelectedAnnotationId(null);
     }
-  }, [setSelectedTableId, setSelectedEdgeId]);
+  }, [setSelectedTableId, setSelectedEdgeId, setSelectedAnnotationId]);
 
   const isValidConnection = useCallback((connection: Connection) => {
     // Allow any connection as long as it's between different nodes
@@ -495,6 +596,7 @@ function Flow() {
         onEdgesChange={onEdgesChange}
         onNodesDelete={onNodesDelete}
         onEdgesDelete={onEdgesDelete}
+        onNodeDrag={onNodeDrag}
         onNodeDragStop={onNodeDragStop}
         onNodeClick={onNodeClick}
         onEdgeClick={onEdgeClick}

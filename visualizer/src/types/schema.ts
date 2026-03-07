@@ -2,7 +2,18 @@ export interface Schema {
   tables: Table[];
   relationships: Relationship[];
   domains?: Domain[]; // Optional
+  annotations?: Annotation[]; // Optional visual notes
   layout?: Record<string, { x: number; y: number; width?: number; height?: number }>;
+}
+
+export interface Annotation {
+  id: string;
+  targetId?: string; // Optional: ID of the object this annotation is attached to
+  targetType?: 'table' | 'domain' | 'relationship' | 'column';
+  text: string;
+  type: 'sticky' | 'callout';
+  color?: string;
+  offset: { x: number; y: number }; // Relative to target or absolute if no target
 }
 
 export interface Domain {

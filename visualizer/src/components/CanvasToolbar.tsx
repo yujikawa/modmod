@@ -14,8 +14,11 @@ const CanvasToolbar = () => {
     removeEdge,
     showER,
     showLineage,
+    showAnnotations,
     setShowER,
     setShowLineage,
+    setShowAnnotations,
+    addAnnotation,
     setSelectedTableId,
     setSelectedEdgeId,
     calculateAutoLayout,
@@ -103,6 +106,17 @@ const CanvasToolbar = () => {
               >
                 <GitGraph size={20} />
               </button>
+              <button
+                onClick={() => setShowAnnotations(!showAnnotations)}
+                className={`flex items-center justify-center w-full aspect-square rounded-xl transition-all ${
+                  showAnnotations 
+                    ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' 
+                    : theme === 'dark' ? 'text-slate-500 hover:text-slate-300 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+                }`}
+                title={showAnnotations ? "Hide Annotations" : "Show Annotations"}
+              >
+                <Tag size={20} />
+              </button>
             </div>
           </div>
 
@@ -139,6 +153,33 @@ const CanvasToolbar = () => {
               >
                 <Grid size={20} />
                 {isEditingDisabled && <Lock size={10} className="absolute bottom-1 right-1 text-slate-500" />}
+              </button>
+
+              <button
+                onClick={() => {
+                  const target = table || domain;
+                  const center = screenToFlowPosition({
+                    x: window.innerWidth / 2,
+                    y: window.innerHeight / 2,
+                  });
+                  
+                  // Ensure annotations are visible when adding a new one
+                  if (!showAnnotations) {
+                    setShowAnnotations(true);
+                  }
+
+                  if (target) {
+                    addAnnotation({ x: 50, y: -50 }, target.id, table ? 'table' : 'domain');
+                  } else {
+                    addAnnotation({ x: center.x, y: center.y });
+                  }
+                }}
+                className={`flex items-center justify-center w-full aspect-square rounded-xl transition-all group relative ${
+                  theme === 'dark' ? 'text-slate-500 hover:text-amber-400 hover:bg-slate-800' : 'text-slate-400 hover:text-amber-600 hover:bg-slate-100'
+                }`}
+                title="Add Sticky Note"
+              >
+                <Tag size={20} />
               </button>
             </div>
           </div>

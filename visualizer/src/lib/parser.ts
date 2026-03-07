@@ -7,11 +7,12 @@ export function normalizeSchema(data: any): Schema {
     throw new Error('Invalid YAML: Root must be an object')
   }
 
-  // Normalization: Ensure tables, relationships and domains are always arrays
+  // Normalization: Ensure tables, relationships, domains and annotations are always arrays
   const schema: Schema = {
     tables: Array.isArray(data.tables) ? data.tables : [],
     relationships: Array.isArray(data.relationships) ? data.relationships : [],
     domains: Array.isArray(data.domains) ? data.domains : [],
+    annotations: Array.isArray(data.annotations) ? data.annotations : [],
     layout: data.layout || {}
   }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useStore } from '../store/useStore'
-import { X, Plus, Trash2, Tag as TagIcon, Table as TableIcon, Database } from 'lucide-react'
+import { X, Plus, Trash2, Tag as TagIcon, Table as TableIcon, Database, Link as LinkIcon, Unlink } from 'lucide-react'
 import type { Table, Column } from '../types/schema'
 
 const TYPE_CONFIG: Record<string, { color: string; icon: string; label: string }> = {
@@ -18,14 +18,18 @@ const DetailPanel = () => {
     schema,
     selectedTableId, 
     selectedEdgeId,
+    selectedAnnotationId,
     getSelectedTable, 
     getSelectedDomain,
     getSelectedRelationship,
+    getSelectedAnnotation,
     setSelectedTableId, 
     setSelectedEdgeId,
+    setSelectedAnnotationId,
     updateTable,
     updateDomain,
     updateRelationship,
+    updateAnnotation,
     assignTableToDomain,
     theme
   } = useStore()
@@ -33,6 +37,7 @@ const DetailPanel = () => {
   const table = getSelectedTable()
   const domain = getSelectedDomain()
   const relationshipData = getSelectedRelationship()
+  const annotation = getSelectedAnnotation()
   
   const [activeTab, setActiveTab] = useState('conceptual')
   const [tagInput, setTagInput] = useState('')
@@ -62,8 +67,8 @@ const DetailPanel = () => {
     };
   }, [isResizing]);
 
-  if (!selectedTableId && !selectedEdgeId) return null
-  if (!table && !domain && !relationshipData) return null
+  if (!selectedTableId && !selectedEdgeId && !selectedAnnotationId) return null
+  if (!table && !domain && !relationshipData && !annotation) return null
 
   const startResizing = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -95,6 +100,170 @@ const DetailPanel = () => {
   const handleUpdateTable = (updates: Partial<Table>) => {
     updateTable(table!.id, updates);
   };
+
+  // --- Annotation Editor Rendering ---
+  if (annotation) {
+    return (
+      <div 
+        className="shadow-2xl z-50 flex flex-col"
+        onClick={stopPropagation}
+        onMouseDown={stopPropagation}
+        onPointerDown={stopPropagation}
+        style={{ ...panelStyle, borderTopColor: annotation.color || '#f59e0b' }}
+      >
+        {/* Resize Handle */}
+        <div 
+          onMouseDown={startResizing}
+          style={{
+            position: 'absolute',
+            top: '-4px',
+            left: 0,
+            right: 0,
+            height: '8px',
+            cursor: 'ns-resize',
+            zIndex: 60
+          }}
+        />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 20px', borderBottom: '1px solid var(--border-main)', backgroundColor: 'var(--header-bg)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+            <TagIcon size={18} style={{ color: annotation.color || '#f59e0b' }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Annotation</span>
+                <span style={{ fontSize: '9px', fontWeight: 800, padding: '1px 5px', borderRadius: '3px', backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.2)', textTransform: 'uppercase' }}>
+                  {annotation.type}
+                </span>
+              </div>
+              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', margin: 0 }}>
+                {annotation.targetId ? `Sticky to ${annotation.targetId} (${annotation.targetType})` : 'Floating Note'}
+              </p>
+            </div>
+          </div>
+          <button onClick={() => setSelectedAnnotationId(null)} className={`p-1.5 rounded-full transition-colors ${theme === 'dark' ? 'hover:bg-slate-800 text-slate-500' : 'hover:bg-slate-200 text-slate-400'}`}><X size={18} /></button>
+        </div>
+
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <section>
+              <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Note Content</h3>
+              <textarea 
+                value={annotation.text || ''}
+                onChange={(e) => updateAnnotation(annotation.id, { text: e.target.value })}
+                style={{ 
+                  width: '100%', 
+                  minHeight: '100px',
+                  backgroundColor: theme === 'dark' ? '#0f172a' : '#ffffff', 
+                  border: `1px solid var(--border-main)`, 
+                  borderRadius: '6px',
+                  padding: '12px',
+                  color: 'var(--text-primary)',
+                  fontSize: '13px',
+                  lineHeight: '1.6',
+                  resize: 'none',
+                  outline: 'none'
+                }}
+              />
+            </section>
+
+            <div className="grid grid-cols-2 gap-8">
+              <section>
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Target Binding</h3>
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <select 
+                      value={annotation.targetId || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (!val) {
+                          updateAnnotation(annotation.id, { targetId: undefined, targetType: undefined });
+                        } else {
+                          const isTable = schema?.tables.some(t => t.id === val);
+                          updateAnnotation(annotation.id, { 
+                            targetId: val, 
+                            targetType: isTable ? 'table' : 'domain',
+                            offset: { x: 50, y: -50 } // Reset to a safe offset when binding
+                          });
+                        }
+                      }}
+                      className={`flex-1 border rounded text-xs p-2 outline-none ${
+                        theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-slate-200 text-slate-900'
+                      }`}
+                    >
+                      <option value="">- Floating (No Target) -</option>
+                      <optgroup label="Tables">
+                        {schema?.tables.map(t => <option key={t.id} value={t.id}>{t.name} ({t.id})</option>)}
+                      </optgroup>
+                      <optgroup label="Domains">
+                        {schema?.domains?.map(d => <option key={d.id} value={d.id}>{d.name} ({d.id})</option>)}
+                      </optgroup>
+                    </select>
+                    {annotation.targetId ? (
+                      <button 
+                        onClick={() => updateAnnotation(annotation.id, { targetId: undefined, targetType: undefined })}
+                        className="p-2 text-red-500 hover:bg-red-50 rounded border border-red-100"
+                        title="Unbind Target"
+                      >
+                        <Unlink size={14} />
+                      </button>
+                    ) : (
+                      <div className="p-2 text-slate-300 border border-slate-100 rounded">
+                        <LinkIcon size={14} />
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-slate-400 italic">Bind to a table to make the note "stick" when moving.</p>
+                </div>
+              </section>
+
+              <section>
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Visual Style</h3>
+                <div className="flex flex-col gap-3">
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => updateAnnotation(annotation.id, { type: 'sticky' })}
+                      className={`flex-1 py-2 px-3 rounded border text-xs font-medium transition-all ${
+                        annotation.type === 'sticky' 
+                          ? 'bg-amber-500/10 border-amber-500 text-amber-600' 
+                          : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                      }`}
+                    >
+                      Sticky Note
+                    </button>
+                    <button 
+                      onClick={() => updateAnnotation(annotation.id, { type: 'callout' })}
+                      className={`flex-1 py-2 px-3 rounded border text-xs font-medium transition-all ${
+                        annotation.type === 'callout' 
+                          ? 'bg-blue-500/10 border-blue-500 text-blue-600' 
+                          : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                      }`}
+                    >
+                      Callout Bubble
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="color" 
+                      value={annotation.color || (theme === 'dark' ? '#334155' : '#fef3c7')}
+                      onChange={(e) => updateAnnotation(annotation.id, { color: e.target.value })}
+                      className="w-8 h-8 p-0 border-none rounded cursor-pointer bg-transparent"
+                    />
+                    <input 
+                      value={annotation.color || ''}
+                      onChange={(e) => updateAnnotation(annotation.id, { color: e.target.value })}
+                      placeholder="e.g. #fef3c7"
+                      className={`flex-1 border rounded text-[10px] p-1.5 outline-none font-mono ${
+                        theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-slate-200 text-slate-900'
+                      }`}
+                    />
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // --- Relationship Editor Rendering ---
   if (relationshipData) {

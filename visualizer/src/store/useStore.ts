@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import yaml from 'js-yaml'
 import dagre from 'dagre'
-import type { Schema, Table, Relationship, Domain } from '../types/schema'
+import type { Schema, Table, Relationship, Domain, Annotation } from '../types/schema'
 import { parseYAML, normalizeSchema } from '../lib/parser'
 
 export interface ModelFile {
@@ -14,6 +14,7 @@ interface AppState {
   schema: Schema | null;
   selectedTableId: string | null;
   selectedEdgeId: string | null;
+  selectedAnnotationId: string | null;
   hoveredColumnId: string | null;
   error: string | null;
   isCliMode: boolean;
@@ -36,6 +37,7 @@ interface AppState {
   focusNodeId: string | null;
   showER: boolean;
   showLineage: boolean;
+  showAnnotations: boolean;
   connectionStartHandle: { nodeId: string; handleId: string | null; handleType: string | null } | null;
   theme: 'dark' | 'light';
   
@@ -43,10 +45,12 @@ interface AppState {
   setSchema: (schema: any) => void;
   setSelectedTableId: (id: string | null) => void;
   setSelectedEdgeId: (id: string | null) => void;
+  setSelectedAnnotationId: (id: string | null) => void;
   setHoveredColumnId: (id: string | null) => void;
   setIsCliMode: (isCli: boolean) => void;
   setShowER: (show: boolean) => void;
   setShowLineage: (show: boolean) => void;
+  setShowAnnotations: (show: boolean) => void;
   setIsAutoSaveEnabled: (enabled: boolean) => void;
   setLastUpdateSource: (source: 'user' | 'visual' | 'undo') => void;
   parseAndSetSchema: (yaml: string) => void;
@@ -69,6 +73,12 @@ interface AppState {
   assignTableToDomain: (tableId: string, domainId?: string | null) => void;
   toggleTableSelection: (id: string) => void;
   toggleEdgeSelection: (id: string) => void;
+  toggleAnnotationSelection: (id: string) => void;
+  
+  // Annotation Actions
+  addAnnotation: (offset: { x: number, y: number }, targetId?: string, targetType?: Annotation['targetType']) => void;
+  updateAnnotation: (id: string, updates: Partial<Annotation>) => void;
+  removeAnnotation: (id: string) => void;
   
   // Multi-file Actions
   fetchAvailableFiles: () => Promise<void>;
@@ -86,6 +96,7 @@ interface AppState {
   getSelectedTable: () => Table | null;
   getSelectedDomain: () => Domain | null;
   getSelectedRelationship: () => { relationship: Relationship; index: number } | null;
+  getSelectedAnnotation: () => Annotation | null;
 }
 
 let saveTimeout: any = null;
@@ -94,6 +105,7 @@ export const useStore = create<AppState>((set, get) => ({
   schema: null,
   selectedTableId: null,
   selectedEdgeId: null,
+  selectedAnnotationId: null,
   hoveredColumnId: null,
   error: null,
   isCliMode: (typeof window !== 'undefined' && (window as any).MODSCAPE_CLI_MODE === true),
@@ -122,6 +134,7 @@ export const useStore = create<AppState>((set, get) => ({
   focusNodeId: null,
   showER: true,
   showLineage: true,
+  showAnnotations: true,
   connectionStartHandle: null,
   theme: (typeof window !== 'undefined' && (localStorage.getItem('modscape-theme') as any)) || 
          (window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark'),
@@ -138,11 +151,13 @@ export const useStore = create<AppState>((set, get) => ({
 
   setShowER: (show) => set({ showER: show }),
   setShowLineage: (show) => set({ showLineage: show }),
+  setShowAnnotations: (show) => set({ showAnnotations: show }),
   setIsAutoSaveEnabled: (enabled) => set({ isAutoSaveEnabled: enabled }),
   setLastUpdateSource: (source) => set({ lastUpdateSource: source }),
   
-  setSelectedTableId: (id) => set({ selectedTableId: id }),
-  setSelectedEdgeId: (id) => set({ selectedEdgeId: id }),
+  setSelectedTableId: (id) => set({ selectedTableId: id, selectedEdgeId: null, selectedAnnotationId: null }),
+  setSelectedEdgeId: (id) => set({ selectedEdgeId: id, selectedTableId: null, selectedAnnotationId: null }),
+  setSelectedAnnotationId: (id) => set({ selectedAnnotationId: id, selectedTableId: null, selectedEdgeId: null }),
   setHoveredColumnId: (id) => set({ hoveredColumnId: id }),
   setIsCliMode: (isCli) => set({ isCliMode: isCli }),
   setIsSidebarOpen: (isOpen) => set({ isSidebarOpen: isOpen }),
@@ -315,6 +330,8 @@ export const useStore = create<AppState>((set, get) => ({
           currentModelSlug: slug, 
           schema: normalizeSchema(model.schema), 
           selectedTableId: null, 
+          selectedEdgeId: null,
+          selectedAnnotationId: null,
           error: null 
         });
         get().syncToYamlInput();
@@ -336,6 +353,8 @@ export const useStore = create<AppState>((set, get) => ({
         currentModelSlug: slug, 
         schema: normalizeSchema(data), 
         selectedTableId: null, 
+        selectedEdgeId: null,
+        selectedAnnotationId: null,
         error: null 
       });
       get().syncToYamlInput();
@@ -481,7 +500,8 @@ export const useStore = create<AppState>((set, get) => ({
       schema: normalizeSchema(newSchema), 
       error: null,
       selectedTableId: newId,
-      selectedEdgeId: null
+      selectedEdgeId: null,
+      selectedAnnotationId: null
     });
     get().syncToYamlInput();
     get().saveSchema();
@@ -511,7 +531,8 @@ export const useStore = create<AppState>((set, get) => ({
       schema: normalizeSchema(newSchema), 
       error: null,
       selectedTableId: newId,
-      selectedEdgeId: null
+      selectedEdgeId: null,
+      selectedAnnotationId: null
     });
     get().syncToYamlInput();
     get().saveSchema();
@@ -669,6 +690,7 @@ export const useStore = create<AppState>((set, get) => ({
       tables: d.tables.filter(tid => tid !== id)
     }));
     const newRelationships = (schema.relationships || []).filter(r => r.from.table !== id && r.to.table !== id);
+    const newAnnotations = (schema.annotations || []).filter(a => a.id !== id && a.targetId !== id);
     
     const newLayout = { ...(schema.layout || {}) };
     delete newLayout[id];
@@ -678,10 +700,11 @@ export const useStore = create<AppState>((set, get) => ({
       tables: newTables,
       domains: newDomains,
       relationships: newRelationships,
+      annotations: newAnnotations,
       layout: newLayout
     };
 
-    set({ schema: normalizeSchema(newSchema), selectedTableId: null });
+    set({ schema: normalizeSchema(newSchema), selectedTableId: null, selectedAnnotationId: null });
     get().syncToYamlInput();
     get().saveSchema();
   },
@@ -770,7 +793,7 @@ export const useStore = create<AppState>((set, get) => ({
     if (selectedTableId === id) {
       set({ selectedTableId: null });
     } else {
-      set({ selectedTableId: id, selectedEdgeId: null });
+      set({ selectedTableId: id, selectedEdgeId: null, selectedAnnotationId: null });
     }
   },
 
@@ -779,8 +802,56 @@ export const useStore = create<AppState>((set, get) => ({
     if (selectedEdgeId === id) {
       set({ selectedEdgeId: null });
     } else {
-      set({ selectedEdgeId: id, selectedTableId: null });
+      set({ selectedEdgeId: id, selectedTableId: null, selectedAnnotationId: null });
     }
+  },
+
+  toggleAnnotationSelection: (id) => {
+    const { selectedAnnotationId } = get();
+    if (selectedAnnotationId === id) {
+      set({ selectedAnnotationId: null });
+    } else {
+      set({ selectedAnnotationId: id, selectedTableId: null, selectedEdgeId: null });
+    }
+  },
+
+  addAnnotation: (offset, targetId, targetType) => {
+    const { schema } = get();
+    if (!schema) return;
+    const newId = `note_${Date.now()}`;
+    const newAnnotation: Annotation = {
+      id: newId,
+      targetId,
+      targetType,
+      text: 'New Note',
+      type: 'sticky',
+      offset
+    };
+    const newSchema = {
+      ...schema,
+      annotations: [...(schema.annotations || []), newAnnotation]
+    };
+    set({ schema: normalizeSchema(newSchema), selectedAnnotationId: newId });
+    get().syncToYamlInput();
+    get().saveSchema();
+  },
+
+  updateAnnotation: (id, updates) => {
+    const { schema } = get();
+    if (!schema || !schema.annotations) return;
+    const newAnnotations = schema.annotations.map(a => a.id === id ? { ...a, ...updates } : a);
+    set({ schema: { ...schema, annotations: newAnnotations } });
+    get().syncToYamlInput();
+    get().saveSchema();
+  },
+
+  removeAnnotation: (id) => {
+    const { schema } = get();
+    if (!schema || !schema.annotations) return;
+    const newAnnotations = schema.annotations.filter(a => a.id !== id);
+    set({ schema: { ...schema, annotations: newAnnotations }, selectedAnnotationId: null });
+    get().syncToYamlInput();
+    get().saveSchema();
   },
   
   getSelectedTable: () => {
@@ -815,5 +886,11 @@ export const useStore = create<AppState>((set, get) => ({
     const relationship = schema.relationships[index];
     if (!relationship) return null;
     return { relationship, index };
+  },
+
+  getSelectedAnnotation: () => {
+    const { schema, selectedAnnotationId } = get();
+    if (!schema || !selectedAnnotationId || !schema.annotations) return null;
+    return schema.annotations.find(a => a.id === selectedAnnotationId) || null;
   }
   }));
