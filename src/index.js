@@ -16,7 +16,7 @@ const program = new Command();
 program
   .name('modscape')
   .description('Modscape: A YAML-driven data modeling visualizer CLI')
-  .version('1.0.7');
+  .version('1.0.8');
 
 program
   .command('init')
