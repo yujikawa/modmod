@@ -1,20 +1,96 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+context: |
+  This repository develops Modscape, a YAML-driven data modeling visualizer
+  designed for Modern Data Stack architectures.
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+  Modscape helps data teams design and understand analytics data models
+  such as Star Schema and Data Vault using a visual canvas.
+
+  Core concept:
+  Modscape bridges three abstraction layers of data modeling:
+
+  1. Conceptual layer
+     High-level business entities used in diagrams.
+
+  2. Logical layer
+     Formal business definitions used in semantic modeling.
+
+  3. Physical layer
+     Actual database tables used in the warehouse.
+
+  The modeling definition is written in YAML (model.yaml).
+
+  YAML structure:
+
+  domains:
+    Visual grouping of business domains.
+
+  tables:
+    Entity definitions with tri-layer naming:
+      name           -> conceptual name
+      logical_name   -> business name
+      physical_name  -> database table name
+
+  columns:
+    Each table contains columns with metadata such as:
+      name
+      type
+      primary key
+      additivity
+
+  relationships:
+    Defines cardinality relationships between tables.
+
+  Modscape supports common analytics modeling patterns:
+
+    - Star Schema (fact / dimension)
+    - Data Vault (hub / link / satellite)
+    - Data Mart structures
+
+  Key features of the tool:
+
+    - YAML-as-Code modeling
+    - visual ER modeling canvas (React Flow)
+    - automatic layout using Dagre
+    - interactive editing with CodeMirror
+    - domain-based navigation
+    - sample data storytelling
+    - AI-assisted modeling workflow
+
+  Technology stack:
+
+    - TypeScript
+    - React
+    - React Flow (graph editor)
+    - CodeMirror 6
+    - Zustand (state management)
+    - Dagre (graph layout)
+    - js-yaml (YAML parser)
+    - Node.js CLI
+
+  Development goals:
+
+    - Keep the YAML format human-readable
+    - Maintain compatibility with analytics modeling practices
+    - Make models AI-friendly for LLM agents
+    - Prioritize clarity of visual data architecture
+
+rules:
+  proposal:
+    - Focus on improvements to the modeling experience or visualization
+    - Explain why the change benefits data teams
+
+  design:
+    - Prefer simple architecture over heavy abstractions
+    - Keep YAML schema stable when possible
+    - Ensure visual editor and YAML remain synchronized
+
+  specs:
+    - New features must work with YAML-first modeling
+    - Avoid introducing database-specific assumptions
+    - Maintain compatibility with Star Schema and Data Vault modeling
+
+  tasks:
+    - Break tasks into small incremental steps
+    - Prefer iterative UI improvements over large rewrites
