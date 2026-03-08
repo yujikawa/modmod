@@ -136,13 +136,19 @@ const PathFinderTab = () => {
               {/* Steps */}
               {path.map((step, i) => (
                 <div key={i} className="mb-4">
-                  <div className="flex items-center gap-2 my-2 py-1 px-2 rounded bg-slate-100 dark:bg-slate-800/50 w-fit">
+                  <div className={`flex items-center gap-2 my-2 py-1 px-2 rounded border w-fit transition-colors ${
+                    theme === 'dark' 
+                      ? 'bg-slate-800/50 border-slate-700 text-slate-400' 
+                      : step.edge.type === 'er'
+                        ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                        : 'bg-blue-50 border-blue-100 text-blue-700'
+                  }`}>
                     {step.edge.type === 'er' ? (
-                      <Database size={10} className="text-emerald-500" />
+                      <Database size={10} className={theme === 'dark' ? 'text-emerald-500' : 'text-emerald-600'} />
                     ) : (
-                      <GitGraph size={10} className="text-blue-400" />
+                      <GitGraph size={10} className={theme === 'dark' ? 'text-blue-400' : 'text-blue-600'} />
                     )}
-                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">
+                    <span className="text-[9px] font-bold uppercase tracking-tighter">
                       {step.edge.type === 'er' ? `ER (${step.edge.metadata.type})` : 'Lineage'}
                     </span>
                   </div>
