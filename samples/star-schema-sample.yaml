@@ -71,6 +71,7 @@ tables:
     lineage:
       upstream:
         - fct_sales
+        - dim_dates
     columns:
       - id: month_key
         logical:
@@ -111,6 +112,7 @@ domains:
     color: rgba(245, 158, 11, 0.1)
     tables:
       - mart_monthly_revenue
+annotations: []
 layout:
   sales_ops:
     x: 0

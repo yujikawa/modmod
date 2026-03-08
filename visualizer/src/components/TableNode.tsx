@@ -31,10 +31,15 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
     showER,
     showLineage,
     connectionStartHandle,
-    theme
+    theme,
+    isPresentationMode,
+    selectedTableId,
+    selectedAnnotationId
   } = useStore()
 
   const isActuallySelected = selected;
+  const isAnythingSelected = !!(selectedTableId || selectedAnnotationId);
+  const shouldDim = isPresentationMode && isAnythingSelected && !isActuallySelected;
   const hasColumns = table.columns && table.columns.length > 0;
   
   // Disable connections when both modes are active to prevent ambiguity
@@ -114,7 +119,10 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
         height: '100%',
         minWidth: '220px', 
         position: 'relative',
-        cursor: 'default'
+        cursor: 'default',
+        opacity: shouldDim ? 0.3 : 1,
+        zIndex: isActuallySelected ? 50 : 0,
+        transition: 'opacity 0.5s ease-in-out, z-index 0.3s'
       }}
     >
       <NodeResizer

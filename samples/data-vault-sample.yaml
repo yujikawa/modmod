@@ -112,24 +112,33 @@ domains:
     color: rgba(245, 158, 11, 0.1)
     tables:
       - mart_monthly_revenue
+annotations:
+  - id: note_1772929533045
+    targetId: fct_sales
+    targetType: table
+    text: The sales team wants to add another dimension to this table for analysis.
+    type: sticky
+    offset:
+      x: 114.23465402888576
+      'y': -65.2939652449728
 layout:
   sales_ops:
-    x: -65
-    'y': 54
+    x: 0
+    'y': 0
     width: 840
     height: 640
   fct_sales:
-    x: 511
-    'y': 156
+    x: 483
+    'y': 172
   dim_products:
-    x: 84
-    'y': 33
+    x: 74
+    'y': 70
   dim_dates:
-    x: 70
-    'y': 387
+    x: 73
+    'y': 347
   analytics_marts:
-    x: 822
-    'y': 72
+    x: 876
+    'y': 18
     width: 440
     height: 340
   mart_monthly_revenue:

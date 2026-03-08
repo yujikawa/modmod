@@ -1,5 +1,6 @@
-## ADDED Requirements
-
+## Purpose
+The system SHALL provide an interactive visual canvas for data modeling, supporting multiple abstraction layers and intuitive diagramming.
+## Requirements
 ### Requirement: YAML Parsing
 The system SHALL parse a YAML definition to extract table metadata and relationships.
 
@@ -130,53 +131,24 @@ The system SHALL display a visual indicator for technical/audit metadata columns
 - **WHEN** a column has `logical.isMetadata: true`
 - **THEN** the visualizer displays a `🕒` (Clock) icon next to the column name
 
-## MODIFIED Requirements
-
-### Requirement: Diagram Rendering
-The system SHALL render an interactive ER-style diagram on a canvas showing tables and their relationships.
-
-#### Scenario: Initial Load
-- **WHEN** the application starts and a model is loaded
-- **THEN** the canvas displays all tables as nodes and relationships as lines, even if tables have no columns or relationships have no column IDs
-
-### Requirement: Table-Level Relationships
-The system SHALL support drawing edges between nodes when specific column references are omitted in the relationship definition.
-
-#### Scenario: Relationship without columns
-- **WHEN** a relationship is defined only with `from.table` and `to.table`
-- **THEN** an edge is rendered between the default Top/Bottom handles of the respective nodes
-
-## MODIFIED Requirements
-
-### Requirement: Diagram Rendering
-The system SHALL render an interactive ER-style diagram on a canvas showing tables, their relationships, and optional domain containers, with visual cues for entity types.
-
-#### Scenario: Initial Load
-- **WHEN** the application starts and a model is loaded
-- **THEN** the canvas displays all tables as nodes with type-specific icons and colors, relationships as lines, and domains as enclosing containers where defined
-
-## MODIFIED Requirements
-
-### Requirement: Diagram Rendering
-The system SHALL render an interactive ER-style diagram on a canvas showing tables, their relationships, and optional domain containers, with visual cues for entity types and interactive edge controls, and handles for relationship creation.
-
-#### Scenario: Visualizing Selection
-- **WHEN** a user selects a table node
-- **THEN** the diagram updates the visual style of connected edges to reflect the current focus
-
-#### Scenario: Edge Interaction
-- **WHEN** an edge is rendered
-- **THEN** it utilizes a custom edge component that includes an interactive delete button
-
-#### Scenario: Handle Rendering
-- **WHEN** a table column is rendered in a node
-- **THEN** it includes an invisible handle that becomes visible on hover to initiate a connection
-
-## MODIFIED Requirements
-
 ### Requirement: Diagram Container Structure
 The system SHALL wrap the diagram canvas in a container that allows for sibling elements in a vertical flow.
 
 #### Scenario: Selection Cleared
 - **WHEN** no node is selected
 - **THEN** the diagram container expands to occupy the full available height of the right section
+
+### Requirement: Annotation Node Rendering
+The system SHALL render visual annotations (sticky notes and callouts) as a distinct layer of custom nodes on the React Flow canvas.
+
+#### Scenario: Rendering a sticky note
+- **WHEN** the schema contains an annotation of type `sticky`
+- **THEN** the visualizer SHALL render a React Flow node using the `AnnotationNode` component at the calculated position
+
+### Requirement: Annotation Connector Rendering
+The system SHALL render a visual connector (edge) between an annotation and its target object if a `targetId` is defined.
+
+#### Scenario: Rendering a callout connector
+- **WHEN** an annotation has a `targetId` and `style.arrow: true`
+- **THEN** the visualizer SHALL render a specialized React Flow edge connecting the annotation node to the target node
+

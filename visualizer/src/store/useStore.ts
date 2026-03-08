@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import yaml from 'js-yaml'
 import dagre from 'dagre'
-import type { Schema, Table, Relationship, Domain } from '../types/schema'
+import type { Schema, Table, Relationship, Domain, Annotation } from '../types/schema'
 import { parseYAML, normalizeSchema } from '../lib/parser'
 
 export interface ModelFile {
@@ -14,6 +14,7 @@ interface AppState {
   schema: Schema | null;
   selectedTableId: string | null;
   selectedEdgeId: string | null;
+  selectedAnnotationId: string | null;
   hoveredColumnId: string | null;
   error: string | null;
   isCliMode: boolean;
@@ -30,23 +31,33 @@ interface AppState {
   availableFiles: ModelFile[];
   currentModelSlug: string | null;
   
-  // Sidebar State
+  // UI State
   isSidebarOpen: boolean;
+  isRightPanelOpen: boolean;
+  isPresentationMode: boolean;
   activeTab: 'editor' | 'entities';
+  activeRightPanelTab: 'tables' | 'path' | 'notes';
   focusNodeId: string | null;
+  pathFinderResult: { nodeIds: string[], edgeIds: string[] } | null;
   showER: boolean;
   showLineage: boolean;
+  showAnnotations: boolean;
   connectionStartHandle: { nodeId: string; handleId: string | null; handleType: string | null } | null;
   theme: 'dark' | 'light';
+  isDetailPanelSuppressed: boolean;
   
   // Actions
   setSchema: (schema: any) => void;
   setSelectedTableId: (id: string | null) => void;
   setSelectedEdgeId: (id: string | null) => void;
+  setSelectedAnnotationId: (id: string | null) => void;
+  setIsDetailPanelSuppressed: (suppressed: boolean) => void;
   setHoveredColumnId: (id: string | null) => void;
   setIsCliMode: (isCli: boolean) => void;
   setShowER: (show: boolean) => void;
   setShowLineage: (show: boolean) => void;
+  setShowAnnotations: (show: boolean) => void;
+  setIsPresentationMode: (enabled: boolean) => void;
   setIsAutoSaveEnabled: (enabled: boolean) => void;
   setLastUpdateSource: (source: 'user' | 'visual' | 'undo') => void;
   parseAndSetSchema: (yaml: string) => void;
@@ -69,6 +80,12 @@ interface AppState {
   assignTableToDomain: (tableId: string, domainId?: string | null) => void;
   toggleTableSelection: (id: string) => void;
   toggleEdgeSelection: (id: string) => void;
+  toggleAnnotationSelection: (id: string) => void;
+  
+  // Annotation Actions
+  addAnnotation: (offset: { x: number, y: number }, targetId?: string, targetType?: Annotation['targetType']) => void;
+  updateAnnotation: (id: string, updates: Partial<Annotation>) => void;
+  removeAnnotation: (id: string) => void;
   
   // Multi-file Actions
   fetchAvailableFiles: () => Promise<void>;
@@ -76,7 +93,10 @@ interface AppState {
   
   // Sidebar Actions
   setIsSidebarOpen: (isOpen: boolean) => void;
+  setIsRightPanelOpen: (isOpen: boolean) => void;
   setActiveTab: (tab: 'editor' | 'entities') => void;
+  setActiveRightPanelTab: (tab: 'tables' | 'path' | 'notes') => void;
+  setPathFinderResult: (result: { nodeIds: string[], edgeIds: string[] } | null) => void;
   setFocusNodeId: (id: string | null) => void;
   setConnectionStartHandle: (handle: { nodeId: string; handleId: string | null; handleType: string | null } | null) => void;
   toggleTheme: () => void;
@@ -86,6 +106,7 @@ interface AppState {
   getSelectedTable: () => Table | null;
   getSelectedDomain: () => Domain | null;
   getSelectedRelationship: () => { relationship: Relationship; index: number } | null;
+  getSelectedAnnotation: () => Annotation | null;
 }
 
 let saveTimeout: any = null;
@@ -94,6 +115,7 @@ export const useStore = create<AppState>((set, get) => ({
   schema: null,
   selectedTableId: null,
   selectedEdgeId: null,
+  selectedAnnotationId: null,
   hoveredColumnId: null,
   error: null,
   isCliMode: (typeof window !== 'undefined' && (window as any).MODSCAPE_CLI_MODE === true),
@@ -116,15 +138,21 @@ export const useStore = create<AppState>((set, get) => ({
   availableFiles: [],
   currentModelSlug: null,
 
-  // Sidebar Defaults
+  // UI Defaults
   isSidebarOpen: true,
+  isRightPanelOpen: false,
+  isPresentationMode: false,
   activeTab: 'editor',
+  activeRightPanelTab: 'tables',
   focusNodeId: null,
+  pathFinderResult: null,
   showER: true,
   showLineage: true,
+  showAnnotations: true,
   connectionStartHandle: null,
   theme: (typeof window !== 'undefined' && (localStorage.getItem('modscape-theme') as any)) || 
          (window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark'),
+  isDetailPanelSuppressed: false,
 
   setSchema: (data) => {
     try {
@@ -138,15 +166,22 @@ export const useStore = create<AppState>((set, get) => ({
 
   setShowER: (show) => set({ showER: show }),
   setShowLineage: (show) => set({ showLineage: show }),
+  setShowAnnotations: (show) => set({ showAnnotations: show }),
+  setIsPresentationMode: (enabled) => set({ isPresentationMode: enabled }),
   setIsAutoSaveEnabled: (enabled) => set({ isAutoSaveEnabled: enabled }),
   setLastUpdateSource: (source) => set({ lastUpdateSource: source }),
   
-  setSelectedTableId: (id) => set({ selectedTableId: id }),
-  setSelectedEdgeId: (id) => set({ selectedEdgeId: id }),
+  setSelectedTableId: (id) => set({ selectedTableId: id, selectedEdgeId: null, selectedAnnotationId: null, isDetailPanelSuppressed: false }),
+  setSelectedEdgeId: (id) => set({ selectedEdgeId: id, selectedTableId: null, selectedAnnotationId: null, isDetailPanelSuppressed: false }),
+  setSelectedAnnotationId: (id) => set({ selectedAnnotationId: id, selectedTableId: null, selectedEdgeId: null, isDetailPanelSuppressed: false }),
+  setIsDetailPanelSuppressed: (suppressed) => set({ isDetailPanelSuppressed: suppressed }),
   setHoveredColumnId: (id) => set({ hoveredColumnId: id }),
   setIsCliMode: (isCli) => set({ isCliMode: isCli }),
   setIsSidebarOpen: (isOpen) => set({ isSidebarOpen: isOpen }),
+  setIsRightPanelOpen: (isOpen) => set({ isRightPanelOpen: isOpen }),
   setActiveTab: (tab) => set({ activeTab: tab }),
+  setActiveRightPanelTab: (tab) => set({ activeRightPanelTab: tab, pathFinderResult: null }),
+  setPathFinderResult: (result) => set({ pathFinderResult: result }),
   setFocusNodeId: (id) => set({ focusNodeId: id }),
   setConnectionStartHandle: (handle) => set({ connectionStartHandle: handle }),
   
@@ -277,7 +312,7 @@ export const useStore = create<AppState>((set, get) => ({
           newLayout[tid] = { x: domainLayouts[v].tableOffsets[tid].x, y: domainLayouts[v].tableOffsets[tid].y };
         });
       } else {
-        newLayout[v] = { x: absX, y: absY }; // No need to set width/height for unassigned tables unless manually resized
+        newLayout[v] = { x: absX, y: absY };
       }
     });
 
@@ -286,7 +321,8 @@ export const useStore = create<AppState>((set, get) => ({
     get().saveSchema(true);
   },
 
-  fetchAvailableFiles: async () => {    const injectedData = (window as any).__MODSCAPE_DATA__;
+  fetchAvailableFiles: async () => {
+    const injectedData = (window as any).__MODSCAPE_DATA__;
     if (injectedData && injectedData.models) {
       const files = injectedData.models.map((m: any) => ({
         slug: m.slug,
@@ -315,6 +351,8 @@ export const useStore = create<AppState>((set, get) => ({
           currentModelSlug: slug, 
           schema: normalizeSchema(model.schema), 
           selectedTableId: null, 
+          selectedEdgeId: null,
+          selectedAnnotationId: null,
           error: null 
         });
         get().syncToYamlInput();
@@ -336,6 +374,8 @@ export const useStore = create<AppState>((set, get) => ({
         currentModelSlug: slug, 
         schema: normalizeSchema(data), 
         selectedTableId: null, 
+        selectedEdgeId: null,
+        selectedAnnotationId: null,
         error: null 
       });
       get().syncToYamlInput();
@@ -481,7 +521,8 @@ export const useStore = create<AppState>((set, get) => ({
       schema: normalizeSchema(newSchema), 
       error: null,
       selectedTableId: newId,
-      selectedEdgeId: null
+      selectedEdgeId: null,
+      selectedAnnotationId: null
     });
     get().syncToYamlInput();
     get().saveSchema();
@@ -511,7 +552,8 @@ export const useStore = create<AppState>((set, get) => ({
       schema: normalizeSchema(newSchema), 
       error: null,
       selectedTableId: newId,
-      selectedEdgeId: null
+      selectedEdgeId: null,
+      selectedAnnotationId: null
     });
     get().syncToYamlInput();
     get().saveSchema();
@@ -545,14 +587,10 @@ export const useStore = create<AppState>((set, get) => ({
       finalTargetHandle = sourceHandle;
     }
 
-    // New Parsing Logic for Descriptive IDs
-    // Format is either "[node]-[col]-er-source-right" or "[node]-er-source-bottom"
     const parseColumn = (nodeId: string, handleId: string | null | undefined) => {
       if (!handleId) return undefined;
       const baseId = handleId.replace(`${nodeId}-`, '');
-      // If it starts with er- or lin-, it's a table-level handle
       if (baseId.startsWith('er-') || baseId.startsWith('lin-')) return undefined;
-      // Otherwise, extract column name from [col]-er-...
       return baseId.split('-')[0] || undefined;
     };
 
@@ -630,7 +668,6 @@ export const useStore = create<AppState>((set, get) => ({
     const { schema } = get();
     if (!schema) return;
 
-    // 1. Remove ER Relationship
     const newRelationships = (schema.relationships || []).filter(
       r => {
         const isMatch = (r.from.table === source && r.to.table === target) ||
@@ -639,7 +676,6 @@ export const useStore = create<AppState>((set, get) => ({
       }
     );
 
-    // 2. Remove Lineage Dependency
     const newTables = schema.tables.map(table => {
       if (table.id === target && table.lineage?.upstream) {
         return {
@@ -669,6 +705,7 @@ export const useStore = create<AppState>((set, get) => ({
       tables: d.tables.filter(tid => tid !== id)
     }));
     const newRelationships = (schema.relationships || []).filter(r => r.from.table !== id && r.to.table !== id);
+    const newAnnotations = (schema.annotations || []).filter(a => a.id !== id && a.targetId !== id);
     
     const newLayout = { ...(schema.layout || {}) };
     delete newLayout[id];
@@ -678,10 +715,11 @@ export const useStore = create<AppState>((set, get) => ({
       tables: newTables,
       domains: newDomains,
       relationships: newRelationships,
+      annotations: newAnnotations,
       layout: newLayout
     };
 
-    set({ schema: normalizeSchema(newSchema), selectedTableId: null });
+    set({ schema: normalizeSchema(newSchema), selectedTableId: null, selectedAnnotationId: null });
     get().syncToYamlInput();
     get().saveSchema();
   },
@@ -741,20 +779,13 @@ export const useStore = create<AppState>((set, get) => ({
     if (!schema) return;
 
     const newDomains = (schema.domains || []).map(domain => {
-      // Remove from current domain if it's there
       const filteredTables = domain.tables.filter(id => id !== tableId);
-      
-      // If this is the target domain, add the table
       if (domain.id === domainId) {
         return { ...domain, tables: Array.from(new Set([...filteredTables, tableId])) };
       }
-      
       return { ...domain, tables: filteredTables };
     });
 
-    // Reset coordinates to relative (20, 20) inside the new domain
-    // or keep them if removing from domain (though absolute conversion would be better, 
-    // resetting to a safe place is more reliable for now)
     const newLayout = {
       ...(schema.layout || {}),
       [tableId]: { x: 20, y: 20 }
@@ -768,19 +799,80 @@ export const useStore = create<AppState>((set, get) => ({
   toggleTableSelection: (id) => {
     const { selectedTableId } = get();
     if (selectedTableId === id) {
-      set({ selectedTableId: null });
+      set({ selectedTableId: null, isDetailPanelSuppressed: false });
     } else {
-      set({ selectedTableId: id, selectedEdgeId: null });
+      set({ selectedTableId: id, selectedEdgeId: null, selectedAnnotationId: null, isDetailPanelSuppressed: false });
     }
   },
 
   toggleEdgeSelection: (id) => {
     const { selectedEdgeId } = get();
     if (selectedEdgeId === id) {
-      set({ selectedEdgeId: null });
+      set({ selectedEdgeId: null, isDetailPanelSuppressed: false });
     } else {
-      set({ selectedEdgeId: id, selectedTableId: null });
+      set({ selectedEdgeId: id, selectedTableId: null, selectedAnnotationId: null, isDetailPanelSuppressed: false });
     }
+  },
+
+  toggleAnnotationSelection: (id) => {
+    const { selectedAnnotationId, isDetailPanelSuppressed } = get();
+    if (selectedAnnotationId === id) {
+      if (isDetailPanelSuppressed) {
+        set({ isDetailPanelSuppressed: false });
+      } else {
+        set({ selectedAnnotationId: null, isDetailPanelSuppressed: false });
+      }
+    } else {
+      set({ selectedAnnotationId: id, selectedTableId: null, selectedEdgeId: null, isDetailPanelSuppressed: false });
+    }
+  },
+
+  addAnnotation: (offset, targetId, targetType) => {
+    const { schema } = get();
+    if (!schema) return;
+    const newId = `note_${Date.now()}`;
+    const newAnnotation: Annotation = {
+      id: newId,
+      targetId,
+      targetType,
+      text: 'New Note',
+      type: 'sticky',
+      offset
+    };
+    const newSchema = {
+      ...schema,
+      annotations: [...(schema.annotations || []), newAnnotation]
+    };
+    set({ 
+      schema: normalizeSchema(newSchema), 
+      selectedAnnotationId: newId,
+      selectedTableId: null,
+      selectedEdgeId: null,
+      isDetailPanelSuppressed: true 
+    });
+    if (!targetId) {
+      get().setFocusNodeId(newId);
+    }
+    get().syncToYamlInput();
+    get().saveSchema();
+  },
+
+  updateAnnotation: (id, updates) => {
+    const { schema } = get();
+    if (!schema || !schema.annotations) return;
+    const newAnnotations = schema.annotations.map(a => a.id === id ? { ...a, ...updates } : a);
+    set({ schema: { ...schema, annotations: newAnnotations } });
+    get().syncToYamlInput();
+    get().saveSchema();
+  },
+
+  removeAnnotation: (id) => {
+    const { schema } = get();
+    if (!schema || !schema.annotations) return;
+    const newAnnotations = schema.annotations.filter(a => a.id !== id);
+    set({ schema: { ...schema, annotations: newAnnotations }, selectedAnnotationId: null });
+    get().syncToYamlInput();
+    get().saveSchema();
   },
   
   getSelectedTable: () => {
@@ -800,7 +892,6 @@ export const useStore = create<AppState>((set, get) => ({
     if (!schema || !selectedEdgeId) return null;
 
     if (selectedEdgeId.startsWith('lin-')) {
-      // Lineage Edge Format: lin-SOURCE-TARGET-INDEX
       const parts = selectedEdgeId.split('-');
       const source = parts[1];
       const target = parts[2];
@@ -815,5 +906,11 @@ export const useStore = create<AppState>((set, get) => ({
     const relationship = schema.relationships[index];
     if (!relationship) return null;
     return { relationship, index };
+  },
+
+  getSelectedAnnotation: () => {
+    const { schema, selectedAnnotationId } = get();
+    if (!schema || !selectedAnnotationId || !schema.annotations) return null;
+    return schema.annotations.find(a => a.id === selectedAnnotationId) || null;
   }
   }));

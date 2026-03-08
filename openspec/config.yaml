@@ -94,3 +94,4 @@ rules:
   tasks:
     - Break tasks into small incremental steps
     - Prefer iterative UI improvements over large rewrites
+    - Check whether you can build using `npm run build-ui` after implemation 
