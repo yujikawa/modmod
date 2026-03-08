@@ -132,9 +132,6 @@ const DetailPanel = () => {
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Annotation</span>
-                <span style={{ fontSize: '9px', fontWeight: 800, padding: '1px 5px', borderRadius: '3px', backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.2)', textTransform: 'uppercase' }}>
-                  {annotation.type}
-                </span>
               </div>
               <p style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', margin: 0 }}>
                 {annotation.targetId ? `Sticky to ${annotation.targetId} (${annotation.targetType})` : 'Floating Note'}
@@ -218,30 +215,8 @@ const DetailPanel = () => {
               </section>
 
               <section>
-                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Visual Style</h3>
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Note Color</h3>
                 <div className="flex flex-col gap-3">
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => updateAnnotation(annotation.id, { type: 'sticky' })}
-                      className={`flex-1 py-2 px-3 rounded border text-xs font-medium transition-all ${
-                        annotation.type === 'sticky' 
-                          ? 'bg-amber-500/10 border-amber-500 text-amber-600' 
-                          : 'border-slate-200 text-slate-500 hover:bg-slate-50'
-                      }`}
-                    >
-                      Sticky Note
-                    </button>
-                    <button 
-                      onClick={() => updateAnnotation(annotation.id, { type: 'callout' })}
-                      className={`flex-1 py-2 px-3 rounded border text-xs font-medium transition-all ${
-                        annotation.type === 'callout' 
-                          ? 'bg-blue-500/10 border-blue-500 text-blue-600' 
-                          : 'border-slate-200 text-slate-500 hover:bg-slate-50'
-                      }`}
-                    >
-                      Callout Bubble
-                    </button>
-                  </div>
                   <div className="flex items-center gap-2">
                     <input 
                       type="color" 
