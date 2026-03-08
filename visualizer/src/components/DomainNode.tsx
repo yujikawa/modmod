@@ -14,10 +14,15 @@ const DomainNode = ({ id, data, selected }: NodeProps) => {
   const { 
     updateNodeDimensions,
     theme,
-    toggleDomainLock
+    toggleDomainLock,
+    isPresentationMode,
+    selectedTableId,
+    selectedAnnotationId
   } = useStore()
 
   const isActuallySelected = selected;
+  const isAnythingSelected = !!(selectedTableId || selectedAnnotationId);
+  const shouldDim = isPresentationMode && isAnythingSelected && !isActuallySelected;
   const isLocked = data.isLocked;
   const color = data.color || '#3b82f6';
   
@@ -49,8 +54,9 @@ const DomainNode = ({ id, data, selected }: NodeProps) => {
         position: 'relative',
         color: 'var(--text-secondary)',
         cursor: 'default',
-        transition: 'border-color 0.3s, opacity 0.3s',
-        opacity: isLocked ? 0.8 : 1
+        transition: 'border-color 0.3s, opacity 0.5s ease-in-out, z-index 0.3s',
+        opacity: shouldDim ? 0.2 : (isLocked ? 0.8 : 1),
+        zIndex: isActuallySelected ? 40 : -1
       }}
     >
       {!isLocked && (

@@ -9,7 +9,14 @@ const animatedIds = new Set<string>();
 
 const AnnotationNode = ({ id, data, selected }: NodeProps<{ annotation: Annotation }>) => {
   const { annotation } = data
-  const { updateAnnotation, removeAnnotation, theme } = useStore()
+  const { 
+    updateAnnotation, 
+    removeAnnotation, 
+    theme,
+    isPresentationMode,
+    selectedTableId,
+    selectedAnnotationId
+  } = useStore()
   const [isEditing, setIsEditing] = useState(false)
   const [text, setText] = useState(annotation.text)
   const [isNew, setIsNew] = useState(!animatedIds.has(id))
@@ -43,6 +50,10 @@ const AnnotationNode = ({ id, data, selected }: NodeProps<{ annotation: Annotati
   const textColor = theme === 'dark' ? '#f1f5f9' : '#92400e'
   const borderColor = selected ? '#3b82f6' : (theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)')
 
+  const isActuallySelected = selected;
+  const isAnythingSelected = !!(selectedTableId || selectedAnnotationId);
+  const shouldDim = isPresentationMode && isAnythingSelected && !isActuallySelected;
+
   return (
     <div 
       className={`relative group ${isNew ? 'animate-creation' : ''}`}
@@ -56,9 +67,11 @@ const AnnotationNode = ({ id, data, selected }: NodeProps<{ annotation: Annotati
           : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
         minWidth: '120px',
         maxWidth: '250px',
-        transition: 'background-color 0.3s, color 0.3s', // border-color を除外し、選択時の反応を高速化
+        transition: 'background-color 0.3s, color 0.3s, opacity 0.5s ease-in-out',
         cursor: isEditing ? 'text' : 'grab',
-        color: textColor
+        color: textColor,
+        opacity: shouldDim ? 0.2 : 1,
+        zIndex: isActuallySelected ? 50 : 0
       }}
       onDoubleClick={() => setIsEditing(true)}
     >

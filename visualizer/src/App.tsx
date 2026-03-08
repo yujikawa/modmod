@@ -20,6 +20,7 @@ import AnnotationNode from './components/AnnotationNode'
 import DetailPanel from './components/DetailPanel'
 import Sidebar from './components/Sidebar/Sidebar'
 import RightPanel from './components/RightPanel/RightPanel'
+import PresentationOverlay from './components/PresentationOverlay'
 import SelectionToolbar from './components/SelectionToolbar'
 import ButtonEdge from './components/ButtonEdge'
 import LineageEdge from './components/LineageEdge'
@@ -64,7 +65,9 @@ function Flow() {
     setConnectionStartHandle,
     updateAnnotation,
     theme,
-    currentModelSlug
+    currentModelSlug,
+    isPresentationMode,
+    setIsPresentationMode
   } = useStore()
   
   const [nodes, setNodes, onNodesChange] = useNodesState([])
@@ -79,7 +82,12 @@ function Flow() {
   // Handle global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Exit Presentation Mode on Escape
       if (e.key === 'Escape') {
+        if (isPresentationMode) {
+          setIsPresentationMode(false);
+          return;
+        }
         setSelectedTableId(null);
         setSelectedEdgeId(null);
         setSelectedAnnotationId(null);
@@ -113,7 +121,7 @@ function Flow() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [setSelectedTableId, setSelectedEdgeId, setSelectedAnnotationId, getViewport, setViewport, selectedTableId, selectedEdgeId, selectedAnnotationId]);
+  }, [setSelectedTableId, setSelectedEdgeId, setSelectedAnnotationId, getViewport, setViewport, selectedTableId, selectedEdgeId, selectedAnnotationId, isPresentationMode, setIsPresentationMode]);
 
   // Handle focusNodeId changes
   useEffect(() => {
@@ -481,7 +489,8 @@ function Flow() {
   return (
     <div className="flex-1 relative h-full flex flex-col overflow-hidden">
       <div className="flex-1 relative">
-        <SelectionToolbar />
+        {!isPresentationMode && <SelectionToolbar />}
+        <PresentationOverlay />
         
         {/* Badges ... (Omitting inner badge JSX for brevity, but they stay) */}
         {isEditingDisabled && (
@@ -545,8 +554,8 @@ function Flow() {
         </ReactFlow>
       </div>
 
-      {/* Bottom: Detail Panel (Now properly nested in central column) */}
-      <DetailPanel />
+      {/* Bottom: Detail Panel (Hidden in Presentation Mode) */}
+      {!isPresentationMode && <DetailPanel />}
     </div>
   )
 }
@@ -557,7 +566,8 @@ function App() {
     fetchAvailableFiles, 
     setCurrentModel, 
     setSchema,
-    theme
+    theme,
+    isPresentationMode
   } = useStore()
 
   const hasInjectedData = !!(window as any).__MODSCAPE_DATA__;
@@ -595,13 +605,13 @@ function App() {
         theme === 'dark' ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'
       }`}>
         {/* Left Column: Sidebar (Editor) */}
-        <Sidebar />
+        {!isPresentationMode && <Sidebar />}
 
         {/* Middle Column: Main Container (Canvas + DetailPanel) */}
         <Flow />
 
         {/* Right Column: Entities Panel */}
-        <RightPanel />
+        {!isPresentationMode && <RightPanel />}
       </div>
     </ReactFlowProvider>
   )

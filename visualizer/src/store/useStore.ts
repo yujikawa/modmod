@@ -31,9 +31,10 @@ interface AppState {
   availableFiles: ModelFile[];
   currentModelSlug: string | null;
   
-  // Sidebar State
+  // UI State
   isSidebarOpen: boolean;
   isRightPanelOpen: boolean;
+  isPresentationMode: boolean;
   activeTab: 'editor' | 'entities';
   focusNodeId: string | null;
   showER: boolean;
@@ -54,6 +55,7 @@ interface AppState {
   setShowER: (show: boolean) => void;
   setShowLineage: (show: boolean) => void;
   setShowAnnotations: (show: boolean) => void;
+  setIsPresentationMode: (enabled: boolean) => void;
   setIsAutoSaveEnabled: (enabled: boolean) => void;
   setLastUpdateSource: (source: 'user' | 'visual' | 'undo') => void;
   parseAndSetSchema: (yaml: string) => void;
@@ -132,9 +134,10 @@ export const useStore = create<AppState>((set, get) => ({
   availableFiles: [],
   currentModelSlug: null,
 
-  // Sidebar Defaults
+  // UI Defaults
   isSidebarOpen: true,
   isRightPanelOpen: false,
+  isPresentationMode: false,
   activeTab: 'editor',
   focusNodeId: null,
   showER: true,
@@ -158,6 +161,7 @@ export const useStore = create<AppState>((set, get) => ({
   setShowER: (show) => set({ showER: show }),
   setShowLineage: (show) => set({ showLineage: show }),
   setShowAnnotations: (show) => set({ showAnnotations: show }),
+  setIsPresentationMode: (enabled) => set({ isPresentationMode: enabled }),
   setIsAutoSaveEnabled: (enabled) => set({ isAutoSaveEnabled: enabled }),
   setLastUpdateSource: (source) => set({ lastUpdateSource: source }),
   
@@ -300,7 +304,7 @@ export const useStore = create<AppState>((set, get) => ({
           newLayout[tid] = { x: domainLayouts[v].tableOffsets[tid].x, y: domainLayouts[v].tableOffsets[tid].y };
         });
       } else {
-        newLayout[v] = { x: absX, y: absY }; // No need to set width/height for unassigned tables unless manually resized
+        newLayout[v] = { x: absX, y: absY };
       }
     });
 
@@ -309,7 +313,8 @@ export const useStore = create<AppState>((set, get) => ({
     get().saveSchema(true);
   },
 
-  fetchAvailableFiles: async () => {    const injectedData = (window as any).__MODSCAPE_DATA__;
+  fetchAvailableFiles: async () => {
+    const injectedData = (window as any).__MODSCAPE_DATA__;
     if (injectedData && injectedData.models) {
       const files = injectedData.models.map((m: any) => ({
         slug: m.slug,
@@ -574,14 +579,10 @@ export const useStore = create<AppState>((set, get) => ({
       finalTargetHandle = sourceHandle;
     }
 
-    // New Parsing Logic for Descriptive IDs
-    // Format is either "[node]-[col]-er-source-right" or "[node]-er-source-bottom"
     const parseColumn = (nodeId: string, handleId: string | null | undefined) => {
       if (!handleId) return undefined;
       const baseId = handleId.replace(`${nodeId}-`, '');
-      // If it starts with er- or lin-, it's a table-level handle
       if (baseId.startsWith('er-') || baseId.startsWith('lin-')) return undefined;
-      // Otherwise, extract column name from [col]-er-...
       return baseId.split('-')[0] || undefined;
     };
 
@@ -659,7 +660,6 @@ export const useStore = create<AppState>((set, get) => ({
     const { schema } = get();
     if (!schema) return;
 
-    // 1. Remove ER Relationship
     const newRelationships = (schema.relationships || []).filter(
       r => {
         const isMatch = (r.from.table === source && r.to.table === target) ||
@@ -668,7 +668,6 @@ export const useStore = create<AppState>((set, get) => ({
       }
     );
 
-    // 2. Remove Lineage Dependency
     const newTables = schema.tables.map(table => {
       if (table.id === target && table.lineage?.upstream) {
         return {
@@ -772,20 +771,13 @@ export const useStore = create<AppState>((set, get) => ({
     if (!schema) return;
 
     const newDomains = (schema.domains || []).map(domain => {
-      // Remove from current domain if it's there
       const filteredTables = domain.tables.filter(id => id !== tableId);
-      
-      // If this is the target domain, add the table
       if (domain.id === domainId) {
         return { ...domain, tables: Array.from(new Set([...filteredTables, tableId])) };
       }
-      
       return { ...domain, tables: filteredTables };
     });
 
-    // Reset coordinates to relative (20, 20) inside the new domain
-    // or keep them if removing from domain (though absolute conversion would be better, 
-    // resetting to a safe place is more reliable for now)
     const newLayout = {
       ...(schema.layout || {}),
       [tableId]: { x: 20, y: 20 }
@@ -818,8 +810,6 @@ export const useStore = create<AppState>((set, get) => ({
     const { selectedAnnotationId, isDetailPanelSuppressed } = get();
     if (selectedAnnotationId === id) {
       if (isDetailPanelSuppressed) {
-        // If it was already selected but panel was hidden (after adding), 
-        // just show the panel on first click instead of deselecting.
         set({ isDetailPanelSuppressed: false });
       } else {
         set({ selectedAnnotationId: null, isDetailPanelSuppressed: false });
@@ -852,12 +842,9 @@ export const useStore = create<AppState>((set, get) => ({
       selectedEdgeId: null,
       isDetailPanelSuppressed: true 
     });
-    
-    // Focus camera on new annotation if it's independent (no target)
     if (!targetId) {
       get().setFocusNodeId(newId);
     }
-
     get().syncToYamlInput();
     get().saveSchema();
   },
@@ -897,7 +884,6 @@ export const useStore = create<AppState>((set, get) => ({
     if (!schema || !selectedEdgeId) return null;
 
     if (selectedEdgeId.startsWith('lin-')) {
-      // Lineage Edge Format: lin-SOURCE-TARGET-INDEX
       const parts = selectedEdgeId.split('-');
       const source = parts[1];
       const target = parts[2];

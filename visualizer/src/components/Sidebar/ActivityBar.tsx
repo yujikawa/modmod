@@ -10,7 +10,8 @@ import {
   Moon,
   Lock,
   Plus,
-  ChevronLeft
+  ChevronLeft,
+  Play
 } from 'lucide-react'
 import { useReactFlow } from 'reactflow'
 import logo from '/favicon.svg?url'
@@ -19,6 +20,8 @@ const ActivityBar = () => {
   const { 
     isSidebarOpen,
     setIsSidebarOpen,
+    isPresentationMode,
+    setIsPresentationMode,
     showER,
     setShowER,
     showLineage,
@@ -159,6 +162,10 @@ const ActivityBar = () => {
       <div className={`w-8 border-t mb-6 ${theme === 'dark' ? 'border-slate-800' : 'border-slate-200'}`} />
 
       <div className="mt-auto flex flex-col gap-2">
+        <button onClick={() => setIsPresentationMode(true)} className={iconClass(isPresentationMode, 'text-purple-500')}>
+          <Play size={20} />
+          <Tooltip text="Presentation Mode" />
+        </button>
         <button onClick={() => calculateAutoLayout()} className={iconClass(false)}>
           <LayoutTemplate size={20} />
           <Tooltip text="Auto Layout" />
