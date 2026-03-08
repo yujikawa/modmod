@@ -1,146 +1,227 @@
 tables:
-  - id: dim_products
-    name: Products
-    logical_name: Product Master List
-    physical_name: dim_products_v2
+  - id: hub_customer
+    name: Customer Hub
+    logical_name: Customer Business Key
+    physical_name: hub_customer
     appearance:
-      type: dimension
+      type: hub
+      icon: 👤
+    columns:
+      - id: customer_hk
+        logical:
+          name: Customer Hash Key
+          type: String
+          isPrimaryKey: true
+      - id: customer_id
+        logical:
+          name: Customer ID (BK)
+          type: String
+      - id: load_date
+        logical:
+          name: Load Date
+          type: Timestamp
+          isMetadata: true
+      - id: record_source
+        logical:
+          name: Record Source
+          type: String
+          isMetadata: true
+    sampleData: []
+  - id: hub_product
+    name: Product Hub
+    logical_name: Product Business Key
+    physical_name: hub_product
+    appearance:
+      type: hub
       icon: 📦
     columns:
-      - id: product_key
+      - id: product_hk
         logical:
-          name: Product Key
-          type: Int
+          name: Product Hash Key
+          type: String
+          isPrimaryKey: true
+      - id: product_code
+        logical:
+          name: Product Code (BK)
+          type: String
+      - id: load_date
+        logical:
+          name: Load Date
+          type: Timestamp
+          isMetadata: true
+      - id: record_source
+        logical:
+          name: Record Source
+          type: String
+          isMetadata: true
+    sampleData: []
+  - id: lnk_sales
+    name: Sales Link
+    logical_name: Customer Product Transaction
+    physical_name: lnk_sales
+    appearance:
+      type: link
+      icon: 🔗
+    columns:
+      - id: sales_hk
+        logical:
+          name: Sales Hash Key
+          type: String
+          isPrimaryKey: true
+      - id: customer_hk
+        logical:
+          name: Customer Hash Key
+          type: String
+          isForeignKey: true
+      - id: product_hk
+        logical:
+          name: Product Hash Key
+          type: String
+          isForeignKey: true
+      - id: load_date
+        logical:
+          name: Load Date
+          type: Timestamp
+          isMetadata: true
+      - id: record_source
+        logical:
+          name: Record Source
+          type: String
+          isMetadata: true
+    sampleData: []
+  - id: sat_customer_details
+    name: Customer Details
+    logical_name: Customer Descriptive Attributes
+    physical_name: sat_customer_p_details
+    appearance:
+      type: satellite
+      icon: 🛰️
+    columns:
+      - id: customer_hk
+        logical:
+          name: Customer Hash Key
+          type: String
+          isPrimaryKey: true
+      - id: load_date
+        logical:
+          name: Load Date
+          type: Timestamp
+          isPrimaryKey: true
+      - id: customer_name
+        logical:
+          name: Customer Name
+          type: String
+      - id: email
+        logical:
+          name: Email Address
+          type: String
+      - id: hash_diff
+        logical:
+          name: Hash Diff
+          type: String
+          isMetadata: true
+      - id: record_source
+        logical:
+          name: Record Source
+          type: String
+          isMetadata: true
+    sampleData: []
+  - id: sat_product_details
+    name: Product Details
+    logical_name: Product Descriptive Attributes
+    physical_name: sat_product_p_details
+    appearance:
+      type: satellite
+      icon: 🛰️
+    columns:
+      - id: product_hk
+        logical:
+          name: Product Hash Key
+          type: String
+          isPrimaryKey: true
+      - id: load_date
+        logical:
+          name: Load Date
+          type: Timestamp
           isPrimaryKey: true
       - id: product_name
         logical:
-          name: Name
+          name: Product Name
           type: String
-    sampleData: []
-  - id: dim_dates
-    name: Calendar
-    logical_name: Enterprise Date Dimension
-    physical_name: dim_date_spine
-    appearance:
-      type: dimension
-      icon: 📅
-    columns:
-      - id: date_key
+      - id: category
         logical:
-          name: Date Key
-          type: Date
-          isPrimaryKey: true
-    sampleData: []
-  - id: fct_sales
-    name: Sales
-    logical_name: Retail Sales Transactions
-    physical_name: fct_retail_sales_incremental
-    appearance:
-      type: fact
-      sub_type: transaction
-      icon: 💰
-    columns:
-      - id: sale_id
-        logical:
-          name: ID
-          type: Int
-          isPrimaryKey: true
-      - id: product_key
-        logical:
-          name: Product Key
-          type: Int
-          isForeignKey: true
-      - id: date_key
-        logical:
-          name: Date Key
-          type: Date
-          isForeignKey: true
-      - id: amount
-        logical:
-          name: Total Amount
-          type: Decimal
-          additivity: fully
-    sampleData: []
-  - id: mart_monthly_revenue
-    name: Monthly Revenue
-    logical_name: Executive Revenue Summary
-    physical_name: mart_finance_monthly_revenue_agg
-    appearance:
-      type: mart
-      icon: 📈
-    lineage:
-      upstream:
-        - fct_sales
-    columns:
-      - id: month_key
-        logical:
-          name: Month
+          name: Category
           type: String
-          isPrimaryKey: true
-      - id: total_revenue
+      - id: hash_diff
         logical:
-          name: Revenue
-          type: Decimal
-          additivity: fully
+          name: Hash Diff
+          type: String
+          isMetadata: true
+      - id: record_source
+        logical:
+          name: Record Source
+          type: String
+          isMetadata: true
     sampleData: []
 relationships:
   - from:
-      table: dim_products
-      column: product_key
+      table: hub_customer
+      column: customer_hk
     to:
-      table: fct_sales
-      column: product_key
+      table: lnk_sales
+      column: customer_hk
     type: one-to-many
   - from:
-      table: dim_dates
-      column: date_key
+      table: hub_product
+      column: product_hk
     to:
-      table: fct_sales
-      column: date_key
+      table: lnk_sales
+      column: product_hk
+    type: one-to-many
+  - from:
+      table: hub_customer
+      column: customer_hk
+    to:
+      table: sat_customer_details
+      column: customer_hk
+    type: one-to-many
+  - from:
+      table: hub_product
+      column: product_hk
+    to:
+      table: sat_product_details
+      column: product_hk
     type: one-to-many
 domains:
-  - id: sales_ops
-    name: Sales Operations
-    color: rgba(239, 68, 68, 0.1)
+  - id: raw_vault
+    name: Raw Data Vault
+    color: rgba(59, 130, 246, 0.1)
     tables:
-      - dim_dates
-      - dim_products
-      - fct_sales
-    isLocked: true
-  - id: analytics_marts
-    name: Analytics & Insights
-    color: rgba(245, 158, 11, 0.1)
-    tables:
-      - mart_monthly_revenue
-annotations:
-  - id: note_1772929533045
-    targetId: fct_sales
-    targetType: table
-    text: The sales team wants to add another dimension to this table for analysis.
-    type: sticky
-    offset:
-      x: 114.23465402888576
-      'y': -65.2939652449728
+      - hub_customer
+      - lnk_sales
+      - hub_product
+      - sat_product_details
+      - sat_customer_details
+    isLocked: false
+annotations: []
 layout:
-  sales_ops:
-    x: 0
-    'y': 0
-    width: 840
-    height: 640
-  fct_sales:
-    x: 483
-    'y': 172
-  dim_products:
-    x: 74
-    'y': 70
-  dim_dates:
-    x: 73
-    'y': 347
-  analytics_marts:
+  raw_vault:
+    x: -197
+    'y': -50
+    width: 1305
+    height: 1093
+  hub_customer:
+    x: 100
+    'y': 100
+  hub_product:
+    x: 105
+    'y': 647
+  lnk_sales:
+    x: 491
+    'y': 279
+  sat_customer_details:
     x: 876
-    'y': 18
-    width: 440
-    height: 340
-  mart_monthly_revenue:
-    x: 60
-    'y': 60
+    'y': 102
+  sat_product_details:
+    x: 870
+    'y': 647

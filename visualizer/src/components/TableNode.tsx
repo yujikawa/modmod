@@ -43,7 +43,7 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
   const hasColumns = table.columns && table.columns.length > 0;
   
   // Disable connections when both modes are active to prevent ambiguity
-  const isEditingDisabled = showER && showLineage;
+  const isConnectionLocked = showER && showLineage;
   
   // Resolve appearance
   const typeConfig = table.appearance?.type ? TYPE_CONFIG[table.appearance.type] : null;
@@ -101,7 +101,7 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
 
   // Helper to determine handle style
   const getHandleStyle = (baseColor: string, isVisible: boolean): React.CSSProperties => {
-    if (isEditingDisabled && isVisible) {
+    if (isConnectionLocked && isVisible) {
       return {
         background: '#ef4444', // Red-500 for locked state
         cursor: 'not-allowed',
