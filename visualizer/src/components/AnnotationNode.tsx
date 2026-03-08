@@ -147,7 +147,7 @@ const AnnotationNode = ({ id, data, selected }: NodeProps<{ annotation: Annotati
       </div>
 
       <div 
-        className="custom-scrollbar"
+        className="custom-scrollbar sidebar-content"
         style={{ 
           maxHeight: '240px', 
           overflowY: 'auto',

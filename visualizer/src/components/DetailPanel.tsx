@@ -107,7 +107,7 @@ const DetailPanel = () => {
   if (annotation) {
     return (
       <div 
-        className="shadow-2xl z-50 flex flex-col"
+        className="shadow-2xl z-50 flex flex-col sidebar-content"
         onClick={stopPropagation}
         onMouseDown={stopPropagation}
         onPointerDown={stopPropagation}
@@ -247,7 +247,7 @@ const DetailPanel = () => {
     const { relationship, index } = relationshipData;
     return (
       <div 
-        className="shadow-2xl z-50 flex flex-col"
+        className="shadow-2xl z-50 flex flex-col sidebar-content"
         onClick={stopPropagation}
         onMouseDown={stopPropagation}
         onPointerDown={stopPropagation}
@@ -339,7 +339,7 @@ const DetailPanel = () => {
   if (domain) {
     return (
       <div 
-        className="shadow-2xl z-50 flex flex-col"
+        className="shadow-2xl z-50 flex flex-col sidebar-content"
         onClick={stopPropagation}
         onMouseDown={stopPropagation}
         onPointerDown={stopPropagation}
@@ -587,7 +587,7 @@ const DetailPanel = () => {
 
   return (
     <div 
-      className="shadow-2xl z-50 flex flex-col"
+      className="shadow-2xl z-50 flex flex-col sidebar-content"
       onClick={stopPropagation}
       onMouseDown={stopPropagation}
       onPointerDown={stopPropagation}

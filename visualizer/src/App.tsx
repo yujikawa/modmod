@@ -63,6 +63,9 @@ function Flow() {
     showAnnotations,
     addLineage,
     setConnectionStartHandle,
+    addTable,
+    addDomain,
+    addAnnotation,
     updateAnnotation,
     theme,
     currentModelSlug,
@@ -73,7 +76,7 @@ function Flow() {
   
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
-  const { fitView, getViewport, setViewport } = useReactFlow()
+  const { fitView, getViewport, setViewport, screenToFlowPosition } = useReactFlow()
   const [edgeSyncTrigger, setEdgeSyncTrigger] = useState(0)
   const lastLoadedModel = useRef<string | null>(null)
 
@@ -96,12 +99,42 @@ function Flow() {
       }
 
       const activeEl = document.activeElement;
-      const isTyping = activeEl?.tagName === 'INPUT' || 
-                       activeEl?.tagName === 'TEXTAREA' || 
-                       activeEl?.hasAttribute('contenteditable') ||
-                       activeEl?.classList.contains('cm-content');
+      const isTyping = 
+        activeEl?.tagName === 'INPUT' || 
+        activeEl?.tagName === 'TEXTAREA' || 
+        (activeEl as HTMLElement)?.isContentEditable ||
+        activeEl?.closest('.cm-editor') || // CodeMirror 6 container
+        activeEl?.closest('.cm-content') || // CodeMirror 6 content
+        activeEl?.closest('[role="dialog"]') || // Modals/Dialogs
+        activeEl?.closest('.sidebar-content'); // Additional safeguard for our panels
 
       if (isTyping) return;
+      
+      // Prevention of continuous creation on long press
+      if (e.repeat) return;
+
+      const key = e.key.toLowerCase();
+
+      // Object Creation Shortcuts
+      if (key === 't' || key === 'd' || key === 's') {
+        const center = screenToFlowPosition({
+          x: window.innerWidth / 2,
+          y: window.innerHeight / 2,
+        });
+
+        if (key === 't') {
+          addTable(center.x - 160, center.y - 125);
+        } else if (key === 'd') {
+          addDomain(center.x - 300, center.y - 200);
+        } else if (key === 's') {
+          if (!showAnnotations) {
+            useStore.getState().setShowAnnotations(true);
+          }
+          addAnnotation({ x: center.x - 60, y: center.y - 40 });
+        }
+        return;
+      }
+
       if (selectedTableId || selectedEdgeId || selectedAnnotationId) return;
 
       if (e.key.startsWith('Arrow')) {

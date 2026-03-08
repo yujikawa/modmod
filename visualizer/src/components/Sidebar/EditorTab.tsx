@@ -88,7 +88,7 @@ const EditorTab = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col gap-3 overflow-hidden p-4 pt-2 h-full">
+    <div className="flex-1 flex flex-col gap-3 overflow-hidden p-4 pt-2 h-full sidebar-content">
       <div className="flex items-center justify-between px-1">
         {!isCliMode ? (
           <div className="flex items-center gap-2 px-2 py-1 bg-blue-500/10 border border-blue-500/30 rounded-md">

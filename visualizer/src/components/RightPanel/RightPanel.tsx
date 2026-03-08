@@ -82,7 +82,7 @@ const RightPanel = () => {
 
       {/* 2. Content Panel (Left side of the Right Panel) */}
       <div 
-        className={`flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-300 ${
+        className={`flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-300 sidebar-content ${
           theme === 'dark' ? 'bg-slate-900' : 'bg-white'
         } ${
           isRightPanelOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'

@@ -17,7 +17,9 @@ const Sidebar = () => {
     >
       {/* 1. Main Content Panel (Left) */}
       <div 
-        className={`flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-300 ${
+        className={`flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-300 sidebar-content ${
+          theme === 'dark' ? 'bg-slate-900' : 'bg-white'
+        } ${
           isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
         style={{ width: isSidebarOpen ? '400px' : '0px' }}
