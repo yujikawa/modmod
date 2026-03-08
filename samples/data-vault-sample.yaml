@@ -113,52 +113,14 @@ domains:
     tables:
       - mart_monthly_revenue
 annotations:
-  - id: note_1772889296128
-    text: これはいっぱいあるよ
-    type: sticky
-    offset:
-      x: 211.10238120430745
-      'y': 34.302114936401345
-    targetId: sales_ops
-    targetType: domain
-  - id: note_1772892844916
-    text: New Note
-    type: sticky
-    offset:
-      x: 364.141660705237
-      'y': 80.15220862474973
-  - id: note_1772894187342
-    text: New Note
-    type: sticky
-    offset:
-      x: 731.7359528770415
-      'y': 314.4961963303167
-  - id: note_1772894187841
-    text: New Note
-    type: sticky
-    offset:
-      x: 752.7071874109032
-      'y': -21.04355621147003
-  - id: note_1772894212575
-    targetId: dim_products
+  - id: note_1772929533045
+    targetId: fct_sales
     targetType: table
-    text: New Note
+    text: The sales team wants to add another dimension to this table for analysis.
     type: sticky
     offset:
-      x: -55.193078718380775
-      'y': 233.7985511910623
-  - id: note_1772900428462
-    text: New Note
-    type: sticky
-    offset:
-      x: 339.20710059171597
-      'y': 254.3009588488713
-  - id: note_1772900724704
-    text: New Note
-    type: sticky
-    offset:
-      x: 339.20710059171597
-      'y': 254.3009588488713
+      x: 114.23465402888576
+      'y': -65.2939652449728
 layout:
   sales_ops:
     x: 0
@@ -166,17 +128,17 @@ layout:
     width: 840
     height: 640
   fct_sales:
-    x: 260
-    'y': 360
+    x: 483
+    'y': 172
   dim_products:
-    x: 60
-    'y': 60
+    x: 74
+    'y': 70
   dim_dates:
-    x: 460
-    'y': 60
+    x: 73
+    'y': 347
   analytics_marts:
-    x: 1140
-    'y': 150
+    x: 876
+    'y': 18
     width: 440
     height: 340
   mart_monthly_revenue:
