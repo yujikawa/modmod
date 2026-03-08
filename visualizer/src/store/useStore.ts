@@ -33,6 +33,7 @@ interface AppState {
   
   // Sidebar State
   isSidebarOpen: boolean;
+  isRightPanelOpen: boolean;
   activeTab: 'editor' | 'entities';
   focusNodeId: string | null;
   showER: boolean;
@@ -88,6 +89,7 @@ interface AppState {
   
   // Sidebar Actions
   setIsSidebarOpen: (isOpen: boolean) => void;
+  setIsRightPanelOpen: (isOpen: boolean) => void;
   setActiveTab: (tab: 'editor' | 'entities') => void;
   setFocusNodeId: (id: string | null) => void;
   setConnectionStartHandle: (handle: { nodeId: string; handleId: string | null; handleType: string | null } | null) => void;
@@ -132,6 +134,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   // Sidebar Defaults
   isSidebarOpen: true,
+  isRightPanelOpen: false,
   activeTab: 'editor',
   focusNodeId: null,
   showER: true,
@@ -165,6 +168,7 @@ export const useStore = create<AppState>((set, get) => ({
   setHoveredColumnId: (id) => set({ hoveredColumnId: id }),
   setIsCliMode: (isCli) => set({ isCliMode: isCli }),
   setIsSidebarOpen: (isOpen) => set({ isSidebarOpen: isOpen }),
+  setIsRightPanelOpen: (isOpen) => set({ isRightPanelOpen: isOpen }),
   setActiveTab: (tab) => set({ activeTab: tab }),
   setFocusNodeId: (id) => set({ focusNodeId: id }),
   setConnectionStartHandle: (handle) => set({ connectionStartHandle: handle }),
