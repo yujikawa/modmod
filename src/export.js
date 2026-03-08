@@ -15,6 +15,7 @@ function normalizeSchema(data) {
     tables: Array.isArray(data.tables) ? data.tables : [],
     relationships: Array.isArray(data.relationships) ? data.relationships : [],
     domains: Array.isArray(data.domains) ? data.domains : [],
+    annotations: Array.isArray(data.annotations) ? data.annotations : [],
     layout: data.layout || {}
   };
 
@@ -30,11 +31,18 @@ function normalizeSchema(data) {
       }
     }
 
+    const columns = (Array.isArray(table.columns) ? table.columns : []).map(col => ({
+      ...col,
+      id: col.id || 'unknown',
+      logical: col.logical || { name: col.id || 'unknown', type: 'string' },
+      physical: col.physical || { name: '', type: '' }
+    }));
+
     return {
       ...table,
       id: table.id || 'unknown',
       name: table.name || table.id || 'Unnamed Table',
-      columns: Array.isArray(table.columns) ? table.columns : [],
+      columns,
       sampleData: Array.isArray(sampleData) ? sampleData : []
     };
   });
@@ -47,7 +55,31 @@ function normalizeSchema(data) {
  * Spaces and hyphens are replaced with underscores.
  */
 function sanitize(str) {
-  return str.replace(/[^a-zA-Z0-9_]/g, '_');
+  if (!str) return 'unknown';
+  // Mermaid ER/Flowchart labels can be wrapped in quotes for better compatibility
+  return str.replace(/[^a-zA-Z0-9_\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf]/g, '_');
+}
+
+/**
+ * Generates Mermaid Data Lineage syntax.
+ */
+function generateMermaidLineage(schema) {
+  let mermaid = 'graph TD\n';
+  let hasLineage = false;
+
+  schema.tables.forEach(table => {
+    if (table.lineage?.upstream && table.lineage.upstream.length > 0) {
+      hasLineage = true;
+      const targetName = sanitize(table.name);
+      table.lineage.upstream.forEach(upId => {
+        const sourceTable = schema.tables.find(t => t.id === upId);
+        const sourceName = sanitize(sourceTable?.name || upId);
+        mermaid += `    ${sourceName} --> ${targetName}\n`;
+      });
+    }
+  });
+
+  return hasLineage ? mermaid : null;
 }
 
 /**
@@ -89,16 +121,45 @@ function generateMermaidER(schema) {
 }
 
 /**
+ * Generates the Sticky Notes section.
+ */
+function generateNotesSection(schema) {
+  if (!schema.annotations || schema.annotations.length === 0) return null;
+
+  let md = '## Sticky Notes\n\n';
+  schema.annotations.forEach(note => {
+    md += `> **[Note]** ${note.text}\n`;
+    if (note.targetId) {
+      md += `> *Attached to: ${note.targetId} (${note.targetType})*\n`;
+    }
+    md += '\n';
+  });
+
+  return md;
+}
+
+/**
  * Generates the full Markdown document.
  */
 export function generateMarkdown(schema, modelName) {
   let md = `# ${modelName} Data Model Definition\n\n`;
 
   // Mermaid ER Diagram
-  md += '## ER Diagram\n\n';
-  md += '```mermaid\n';
-  md += generateMermaidER(schema);
-  md += '```\n\n';
+  if (schema.relationships && schema.relationships.length > 0) {
+    md += '## ER Diagram\n\n';
+    md += '```mermaid\n';
+    md += generateMermaidER(schema);
+    md += '```\n\n';
+  }
+
+  // Mermaid Data Lineage
+  const lineageMermaid = generateMermaidLineage(schema);
+  if (lineageMermaid) {
+    md += '## Data Lineage\n\n';
+    md += '```mermaid\n';
+    md += lineageMermaid;
+    md += '```\n\n';
+  }
 
   // Domains
   if (schema.domains && schema.domains.length > 0) {
@@ -123,20 +184,26 @@ export function generateMarkdown(schema, modelName) {
       md += `**Description**: ${table.conceptual.description}\n\n`;
     }
     if (table.appearance?.type) {
-      md += `**Type**: ${table.appearance.type}\n\n`;
+      md += `**Type**: ${table.appearance.type.toUpperCase()}\n\n`;
     }
 
-    // Columns Table
+    // Columns Table (Enhanced with Physical info)
     if (table.columns && table.columns.length > 0) {
       md += '#### Column Definitions\n\n';
-      md += '| ID | Logical Name | Type | Key | Description |\n';
-      md += '| --- | --- | --- | --- | --- |\n';
+      md += '| Logical Name | Physical Name | Logical Type | Physical Type | Key | Description |\n';
+      md += '| --- | --- | --- | --- | --- | --- |\n';
       table.columns.forEach(col => {
         const key = [
           col.logical?.isPrimaryKey ? 'PK' : '',
           col.logical?.isForeignKey ? 'FK' : ''
         ].filter(Boolean).join(', ');
-        md += `| ${col.id} | ${col.logical?.name || '-'} | ${col.logical?.type || '-'} | ${key || '-'} | ${col.logical?.description || '-'} |\n`;
+        const logicalName = col.logical?.name || col.id;
+        const physicalName = col.physical?.name || '-';
+        const logicalType = col.logical?.type || '-';
+        const physicalType = col.physical?.type || '-';
+        const description = col.logical?.description || '-';
+        
+        md += `| ${logicalName} | ${physicalName} | ${logicalType} | ${physicalType} | ${key || '-'} | ${description} |\n`;
       });
       md += '\n';
     }
@@ -156,6 +223,12 @@ export function generateMarkdown(schema, modelName) {
       md += '\n';
     }
   });
+
+  // Sticky Notes Section
+  const notesSection = generateNotesSection(schema);
+  if (notesSection) {
+    md += notesSection;
+  }
 
   return md;
 }
