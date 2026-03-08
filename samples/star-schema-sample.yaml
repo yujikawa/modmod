@@ -112,7 +112,15 @@ domains:
     color: rgba(245, 158, 11, 0.1)
     tables:
       - mart_monthly_revenue
-annotations: []
+annotations:
+  - id: note_1772966706077
+    text: The sales team has requested adding another dimension to this table for analytical purposes.
+    type: sticky
+    offset:
+      x: 100.15082327113055
+      'y': -71.11613611416027
+    targetId: fct_sales
+    targetType: table
 layout:
   sales_ops:
     x: 0
