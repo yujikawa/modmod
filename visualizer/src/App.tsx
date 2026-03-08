@@ -67,7 +67,8 @@ function Flow() {
     theme,
     currentModelSlug,
     isPresentationMode,
-    setIsPresentationMode
+    setIsPresentationMode,
+    pathFinderResult
   } = useStore()
   
   const [nodes, setNodes, onNodesChange] = useNodesState([])
@@ -252,6 +253,22 @@ function Flow() {
       });
     }
 
+    // Apply Path Highlighting to Nodes
+    if (pathFinderResult) {
+      newNodes.forEach(node => {
+        const isPartOfPath = pathFinderResult.nodeIds.includes(node.id);
+        node.style = {
+          ...node.style,
+          opacity: isPartOfPath ? 1 : 0.1,
+          pointerEvents: isPartOfPath ? 'all' : 'none',
+          transition: 'opacity 0.5s ease-in-out'
+        };
+        if (isPartOfPath) {
+          node.zIndex = 1000;
+        }
+      });
+    }
+
     setNodes(newNodes)
 
     if (lastLoadedModel.current !== currentModelSlug) {
@@ -265,7 +282,7 @@ function Flow() {
     } else {
       setEdgeSyncTrigger(v => v + 1);
     }
-  }, [schema, setNodes, fitView, currentModelSlug, showAnnotations, selectedTableId, selectedAnnotationId])
+  }, [schema, setNodes, fitView, currentModelSlug, showAnnotations, selectedTableId, selectedAnnotationId, pathFinderResult])
 
   // Sync Store Selection
   useEffect(() => {
@@ -284,10 +301,12 @@ function Flow() {
 
     if (showER && schema.relationships) {
       const HIGHLIGHT_STYLE = { stroke: theme === 'dark' ? '#f1f5f9' : '#0f172a', strokeWidth: 5 };
+      const PATH_STYLE = { stroke: '#3b82f6', strokeWidth: 8 }; 
       const NORMAL_STYLE = { stroke: theme === 'dark' ? '#94a3b8' : '#64748b', strokeWidth: 3 };
 
       const erEdges = schema.relationships.map((rel, index) => {
         const edgeId = `e-${index}`;
+        const isPartOfPath = pathFinderResult?.edgeIds.includes(edgeId);
         const isConnectedToSelectedTable = selectedTableId === rel.from.table || selectedTableId === rel.to.table;
         const isDirectlySelected = selectedEdgeId === edgeId;
         const isHighlighted = isConnectedToSelectedTable || isDirectlySelected;
@@ -307,9 +326,12 @@ function Flow() {
           type: 'button',
           data: { isConnectedToSelectedTable, isDirectlySelected, label: rel.type },
           selected: isDirectlySelected,
-          animated: false,
-          style: isHighlighted ? HIGHLIGHT_STYLE : NORMAL_STYLE,
-          zIndex: isHighlighted ? 10 : 1,
+          animated: isPartOfPath || false,
+          style: {
+            ...(isPartOfPath ? PATH_STYLE : (isHighlighted ? HIGHLIGHT_STYLE : NORMAL_STYLE)),
+            opacity: pathFinderResult ? (isPartOfPath ? 1 : 0.1) : 1
+          },
+          zIndex: isPartOfPath ? 100 : (isHighlighted ? 10 : 1),
         }
       });
       newEdges.push(...erEdges);
@@ -320,6 +342,7 @@ function Flow() {
         if (table.lineage?.upstream) {
           table.lineage.upstream.forEach((upstreamId, index) => {
             const edgeId = `lin-${upstreamId}-${table.id}-${index}`;
+            const isPartOfPath = pathFinderResult?.edgeIds.includes(edgeId);
             const isConnectedToSelected = selectedTableId === table.id || selectedTableId === upstreamId;
             const isDirectlySelected = selectedEdgeId === edgeId;
             const isHighlighted = isConnectedToSelected || isDirectlySelected;
@@ -335,7 +358,11 @@ function Flow() {
               selected: isDirectlySelected,
               animated: true,
               markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6', width: 20, height: 20 },
-              zIndex: isHighlighted ? 15 : 2, 
+              style: {
+                ...(isPartOfPath ? { stroke: '#3b82f6', strokeWidth: 8 } : {}),
+                opacity: pathFinderResult ? (isPartOfPath ? 1 : 0.1) : 1
+              },
+              zIndex: isPartOfPath ? 110 : (isHighlighted ? 15 : 2), 
             });
           });
         }
@@ -357,7 +384,7 @@ function Flow() {
     }
 
     setEdges(newEdges);
-  }, [schema, selectedTableId, selectedEdgeId, setEdges, showER, showLineage, showAnnotations, theme, edgeSyncTrigger])
+  }, [schema, selectedTableId, selectedEdgeId, setEdges, showER, showLineage, showAnnotations, theme, edgeSyncTrigger, pathFinderResult])
 
   const onConnect = useCallback(
     (params: Connection) => {

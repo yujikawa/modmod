@@ -36,7 +36,9 @@ interface AppState {
   isRightPanelOpen: boolean;
   isPresentationMode: boolean;
   activeTab: 'editor' | 'entities';
+  activeRightPanelTab: 'tables' | 'path' | 'notes';
   focusNodeId: string | null;
+  pathFinderResult: { nodeIds: string[], edgeIds: string[] } | null;
   showER: boolean;
   showLineage: boolean;
   showAnnotations: boolean;
@@ -93,6 +95,8 @@ interface AppState {
   setIsSidebarOpen: (isOpen: boolean) => void;
   setIsRightPanelOpen: (isOpen: boolean) => void;
   setActiveTab: (tab: 'editor' | 'entities') => void;
+  setActiveRightPanelTab: (tab: 'tables' | 'path' | 'notes') => void;
+  setPathFinderResult: (result: { nodeIds: string[], edgeIds: string[] } | null) => void;
   setFocusNodeId: (id: string | null) => void;
   setConnectionStartHandle: (handle: { nodeId: string; handleId: string | null; handleType: string | null } | null) => void;
   toggleTheme: () => void;
@@ -139,7 +143,9 @@ export const useStore = create<AppState>((set, get) => ({
   isRightPanelOpen: false,
   isPresentationMode: false,
   activeTab: 'editor',
+  activeRightPanelTab: 'tables',
   focusNodeId: null,
+  pathFinderResult: null,
   showER: true,
   showLineage: true,
   showAnnotations: true,
@@ -174,6 +180,8 @@ export const useStore = create<AppState>((set, get) => ({
   setIsSidebarOpen: (isOpen) => set({ isSidebarOpen: isOpen }),
   setIsRightPanelOpen: (isOpen) => set({ isRightPanelOpen: isOpen }),
   setActiveTab: (tab) => set({ activeTab: tab }),
+  setActiveRightPanelTab: (tab) => set({ activeRightPanelTab: tab, pathFinderResult: null }),
+  setPathFinderResult: (result) => set({ pathFinderResult: result }),
   setFocusNodeId: (id) => set({ focusNodeId: id }),
   setConnectionStartHandle: (handle) => set({ connectionStartHandle: handle }),
   
