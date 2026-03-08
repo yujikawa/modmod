@@ -9,7 +9,6 @@ import {
   LayoutTemplate, 
   Sun, 
   Moon,
-  Lock,
   Plus,
   ChevronLeft,
   Play,
@@ -45,18 +44,15 @@ const ActivityBar = () => {
   const { screenToFlowPosition } = useReactFlow()
   const [showHelp, setShowHelp] = useState(false)
   
-  const isEditingDisabled = showER && showLineage
   const table = getSelectedTable()
   const domain = getSelectedDomain()
 
   const handleAddDomain = () => {
-    if (isEditingDisabled) return
     const center = screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 })
     addDomain(center.x - 300, center.y - 200)
   }
 
   const handleAddTable = () => {
-    if (isEditingDisabled) return
     const center = screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 })
     addTable(center.x - 160, center.y - 125)
   }
@@ -152,20 +148,16 @@ const ActivityBar = () => {
           <div className="flex flex-col gap-2">
             <button 
               onClick={handleAddDomain} 
-              disabled={isEditingDisabled}
               className={iconClass(false, 'text-blue-400')}
             >
-              <Layout size={20} className={isEditingDisabled ? 'opacity-40' : ''} />
-              {isEditingDisabled && <Lock size={10} className="absolute bottom-1 right-1 text-slate-500" />}
+              <Layout size={20} />
               <Tooltip text="Add Domain (D)" />
             </button>
             <button 
               onClick={handleAddTable} 
-              disabled={isEditingDisabled}
               className={iconClass(false, 'text-emerald-400')}
             >
-              <Grid size={20} className={isEditingDisabled ? 'opacity-40' : ''} />
-              {isEditingDisabled && <Lock size={10} className="absolute bottom-1 right-1 text-slate-500" />}
+              <Grid size={20} />
               <Tooltip text="Add Table (T)" />
             </button>
             <button onClick={handleAddAnnotation} className={iconClass(false, 'text-amber-400')}>

@@ -80,7 +80,7 @@ function Flow() {
   const [edgeSyncTrigger, setEdgeSyncTrigger] = useState(0)
   const lastLoadedModel = useRef<string | null>(null)
 
-  const isEditingDisabled = showER && showLineage
+  const isConnectionLocked = showER && showLineage
   const isViewingDisabled = !showER && !showLineage
 
   // Handle global keyboard shortcuts
@@ -553,7 +553,7 @@ function Flow() {
         <PresentationOverlay />
         
         {/* Badges ... (Omitting inner badge JSX for brevity, but they stay) */}
-        {isEditingDisabled && (
+        {isConnectionLocked && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-2 text-center pointer-events-none">
             <div className="flex flex-col items-center">
               <div className={`flex items-center gap-2 px-4 py-1.5 backdrop-blur-md rounded-full shadow-xl border transition-colors ${

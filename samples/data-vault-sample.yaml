@@ -83,6 +83,17 @@ tables:
           type: Decimal
           additivity: fully
     sampleData: []
+  - id: new_table_1772966215530
+    name: NEW_TABLE
+    appearance:
+      type: table
+    columns:
+      - id: id
+        logical:
+          name: ID
+          type: Integer
+          isPrimaryKey: true
+    sampleData: []
 relationships:
   - from:
       table: dim_products
@@ -144,3 +155,6 @@ layout:
   mart_monthly_revenue:
     x: 60
     'y': 60
+  new_table_1772966215530:
+    x: 995
+    'y': 417
