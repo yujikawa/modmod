@@ -1,120 +1,122 @@
-# Data Modeling Rules for this Project
+# Modscape Data Modeling Rules (AI-Optimized)
 
-## 1. Modeling Strategy
-- **Dimensional Modeling (Star Schema)**: Recommended for most analytical use cases. 
-  - Use `appearance.type: fact` for central measurement tables.
-  - Use `appearance.type: dimension` for descriptive attribute tables.
-  - Use `appearance.type: mart` for downstream reporting-ready tables (Data Marts).
-- **Data Vault 2.0**: For highly scalable enterprise data warehouses.
-  - Use `appearance.type: hub`, `link`, or `satellite`.
-- **Generic Modeling**: For all other physical tables.
-  - Use `appearance.type: table` for raw mirror tables, simple RDB exports, or utility tables.
+## 0. Foundational Principle: Instruction Fidelity
+AI agents MUST prioritize the user's specific instructions above all else.
+- **Accuracy**: Precisely implement every table, column, and relationship requested.
+- **Completeness**: Do not omit requested details for the sake of brevity.
+- **Expert Guidance**: If a user's instruction contradicts modeling best practices (e.g., mixing grains), **warn the user and suggest an alternative**, but do not ignore the original intent.
 
-## 2. Table Naming Hierarchy
-Modscape supports three levels of naming to bridge the gap between business and technology.
+## CRITICAL: YAML Architecture
+AI agents MUST follow this root-level structure. Schema violations will cause parsing errors.
 
-1.  **Conceptual Name (`name`)**: The primary title on the canvas (e.g., "Customers"). Largest font.
-2.  **Logical Name (`logical_name`)**: Formal business name (e.g., "Customer Master"). Hidden on canvas if identical to Conceptual Name.
-3.  **Physical Name (`physical_name`)**: Actual database table name (e.g., `dim_customers`). Defaults to the technical `id` if empty.
+1.  **`domains`**: (Array) Visual groupings.
+2.  **`tables`**: (Array) Entity definitions. **NEVER put `x` or `y` coordinates here.**
+3.  **`relationships`**: (Array) ER connections.
+4.  **`annotations`**: (Array) Sticky notes and callouts.
+5.  **`layout`**: (Dictionary) **MANDATORY**. All coordinates MUST live here, keyed by object ID.
 
-## 3. Analytics & Visual Metadata
-Modscape supports attributes to communicate the "Story" and "Grain" of your data.
+---
 
-### Grain & History (`appearance.sub_type` and `appearance.scd`)
-- **`sub_type` (The "What")**:
-  - **For Fact Tables**: `transaction` (atomic event), `periodic` (state interval), `accumulating` (milestones), `factless` (occurrence only).
-  - **For Dimension Tables**: `conformed` (shared), `junk` (flags), `degenerate` (in-fact).
-- **`scd` (The "How it changes")**:
-  `type0` (fixed), `type1` (overwrite), `type2` (history row), `type3` (history col), `type4` (history table), `type5` (1+4), `type6` (1+2+3), `type7` (1+2).
+## 1. Beautiful Layout Heuristics
+To ensure a professional and clean diagram, AI agents MUST use the following numeric standards:
 
-### Visual Semantics (`appearance.icon` and `appearance.color`)
-Categorize entities visually to make the canvas intuitive:
-- **`icon`**: Use a single Emoji (e.g., 🛒, 👥, 📋) to represent the business concept.
-- **`color`**: Use Hex or RGBA codes for specific table highlighting (optional).
+### Standard Metrics
+- **Grid Snapping**: All `x` and `y` values MUST be multiples of **40** (e.g., 0, 40, 80, 120).
+- **Standard Table Width**: `320`
+- **Standard Table Height**: `240` (base)
+- **Node Spacing (Gap)**: Minimum `120` between nodes.
 
-### Data Lineage (`lineage.upstream`)
-Define dependencies to communicate data flow:
-- Use `lineage.upstream: [table_id1, table_id2]` to list source tables.
+### Directional Flow
+- **Data Lineage (Horizontal)**: 
+  - Upstream (Source) tables on the **LEFT**.
+  - Downstream (Target) tables on the **RIGHT**.
+- **ER Relationships (Vertical)**:
+  - Master/Dimension/Hub tables on the **TOP**.
+  - Fact/Transaction/Link tables on the **BOTTOM**.
 
-## 4. Sample Data Stories
-**Every table must include realistic sample data** to explain the context without requiring SQL queries.
-- **Format**: A 2D array where the first row is headers.
-- **Rule**: Provide at least 3 rows of high-quality, representative data.
-```yaml
-sampleData:
-  - [header1, header2]
-  - [value1, value2]
-```
+### Domain Containers
+- Tables inside a domain are positioned **relative** to the domain's (0,0) origin.
+- **Domain Packing (Arithmetic Rule)**: 
+  To ensure tables fit perfectly inside a domain, calculate dimensions as follows:
+  - **Width**: `(Cols * 320) + ((Cols - 1) * 80) + 160` (Padding). *Example: 2-col domain = 880px wide.*
+  - **Height**: `(Rows * 240) + ((Rows - 1) * 80) + 160` (Padding). *Example: 2-row domain = 720px high.*
+- **Boundary Constraint**: NEVER place a table such that its right/bottom edge exceeds the domain's `width`/`height`.
 
-## 5. Physical Modeling Rules
-Provide physical mapping metadata to ensure the model is implementation-ready.
+---
 
-- **Physical Naming**: All names (tables, schemas, columns) must use `snake_case`.
-- **Schema Standards**: `raw`, `staging`, `analytics`, or `mart`.
-- **Data Types**: Use standard SQL types (e.g., `VARCHAR`, `BIGINT`, `NUMBER(38,2)`, `DATE`, `TIMESTAMP_NTZ`).
+## 2. Table Naming Hierarchy (3-Layer)
+Bridge the gap between business and tech by populating all three layers:
 
-## 6. Logical Column Rules
-- **Key Flags**: Mark `isPrimaryKey: true`, `isForeignKey: true`, or `isPartitionKey: true` (for performance).
-- **Metadata Columns**: Mark technical columns (e.g., `updated_at`) with `isMetadata: true` (🕒 icon).
-- **Additivity**:
-  - `fully`: Can be summed across all dimensions (Σ icon).
-  - `semi`: Summing is restricted (e.g., bank balance) (Σ~ icon).
-  - `non`: Summing is never valid (e.g., unit price) (⊘ icon).
+1.  **Conceptual Name (`name`)**: Business title (e.g., "Customers"). High-level clarity.
+2.  **Logical Name (`logical_name`)**: Formal modeling name (e.g., "Customer Master"). Hidden if identical to `name`.
+3.  **Physical Name (`physical_name`)**: Actual database table name (e.g., `dim_customers_v1`).
 
-## 7. Relationship Cardinality
-Explicitly define the nature of ER connections using `type`:
-- Options: `one-to-one`, `one-to-many`, `many-to-one`, `many-to-many`.
+---
 
-## 8. Domain Organization
-Group tables into business domains to manage complexity.
-- Assign a unique `color` to each domain container.
-- Use `description` to explain the domain's business purpose.
+## 3. Modeling Strategy & Intelligence
+AI agents MUST analyze the nature of data to choose the correct classification and methodology.
 
-## 9. YAML Schema Reference (Hero Example)
+### Table Classification Heuristics
+- **Fact (`fact`)**: Data represents **Events, Transactions, or Measurements** (e.g., "Sales", "Clicks"). Usually has numbers (measures) and foreign keys.
+- **Dimension (`dimension`)**: Data represents **Entities, People, or Reference Lists** (e.g., "Customers", "Products"). Contains descriptive attributes.
+- **Hub (`hub`)**: Data represents a **Unique Business Key** (e.g., "Customer ID"). Used in Data Vault for core entity identification.
+- **Satellite (`satellite`)**: Data represents **Descriptive Attributes of a Hub over time**. Always linked to a Hub.
+
+### Defining the Grain (The "1-Row Rule")
+- Before adding columns, define the **Grain**: What does one row represent? (e.g., "One line item per invoice").
+- **STRICT**: NEVER mix grains in a single table. Aggregated measures and atomic transactions MUST be in separate tables.
+
+### Methodology Selection
+- **Star Schema**: Use for most business reporting. Prioritize user-friendliness and query performance.
+- **Data Vault 2.0**: Use for high-integration environments with many source systems. Prioritize scalability and auditability over direct queryability.
+
+---
+
+## 4. Logical Column Rules
+- **Key Flags**: Mark `isPrimaryKey`, `isForeignKey`, or `isPartitionKey`.
+- **Metadata**: Mark technical columns (e.g., `dw_load_date`) with `isMetadata: true`.
+- **Additivity**: `fully` (Summable), `semi` (Balance), `non` (Price/ID).
+
+---
+
+## 5. Sample Data Stories
+**Every table MUST include high-quality sample data.**
+- **Format**: 2D array. First row is Header IDs.
+- **Storytelling**: Provide at least 3 rows representing a real business scenario. Avoid "test1", "test2". Use realistic names, dates, and amounts.
+
+---
+
+## 6. Prohibitions & Anti-Patterns
+- **NO NESTED LAYOUT**: Never put `x` or `y` inside `tables[...]` or `domains[...]`.
+- **NO FLOATS**: Use only integers for coordinates.
+- **NO FRAGMENTED LINEAGE**: Always define `lineage.upstream` for derived tables.
+
+---
+
+## 7. Golden Schema Example
 ```yaml
 domains:
-  - id: sales
-    name: Sales Intelligence
-    color: "rgba(59, 130, 246, 0.1)"
+  - id: sales_domain
+    name: "Sales Operations"
     tables: [fct_orders]
 
 tables:
   - id: fct_orders
-    name: Orders Fact
-    logical_name: "Sales Transaction Record"
-    physical_name: "fct_orders"
-    appearance:
-      type: fact
-      sub_type: transaction
-      icon: "🛒"
-    physical:
-      name: fct_orders
-      schema: analytics
+    name: "Orders"
+    logical_name: "Order Transactions"
+    physical_name: "fct_sales_orders"
+    appearance: { type: fact, sub_type: transaction, icon: "🛒" }
     columns:
       - id: order_id
-        logical: { name: ID, type: Int, isPrimaryKey: true }
-        physical: { name: order_id, type: BIGINT }
+        logical: { name: "ID", type: Int, isPrimaryKey: true }
       - id: amount
-        logical: { name: Amount, type: Decimal, additivity: fully }
-        physical: { name: total_amount, type: NUMBER(18,2) }
+        logical: { name: "Amount", type: Decimal, additivity: fully }
     sampleData:
-      - [order_id, amount, status]
-      - [1001, 50.0, "COMPLETED"]
-      - [1002, 120.5, "PENDING"]
+      - [order_id, amount]
+      - [1001, 50.0]
+      - [1002, 120.5]
 
-relationships:
-  - from: { table: dim_customers, column: customer_id }
-    to: { table: fct_orders, column: customer_id }
-    type: one-to-many
+layout:
+  sales_domain: { x: 0, y: 0, width: 480, height: 400 }
+  fct_orders: { x: 80, y: 80 } # Relative to domain
 ```
-
-## 10. Layout Management
-- **Visualizer Priority**: The GUI handles layout through drag-and-drop.
-- **AI Agent Responsibility**: When creating new entities, assign initial (x, y) coordinates to place them near related tables.
-
-## 11. The Golden Rules
-- When updating `model.yaml`, always self-audit against these rules.
-- **Utilize the 3-layer naming (Conceptual, Logical, Physical) for clarity.**
-- **Generate realistic `sampleData` for every new entity.**
-- **Provide `physical` mappings to make the model implementation-ready.**
-- Use `isPartitionKey` for large tables to inform performance design.

@@ -19,13 +19,28 @@ const EditorTab = () => {
     savingStatus,
     saveSchema,
     lastUpdateSource,
-    theme
+    theme,
+    currentModelSlug
   } = useStore()
 
   const [localYaml, setLocalYaml] = useState(yamlInput)
   const timerRef = useRef<any>(null)
   const editorRef = useRef<ReactCodeMirrorRef>(null)
   const isFirstLoadRef = useRef(true)
+
+  // Clear history on file switch
+  useEffect(() => {
+    if (!editorRef.current?.view) return;
+    const view = editorRef.current.view;
+    const currentDoc = view.state.doc.toString();
+    
+    // Reset content and clear history for the new file
+    view.dispatch({
+      changes: { from: 0, to: currentDoc.length, insert: yamlInput },
+      annotations: Transaction.addToHistory.of(false)
+    });
+    setLocalYaml(yamlInput);
+  }, [currentModelSlug])
 
   // Sync store -> editor (for visual edits)
   useEffect(() => {

@@ -2,10 +2,11 @@ import EditorTab from './EditorTab'
 import FileSelector from './FileSelector'
 import ActivityBar from './ActivityBar'
 import { useStore } from '../../store/useStore'
+import { RefreshCw } from 'lucide-react'
 import logo from '/favicon.svg?url'
 
 const Sidebar = () => {
-  const { isSidebarOpen, isCliMode, theme } = useStore()
+  const { isSidebarOpen, isCliMode, theme, refreshModelData, savingStatus } = useStore()
 
   return (
     <div 
@@ -37,6 +38,21 @@ const Sidebar = () => {
               </span>
             )}
           </div>
+
+          {isCliMode && (
+            <button 
+              onClick={() => refreshModelData()}
+              disabled={savingStatus === 'saving'}
+              className={`p-1.5 rounded-md transition-all bg-transparent ${
+                theme === 'dark' 
+                  ? 'text-slate-400 hover:text-slate-100 hover:bg-slate-800' 
+                  : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100'
+              } ${savingStatus === 'saving' ? 'animate-spin opacity-50' : ''}`}
+              title="Refresh all data"
+            >
+              <RefreshCw size={16} />
+            </button>
+          )}
         </div>
 
         {/* Multi-file selector */}
@@ -57,7 +73,7 @@ const Sidebar = () => {
           theme === 'dark' ? 'border-slate-800 bg-slate-950/20' : 'border-slate-100 bg-slate-50/50'
         }`}>
           <p className="text-[10px] text-slate-500 font-medium px-1">
-            Modscape v1.1.2
+            Modscape v1.1.3
           </p>
         </div>
       </div>

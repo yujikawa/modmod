@@ -65,6 +65,7 @@ interface AppState {
   updateNodesPosition: (nodes: { id: string, x: number, y: number, parentId?: string | null }[]) => void;
   updateNodeDimensions: (id: string, width: number, height: number) => void;
   saveSchema: (force?: boolean) => Promise<void>;
+  refreshModelData: () => Promise<void>;
   
   // Modeling Actions
   addTable: (x: number, y: number) => void;
@@ -119,7 +120,7 @@ export const useStore = create<AppState>((set, get) => ({
   hoveredColumnId: null,
   error: null,
   isCliMode: (typeof window !== 'undefined' && (window as any).MODSCAPE_CLI_MODE === true),
-  isAutoSaveEnabled: true,
+  isAutoSaveEnabled: false,
   savingStatus: 'idle',
   lastUpdateSource: 'visual',
 
@@ -494,6 +495,33 @@ export const useStore = create<AppState>((set, get) => ({
         set({ savingStatus: 'error' });
       }
     }, 500);
+  },
+
+  refreshModelData: async () => {
+    const { currentModelSlug, isCliMode } = get();
+    if (!isCliMode) return;
+    
+    try {
+      set({ savingStatus: 'saving' });
+      
+      // 1. Refresh available files list
+      await get().fetchAvailableFiles();
+      
+      // 2. Refresh current model content if selected
+      if (currentModelSlug) {
+        const url = `/api/model?model=${currentModelSlug}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const schema = normalizeSchema(data);
+        set({ schema, error: null });
+        get().syncToYamlInput();
+      }
+      
+      set({ savingStatus: 'idle' });
+    } catch (e) {
+      console.error('Failed to refresh data:', e);
+      set({ error: 'Failed to refresh data from server', savingStatus: 'error' });
+    }
   },
 
   addTable: (x, y) => {

@@ -1,19 +1,10 @@
 import { useStore } from '../../store/useStore';
-import { Database, ChevronDown, RefreshCcw } from 'lucide-react';
-import { useState } from 'react';
+import { Database, ChevronDown } from 'lucide-react';
 
 const FileSelector = () => {
-  const { availableFiles, currentModelSlug, setCurrentModel, isSidebarOpen, fetchAvailableFiles, theme } = useStore();
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { availableFiles, currentModelSlug, setCurrentModel, isSidebarOpen, theme } = useStore();
 
   if (!isSidebarOpen || availableFiles.length <= 0) return null;
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchAvailableFiles();
-    // Artificial delay to make the refresh animation visible
-    setTimeout(() => setIsRefreshing(false), 500);
-  };
 
   const activeSlug = currentModelSlug || availableFiles[0]?.slug;
 
@@ -23,15 +14,6 @@ const FileSelector = () => {
         <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
           Current Model
         </div>
-        <button
-          onClick={handleRefresh}
-          className={`transition-all p-0.5 rounded ${
-            isRefreshing ? 'animate-spin text-blue-400' : 'text-slate-500 hover:text-blue-400'
-          } ${theme === 'dark' ? 'hover:bg-slate-800' : 'hover:bg-slate-100'}`}
-          title="Refresh model list"
-        >
-          <RefreshCcw size={12} />
-        </button>
       </div>
       <div className="relative group">
         <select

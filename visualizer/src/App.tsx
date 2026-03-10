@@ -76,7 +76,7 @@ function Flow() {
   
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
-  const { fitView, getViewport, setViewport, screenToFlowPosition } = useReactFlow()
+  const { fitView, getViewport, setViewport, screenToFlowPosition, getNodes } = useReactFlow()
   const [edgeSyncTrigger, setEdgeSyncTrigger] = useState(0)
   const lastLoadedModel = useRef<string | null>(null)
 
@@ -174,6 +174,7 @@ function Flow() {
     const TABLE_HEIGHT = 250;
     const DOMAIN_PADDING = 60;
     const GRID_COLS = 3;
+    const currentFlowNodes = getNodes();
 
     if (schema.domains) {
       const DOMAIN_GRID_COLS = 2;
@@ -187,10 +188,11 @@ function Flow() {
         const autoWidth = Math.max(2, cols) * TABLE_WIDTH + DOMAIN_PADDING;
         const autoHeight = Math.max(1.5, rows) * TABLE_HEIGHT + DOMAIN_PADDING;
         const layout = schema.layout?.[domain.id];
+        const currentNode = currentFlowNodes.find(n => n.id === domain.id);
         const dRow = Math.floor(dIndex / DOMAIN_GRID_COLS);
         const dCol = dIndex % DOMAIN_GRID_COLS;
-        const x = layout?.x ?? (dCol * DOMAIN_X_GAP);
-        const y = layout?.y ?? (dRow * DOMAIN_Y_GAP);
+        const x = layout?.x ?? currentNode?.position.x ?? (dCol * DOMAIN_X_GAP);
+        const y = layout?.y ?? currentNode?.position.y ?? (dRow * DOMAIN_Y_GAP);
         const width = layout?.width ?? autoWidth;
         const height = layout?.height ?? autoHeight;
 
@@ -213,8 +215,9 @@ function Flow() {
           const localRow = Math.floor(tIndex / GRID_COLS);
           const localCol = tIndex % GRID_COLS;
           const tableLayout = schema.layout?.[table.id];
-          const tx = tableLayout?.x ?? (localCol * TABLE_WIDTH + DOMAIN_PADDING / 2);
-          const ty = tableLayout?.y ?? (localRow * TABLE_HEIGHT + DOMAIN_PADDING / 2);
+          const currentTableNode = currentFlowNodes.find(n => n.id === table.id);
+          const tx = tableLayout?.x ?? currentTableNode?.position.x ?? (localCol * TABLE_WIDTH + DOMAIN_PADDING / 2);
+          const ty = tableLayout?.y ?? currentTableNode?.position.y ?? (localRow * TABLE_HEIGHT + DOMAIN_PADDING / 2);
           const defaultHeight = (table.columns && table.columns.length > 10) ? 350 : undefined;
           const nodeHeight = tableLayout?.height ?? defaultHeight;
 
@@ -241,8 +244,9 @@ function Flow() {
 
     topLevelTables.forEach((table, index) => {
       const tableLayout = schema.layout?.[table.id];
-      const lx = tableLayout?.x ?? (index * 300);
-      const ly = tableLayout?.y ?? 100;
+      const currentTableNode = currentFlowNodes.find(n => n.id === table.id);
+      const lx = tableLayout?.x ?? currentTableNode?.position.x ?? (index * 300);
+      const ly = tableLayout?.y ?? currentTableNode?.position.y ?? 100;
       const defaultHeight = (table.columns && table.columns.length > 10) ? 350 : undefined;
       const nodeHeight = tableLayout?.height ?? defaultHeight;
 

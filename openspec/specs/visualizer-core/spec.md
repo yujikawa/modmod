@@ -152,3 +152,12 @@ The system SHALL render a visual connector (edge) between an annotation and its 
 - **WHEN** an annotation has a `targetId` and `style.arrow: true`
 - **THEN** the visualizer SHALL render a specialized React Flow edge connecting the annotation node to the target node
 
+## ADDED Requirements
+
+### Requirement: Data Refresh
+The system SHALL provide a way to re-fetch the model data from the API without reloading the page.
+
+#### Scenario: Refresh current model
+- **WHEN** user clicks the "Refresh" button in the Sidebar
+- **THEN** the system SHALL fetch the latest model content from the server
+- **AND** update the canvas and editor with the new data
