@@ -546,6 +546,14 @@ function Flow() {
     }
   }, [setSelectedTableId, setSelectedEdgeId, setSelectedAnnotationId]);
 
+  const onNodeDoubleClick = useCallback(() => {
+    // No-op to prevent unexpected expansion
+  }, []);
+
+  const onEdgeDoubleClick = useCallback(() => {
+    // No-op to prevent unexpected expansion
+  }, []);
+
   const isValidConnection = useCallback((connection: Connection) => {
     return connection.source !== connection.target;
   }, []);
@@ -596,6 +604,8 @@ function Flow() {
           onNodeDragStop={onNodeDragStop}
           onNodeClick={onNodeClick}
           onEdgeClick={onEdgeClick}
+          onNodeDoubleClick={onNodeDoubleClick}
+          onEdgeDoubleClick={onEdgeDoubleClick}
           onPaneClick={onPaneClick}
           onConnect={onConnect}
           onConnectStart={onConnectStart}

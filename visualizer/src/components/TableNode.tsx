@@ -34,7 +34,8 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
     theme,
     isPresentationMode,
     selectedTableId,
-    selectedAnnotationId
+    selectedAnnotationId,
+    toggleTableSelection
   } = useStore()
 
   const isActuallySelected = selected;
@@ -236,6 +237,14 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
         {/* Header - Drag Handle */}
         <div 
           className="table-drag-handle"
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleTableSelection(id);
+          }}
+          onDoubleClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
           style={{ 
             padding: '12px', 
             backgroundColor: theme === 'dark' ? 'rgba(15, 23, 42, 0.8)' : 'rgba(241, 245, 249, 0.9)', 

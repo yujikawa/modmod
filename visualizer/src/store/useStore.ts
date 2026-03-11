@@ -45,6 +45,7 @@ interface AppState {
   connectionStartHandle: { nodeId: string; handleId: string | null; handleType: string | null } | null;
   theme: 'dark' | 'light';
   isDetailPanelSuppressed: boolean;
+  isDetailPanelMinimized: boolean;
   
   // Actions
   setSchema: (schema: any) => void;
@@ -52,6 +53,7 @@ interface AppState {
   setSelectedEdgeId: (id: string | null) => void;
   setSelectedAnnotationId: (id: string | null) => void;
   setIsDetailPanelSuppressed: (suppressed: boolean) => void;
+  setIsDetailPanelMinimized: (minimized: boolean) => void;
   setHoveredColumnId: (id: string | null) => void;
   setIsCliMode: (isCli: boolean) => void;
   setShowER: (show: boolean) => void;
@@ -154,6 +156,7 @@ export const useStore = create<AppState>((set, get) => ({
   theme: (typeof window !== 'undefined' && (localStorage.getItem('modscape-theme') as any)) || 
          (window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark'),
   isDetailPanelSuppressed: false,
+  isDetailPanelMinimized: true,
 
   setSchema: (data) => {
     try {
@@ -172,10 +175,26 @@ export const useStore = create<AppState>((set, get) => ({
   setIsAutoSaveEnabled: (enabled) => set({ isAutoSaveEnabled: enabled }),
   setLastUpdateSource: (source) => set({ lastUpdateSource: source }),
   
-  setSelectedTableId: (id) => set({ selectedTableId: id, selectedEdgeId: null, selectedAnnotationId: null, isDetailPanelSuppressed: false }),
-  setSelectedEdgeId: (id) => set({ selectedEdgeId: id, selectedTableId: null, selectedAnnotationId: null, isDetailPanelSuppressed: false }),
-  setSelectedAnnotationId: (id) => set({ selectedAnnotationId: id, selectedTableId: null, selectedEdgeId: null, isDetailPanelSuppressed: false }),
+  setSelectedTableId: (id) => set({ 
+    selectedTableId: id, 
+    selectedEdgeId: null, 
+    selectedAnnotationId: null,
+    isDetailPanelMinimized: id ? get().isDetailPanelMinimized : true // 選択時は現在の状態を維持、解除時は次に備えて最小化
+  }),
+  setSelectedEdgeId: (id) => set({ 
+    selectedEdgeId: id, 
+    selectedTableId: null, 
+    selectedAnnotationId: null,
+    isDetailPanelMinimized: id ? get().isDetailPanelMinimized : true
+  }),
+  setSelectedAnnotationId: (id) => set({ 
+    selectedAnnotationId: id, 
+    selectedTableId: null, 
+    selectedEdgeId: null,
+    isDetailPanelMinimized: id ? get().isDetailPanelMinimized : true
+  }),
   setIsDetailPanelSuppressed: (suppressed) => set({ isDetailPanelSuppressed: suppressed }),
+  setIsDetailPanelMinimized: (minimized) => set({ isDetailPanelMinimized: minimized }),
   setHoveredColumnId: (id) => set({ hoveredColumnId: id }),
   setIsCliMode: (isCli) => set({ isCliMode: isCli }),
   setIsSidebarOpen: (isOpen) => set({ isSidebarOpen: isOpen }),
@@ -825,33 +844,44 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   toggleTableSelection: (id) => {
-    const { selectedTableId } = get();
+    const { selectedTableId, isDetailPanelMinimized } = get();
     if (selectedTableId === id) {
-      set({ selectedTableId: null, isDetailPanelSuppressed: false });
+      set({ selectedTableId: null, isDetailPanelMinimized: true });
     } else {
-      set({ selectedTableId: id, selectedEdgeId: null, selectedAnnotationId: null, isDetailPanelSuppressed: false });
+      set({ 
+        selectedTableId: id, 
+        selectedEdgeId: null, 
+        selectedAnnotationId: null,
+        isDetailPanelMinimized: isDetailPanelMinimized // 現在の状態（バーならバー）を維持
+      });
     }
   },
 
   toggleEdgeSelection: (id) => {
-    const { selectedEdgeId } = get();
+    const { selectedEdgeId, isDetailPanelMinimized } = get();
     if (selectedEdgeId === id) {
-      set({ selectedEdgeId: null, isDetailPanelSuppressed: false });
+      set({ selectedEdgeId: null, isDetailPanelMinimized: true });
     } else {
-      set({ selectedEdgeId: id, selectedTableId: null, selectedAnnotationId: null, isDetailPanelSuppressed: false });
+      set({ 
+        selectedEdgeId: id, 
+        selectedTableId: null, 
+        selectedAnnotationId: null,
+        isDetailPanelMinimized: isDetailPanelMinimized
+      });
     }
   },
 
   toggleAnnotationSelection: (id) => {
-    const { selectedAnnotationId, isDetailPanelSuppressed } = get();
+    const { selectedAnnotationId, isDetailPanelMinimized } = get();
     if (selectedAnnotationId === id) {
-      if (isDetailPanelSuppressed) {
-        set({ isDetailPanelSuppressed: false });
-      } else {
-        set({ selectedAnnotationId: null, isDetailPanelSuppressed: false });
-      }
+      set({ selectedAnnotationId: null, isDetailPanelMinimized: true });
     } else {
-      set({ selectedAnnotationId: id, selectedTableId: null, selectedEdgeId: null, isDetailPanelSuppressed: false });
+      set({ 
+        selectedAnnotationId: id, 
+        selectedTableId: null, 
+        selectedEdgeId: null,
+        isDetailPanelMinimized: isDetailPanelMinimized
+      });
     }
   },
 
@@ -875,8 +905,7 @@ export const useStore = create<AppState>((set, get) => ({
       schema: normalizeSchema(newSchema), 
       selectedAnnotationId: newId,
       selectedTableId: null,
-      selectedEdgeId: null,
-      isDetailPanelSuppressed: true 
+      selectedEdgeId: null
     });
     if (!targetId) {
       get().setFocusNodeId(newId);
