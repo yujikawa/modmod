@@ -103,10 +103,10 @@ function Flow() {
         try {
           const data = JSON.parse(event.data);
           if (data.type === 'update') {
-            console.log('🔄 File change detected, refreshing model...');
+            console.log('🔄 File update signal received from server');
             refreshModelData();
           } else if (data.type === 'files_changed') {
-            console.log('📁 File list change detected, refreshing...');
+            console.log('📁 File list update signal received from server');
             fetchAvailableFiles();
           }
         } catch (e) {

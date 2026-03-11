@@ -31,8 +31,8 @@ npm run build-ui
 YAML モデルを埋め込んだ、ポータブルな HTML サイトを書き出します。
 
 ```bash
-# samples ディレクトリの全ファイルを dist-site に書き出し
-node src/index.js build samples/ -o dist-site
+# samples ディレクトリの全ファイルを dist に書き出し
+node src/index.js build samples/ -o dist
 ```
 
 ---

@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useStore } from '../../store/useStore'
-import { AlertCircle, Save, Play, CheckCircle2, Loader2, Info, Undo2, Redo2 } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Loader2, Info, Undo2, Redo2 } from 'lucide-react'
 import CodeMirror, { type ReactCodeMirrorRef } from '@uiw/react-codemirror'
 import { yaml } from '@codemirror/lang-yaml'
 import { oneDark } from '@codemirror/theme-one-dark'
@@ -14,10 +14,7 @@ const EditorTab = () => {
     yamlInput,
     setYamlInput,
     parseAndSetSchema,
-    isAutoSaveEnabled,
-    setIsAutoSaveEnabled,
     savingStatus,
-    saveSchema,
     lastUpdateSource,
     theme,
     currentModelSlug
@@ -34,7 +31,6 @@ const EditorTab = () => {
     const view = editorRef.current.view;
     const currentDoc = view.state.doc.toString();
     
-    // Reset content and clear history for the new file
     view.dispatch({
       changes: { from: 0, to: currentDoc.length, insert: yamlInput },
       annotations: Transaction.addToHistory.of(false)
@@ -42,13 +38,13 @@ const EditorTab = () => {
     setLocalYaml(yamlInput);
   }, [currentModelSlug])
 
-  // Sync store -> editor (for visual edits)
+  // Sync store -> editor (for visual or remote edits)
   useEffect(() => {
     if (!editorRef.current?.view) return;
     const view = editorRef.current.view;
     const currentDoc = view.state.doc.toString();
 
-    // 1. Initial Load: Set content without adding to history (base state)
+    // 1. Initial Load: Set content without adding to history
     if (isFirstLoadRef.current && yamlInput) {
       view.dispatch({
         changes: { from: 0, to: currentDoc.length, insert: yamlInput },
@@ -59,22 +55,20 @@ const EditorTab = () => {
       return;
     }
 
-    // 2. Subsequent Visual Edits: Add to history
-    if (lastUpdateSource === 'visual' && currentDoc !== yamlInput) {
+    // 2. Subsequent External or Visual Edits: Sync if user is not typing
+    if (lastUpdateSource !== 'user' && currentDoc !== yamlInput) {
       view.dispatch({
         changes: { from: 0, to: currentDoc.length, insert: yamlInput },
-        userEvent: 'visual-edit'
+        userEvent: 'remote-edit'
       });
       setLocalYaml(yamlInput);
     }
   }, [yamlInput, lastUpdateSource])
 
-  // Handle local changes (typing or undo/redo in editor)
   const handleChange = useCallback((value: string) => {
     setLocalYaml(value)
-    if (!value || value.trim() === '') return; // Guard against empty or whitespace only
+    if (!value || value.trim() === '') return;
 
-    // Auto-parse with debounce
     if (timerRef.current) clearTimeout(timerRef.current)
     
     timerRef.current = setTimeout(() => {
@@ -82,13 +76,6 @@ const EditorTab = () => {
       parseAndSetSchema(value)
     }, 300)
   }, [setYamlInput, parseAndSetSchema])
-
-  const handleManualApply = async () => {
-    parseAndSetSchema(localYaml);
-    if (isCliMode) {
-      await saveSchema(true); // Force save
-    }
-  }
 
   const handleUndo = () => {
     if (editorRef.current?.view) {
@@ -112,15 +99,12 @@ const EditorTab = () => {
           </div>
         ) : (
           <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2 cursor-pointer group">
-              <div 
-                className={`relative w-7 h-4 rounded-full transition-colors ${isAutoSaveEnabled ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'}`}
-                onClick={() => setIsAutoSaveEnabled(!isAutoSaveEnabled)}
-              >
-                <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${isAutoSaveEnabled ? 'translate-x-3' : 'translate-x-0'}`} />
-              </div>
-              <span className={`text-[10px] font-bold uppercase tracking-widest ${theme === 'dark' ? 'text-slate-500 group-hover:text-slate-400' : 'text-slate-400 group-hover:text-slate-600'}`}>Auto-save</span>
-            </label>
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+              <span className={`text-[10px] font-bold uppercase tracking-widest ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
+                Auto-sync active
+              </span>
+            </div>
             
             <div className="flex items-center gap-1.5 min-w-[60px]">
               {savingStatus === 'saving' && (
@@ -146,7 +130,6 @@ const EditorTab = () => {
         )}
         
         <div className="flex items-center gap-3">
-          {/* Undo/Redo Buttons */}
           <div className={`flex rounded-lg p-0.5 border ${theme === 'dark' ? 'bg-slate-800/50 border-slate-700/50' : 'bg-slate-100 border-slate-200'}`}>
             <button 
               onClick={handleUndo}
@@ -204,20 +187,10 @@ const EditorTab = () => {
 
       <div className="flex justify-between items-center pt-1 shrink-0">
         <div className="text-[10px] text-slate-500 italic">
-          {isCliMode ? (isAutoSaveEnabled ? 'Changes save automatically' : 'Click save to update file') : 'Changes reset on reload'}
+          {isCliMode 
+            ? 'Changes are automatically reflected and saved to file.' 
+            : 'Changes are reflected instantly but reset on reload.'}
         </div>
-        <button 
-          onClick={handleManualApply}
-          disabled={savingStatus === 'saving'}
-          className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium text-sm transition-all shadow-lg shrink-0 ${
-            isCliMode 
-              ? (isAutoSaveEnabled ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed opacity-50' : 'bg-blue-600 hover:bg-blue-700 text-white') 
-              : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-          }`}
-        >
-          {isCliMode ? <Save size={16} /> : <Play size={16} />}
-          {isCliMode ? 'Save & Update' : 'Apply Changes'}
-        </button>
       </div>
     </div>
   )
