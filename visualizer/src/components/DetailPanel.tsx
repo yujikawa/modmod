@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useStore } from '../store/useStore'
-import { X, Plus, Trash2, Tag as TagIcon, Table as TableIcon, Database, Link as LinkIcon, Unlink } from 'lucide-react'
+import { X, Plus, Trash2, Tag as TagIcon, Table as TableIcon, Database, Link as LinkIcon, Unlink, ChevronUp, ChevronDown } from 'lucide-react'
 import type { Table, Column } from '../types/schema'
 
 const TYPE_CONFIG: Record<string, { color: string; icon: string; label: string }> = {
@@ -16,23 +16,19 @@ const TYPE_CONFIG: Record<string, { color: string; icon: string; label: string }
 const DetailPanel = () => {
   const { 
     schema,
-    selectedTableId, 
-    selectedEdgeId,
-    selectedAnnotationId,
     getSelectedTable, 
     getSelectedDomain,
     getSelectedRelationship,
     getSelectedAnnotation,
-    setSelectedTableId, 
-    setSelectedEdgeId,
-    setSelectedAnnotationId,
     updateTable,
     updateDomain,
     updateRelationship,
     updateAnnotation,
     assignTableToDomain,
     theme,
-    isDetailPanelSuppressed
+    isDetailPanelSuppressed,
+    isDetailPanelMinimized,
+    setIsDetailPanelMinimized
   } = useStore()
   
   const table = getSelectedTable()
@@ -69,8 +65,6 @@ const DetailPanel = () => {
   }, [isResizing]);
 
   if (isDetailPanelSuppressed) return null
-  if (!selectedTableId && !selectedEdgeId && !selectedAnnotationId) return null
-  if (!table && !domain && !relationshipData && !annotation) return null
 
   const startResizing = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -98,6 +92,62 @@ const DetailPanel = () => {
     position: 'relative',
     transition: 'background-color 0.3s, color 0.3s'
   };
+
+  // --- Minimized State Rendering ---
+  if (isDetailPanelMinimized) {
+    const selectedName = table?.name || domain?.name || (relationshipData ? `${relationshipData.relationship.from.table} → ${relationshipData.relationship.to.table}` : null) || annotation?.text?.substring(0, 20);
+    const hasSelection = !!selectedName;
+
+    // Determine active theme color for border synchronization
+    let activeColor = theme === 'dark' ? '#334155' : '#e2e8f0'; // Subtle gray if nothing selected
+    if (table) {
+      const tc = table.appearance?.type ? TYPE_CONFIG[table.appearance.type] : null;
+      activeColor = table.appearance?.color || tc?.color || activeColor;
+    } else if (domain) {
+      activeColor = domain.color || activeColor;
+    } else if (annotation) {
+      activeColor = annotation.color || '#f59e0b';
+    }
+
+    return (
+      <div 
+        className={`shadow-2xl z-50 flex items-center justify-between px-6 transition-all border-t-2 ${hasSelection ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900' : 'cursor-default opacity-80'}`}
+        onClick={(e) => {
+          if (!hasSelection) return;
+          e.stopPropagation();
+          setIsDetailPanelMinimized(false);
+        }}
+        onMouseDown={stopPropagation}
+        onPointerDown={stopPropagation}
+        style={{ 
+          height: '40px', 
+          backgroundColor: 'var(--node-bg)', 
+          borderColor: activeColor,
+          color: 'var(--text-primary)'
+        }}
+      >
+        <div className="flex items-center gap-3 overflow-hidden flex-1">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 whitespace-nowrap">
+            {hasSelection ? `Selected: ${selectedName}` : 'Select an object on the canvas to view its details'}
+          </span>
+        </div>
+        <div className="flex items-center gap-4">
+          {hasSelection && (
+            <>
+              <div className="text-[10px] font-medium text-slate-400 italic hidden sm:block">
+                Click to expand
+              </div>
+              <button 
+                className={`p-1 rounded-full transition-colors ${theme === 'dark' ? 'hover:bg-slate-800 text-slate-500' : 'hover:bg-slate-200 text-slate-400'}`}
+              >
+                <ChevronUp size={18} style={{ color: activeColor }} />
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   const handleUpdateTable = (updates: Partial<Table>) => {
     updateTable(table!.id, updates);
@@ -138,7 +188,15 @@ const DetailPanel = () => {
               </p>
             </div>
           </div>
-          <button onClick={() => setSelectedAnnotationId(null)} className={`p-1.5 rounded-full transition-colors ${theme === 'dark' ? 'hover:bg-slate-800 text-slate-500' : 'hover:bg-slate-200 text-slate-400'}`}><X size={18} /></button>
+          <div className="flex items-center gap-1">
+            <button 
+              onClick={() => setIsDetailPanelMinimized(true)} 
+              className={`p-1.5 rounded-full transition-colors ${theme === 'dark' ? 'hover:bg-slate-800 text-slate-500' : 'hover:bg-slate-200 text-slate-400'}`}
+              title="Minimize Details"
+            >
+              <ChevronDown size={18} />
+            </button>
+          </div>
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
@@ -281,7 +339,15 @@ const DetailPanel = () => {
               </p>
             </div>
           </div>
-          <button onClick={() => setSelectedEdgeId(null)} className={`p-1.5 rounded-full transition-colors ${theme === 'dark' ? 'hover:bg-slate-800 text-slate-500' : 'hover:bg-slate-200 text-slate-400'}`}><X size={18} /></button>
+          <div className="flex items-center gap-1">
+            <button 
+              onClick={() => setIsDetailPanelMinimized(true)} 
+              className={`p-1.5 rounded-full transition-colors ${theme === 'dark' ? 'hover:bg-slate-800 text-slate-500' : 'hover:bg-slate-200 text-slate-400'}`}
+              title="Minimize Details"
+            >
+              <ChevronDown size={18} />
+            </button>
+          </div>
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
@@ -389,7 +455,15 @@ const DetailPanel = () => {
               <p style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', margin: 0 }}>{domain.id}</p>
             </div>
           </div>
-          <button onClick={() => setSelectedTableId(null)} className={`p-1.5 rounded-full transition-colors ${theme === 'dark' ? 'hover:bg-slate-800 text-slate-500' : 'hover:bg-slate-200 text-slate-400'}`}><X size={18} /></button>
+          <div className="flex items-center gap-1">
+            <button 
+              onClick={() => setIsDetailPanelMinimized(true)} 
+              className={`p-1.5 rounded-full transition-colors ${theme === 'dark' ? 'hover:bg-slate-800 text-slate-500' : 'hover:bg-slate-200 text-slate-400'}`}
+              title="Minimize Details"
+            >
+              <ChevronDown size={18} />
+            </button>
+          </div>
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
@@ -724,15 +798,15 @@ const DetailPanel = () => {
           </select>
         </div>
 
-        <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            setSelectedTableId(null);
-          }}
-          className={`p-1.5 rounded-full transition-colors ${theme === 'dark' ? 'hover:bg-slate-800 text-slate-500' : 'hover:bg-slate-200 text-slate-400'}`}
-        >
-          <X size={18} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button 
+            onClick={() => setIsDetailPanelMinimized(true)} 
+            className={`p-1.5 rounded-full transition-colors ${theme === 'dark' ? 'hover:bg-slate-800 text-slate-500' : 'hover:bg-slate-200 text-slate-400'}`}
+            title="Minimize Details"
+          >
+            <ChevronDown size={18} />
+          </button>
+        </div>
       </div>
       
       {/* Tabs */}

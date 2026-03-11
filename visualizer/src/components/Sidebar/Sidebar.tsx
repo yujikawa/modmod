@@ -73,7 +73,7 @@ const Sidebar = () => {
           theme === 'dark' ? 'border-slate-800 bg-slate-950/20' : 'border-slate-100 bg-slate-50/50'
         }`}>
           <p className="text-[10px] text-slate-500 font-medium px-1">
-            Modscape v1.1.3
+            Modscape v1.1.4
           </p>
         </div>
       </div>
