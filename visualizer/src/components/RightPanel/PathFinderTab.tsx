@@ -4,7 +4,7 @@ import {
   Search, 
   GitGraph, 
   Database,
-  RefreshCw,
+  X,
   AlertCircle
 } from 'lucide-react'
 import { findShortestPath, type PathStep } from '../../lib/graph'
@@ -96,8 +96,9 @@ const PathFinderTab = () => {
               className={`p-2 rounded-md border transition-all hover:bg-slate-100 dark:hover:bg-slate-800 ${
                 theme === 'dark' ? 'border-slate-700 text-slate-400' : 'border-slate-200 text-slate-500'
               }`}
+              title="Clear search results"
             >
-              <RefreshCw size={14} />
+              <X size={14} />
             </button>
           )}
         </div>

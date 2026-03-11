@@ -5,6 +5,8 @@ import yaml from 'js-yaml';
 import chokidar from 'chokidar';
 import open from 'open';
 import { fileURLToPath } from 'url';
+import { WebSocketServer } from 'ws';
+import http from 'http';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -43,6 +45,9 @@ function scanFiles(inputPaths) {
 
 export async function startDevServer(paths, visualizerPath) {
   const app = express();
+  const server = http.createServer(app);
+  const wss = new WebSocketServer({ server });
+
   app.use(express.json({ limit: '10mb' }));
 
   const inputPaths = Array.isArray(paths) ? paths : [paths];
@@ -65,6 +70,16 @@ export async function startDevServer(paths, visualizerPath) {
     if (slug) return modelMap.get(slug);
     // If no slug provided, return the first available model
     return modelMap.values().next().value;
+  };
+
+  // Broadcast function to notify all connected clients
+  const broadcast = (message) => {
+    const data = JSON.stringify(message);
+    wss.clients.forEach((client) => {
+      if (client.readyState === 1) { // 1 = OPEN
+        client.send(data);
+      }
+    });
   };
 
   // API to list all available models - re-scans on every request
@@ -113,7 +128,7 @@ export async function startDevServer(paths, visualizerPath) {
   app.use(express.static(distPath, { index: false }));
 
   // Intercept index.html to inject CLI_MODE flag
-  app.get('{/*path}', (req, res) => {
+  app.use((req, res) => {
     try {
       let html = fs.readFileSync(path.join(distPath, 'index.html'), 'utf8');
       html = html.replace(
@@ -127,14 +142,28 @@ export async function startDevServer(paths, visualizerPath) {
   });
 
   const port = 5173;
-  app.listen(port, () => {
+  server.listen(port, () => {
     const url = `http://localhost:${port}`;
     console.log(`\n  🚀 Modscape Visualizer running at: ${url}`);
     console.log(`  Watching ${modelMap.size} file(s)`);
     open(url);
   });
 
-  chokidar.watch(inputPaths).on('change', (changedPath) => {
-    console.log(`  File changed: ${path.relative(process.cwd(), changedPath)}. Please refresh the browser.`);
+  // Debounced file watcher
+  let changeTimeout = null;
+  chokidar.watch(inputPaths, { ignoreInitial: true }).on('all', (event, changedPath) => {
+    if (!changedPath.endsWith('.yaml') && !changedPath.endsWith('.yml')) return;
+    
+    if (changeTimeout) clearTimeout(changeTimeout);
+    changeTimeout = setTimeout(() => {
+      console.log(`  File system event (${event}): ${path.relative(process.cwd(), changedPath)}`);
+      
+      if (event === 'change') {
+        broadcast({ type: 'update', path: changedPath });
+      } else if (event === 'add' || event === 'unlink') {
+        broadcast({ type: 'files_changed' });
+      }
+    }, 200);
   });
 }
+
