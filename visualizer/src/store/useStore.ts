@@ -19,6 +19,7 @@ interface AppState {
   error: string | null;
   isCliMode: boolean;
   isAutoSaveEnabled: boolean;
+  lastSavedAt: number;
   savingStatus: 'idle' | 'saving' | 'saved' | 'error';
   lastUpdateSource: 'user' | 'visual' | 'undo';
   
@@ -123,6 +124,7 @@ export const useStore = create<AppState>((set, get) => ({
   error: null,
   isCliMode: (typeof window !== 'undefined' && (window as any).MODSCAPE_CLI_MODE === true),
   isAutoSaveEnabled: true,
+  lastSavedAt: 0,
   savingStatus: 'idle',
   lastUpdateSource: 'visual',
 
@@ -507,7 +509,7 @@ export const useStore = create<AppState>((set, get) => ({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ yaml: yamlString })
         });
-        set({ savingStatus: 'saved' });
+        set({ savingStatus: 'saved', lastSavedAt: Date.now() });
         setTimeout(() => set({ savingStatus: 'idle' }), 2000);
       } catch (e) {
         console.error('Failed to save schema:', e);
@@ -517,8 +519,15 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   refreshModelData: async () => {
-    const { currentModelSlug, isCliMode } = get();
+    const { currentModelSlug, isCliMode, savingStatus, lastSavedAt } = get();
     if (!isCliMode) return;
+    
+    // Guard: Skip refresh if we are currently saving or just saved (within 3s)
+    // to prevent self-triggered updates from causing UI flickering or state reversal.
+    if (savingStatus === 'saving' || (Date.now() - lastSavedAt < 3000)) {
+      console.log('🔇 Skipping refresh: update originated from recent browser save or save in progress');
+      return;
+    }
     
     try {
       set({ savingStatus: 'saving' });
