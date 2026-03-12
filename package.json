@@ -1,6 +1,6 @@
 {
   "name": "modscape",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "Modscape: A YAML-driven data modeling visualizer CLI",
   "repository": {
     "type": "git",
@@ -19,7 +19,8 @@
   ],
   "scripts": {
     "build-ui": "cd visualizer && npm run build && rm -rf ../visualizer-dist && mv dist ../visualizer-dist",
-    "dev": "node src/index.js dev"
+    "dev": "node src/index.js dev",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@inquirer/prompts": "^8.3.0",
@@ -27,6 +28,10 @@
     "commander": "^14.0.3",
     "express": "^5.2.1",
     "js-yaml": "^4.1.1",
-    "open": "^11.0.0"
+    "open": "^11.0.0",
+    "ws": "^8.18.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2"
   }
 }

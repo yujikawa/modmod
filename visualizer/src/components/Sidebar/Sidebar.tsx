@@ -2,11 +2,10 @@ import EditorTab from './EditorTab'
 import FileSelector from './FileSelector'
 import ActivityBar from './ActivityBar'
 import { useStore } from '../../store/useStore'
-import { RefreshCw } from 'lucide-react'
 import logo from '/favicon.svg?url'
 
 const Sidebar = () => {
-  const { isSidebarOpen, isCliMode, theme, refreshModelData, savingStatus } = useStore()
+  const { isSidebarOpen, isCliMode, theme, savingStatus } = useStore()
 
   return (
     <div 
@@ -33,25 +32,16 @@ const Sidebar = () => {
             <img src={logo} alt="Modscape Logo" className="w-5 h-5 rounded-md" />
             <h1 className={`text-base font-bold tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Modscape</h1>
             {isCliMode && (
-              <span className="px-1.5 py-0.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 text-[10px] font-bold rounded uppercase ml-1">
+              <span className="px-1.5 py-0.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 text-[10px] font-bold rounded uppercase ml-1 animate-pulse" title="Connected & Syncing">
                 Live
               </span>
             )}
           </div>
 
-          {isCliMode && (
-            <button 
-              onClick={() => refreshModelData()}
-              disabled={savingStatus === 'saving'}
-              className={`p-1.5 rounded-md transition-all bg-transparent ${
-                theme === 'dark' 
-                  ? 'text-slate-400 hover:text-slate-100 hover:bg-slate-800' 
-                  : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100'
-              } ${savingStatus === 'saving' ? 'animate-spin opacity-50' : ''}`}
-              title="Refresh all data"
-            >
-              <RefreshCw size={16} />
-            </button>
+          {savingStatus === 'saving' && (
+            <span className="text-[10px] text-slate-500 animate-pulse uppercase font-bold tracking-widest">
+              Saving...
+            </span>
           )}
         </div>
 
@@ -73,7 +63,7 @@ const Sidebar = () => {
           theme === 'dark' ? 'border-slate-800 bg-slate-950/20' : 'border-slate-100 bg-slate-50/50'
         }`}>
           <p className="text-[10px] text-slate-500 font-medium px-1">
-            Modscape v1.1.4
+            Modscape v1.1.5
           </p>
         </div>
       </div>

@@ -1,0 +1,54 @@
+tables:
+  - id: users
+    name: USERS
+    description: System users
+    columns:
+      - id: id
+        logical:
+          name: ID
+          type: Integer
+          isPrimaryKey: true
+      - id: name
+        logical:
+          name: Name
+          type: String
+    sampleData: []
+  - id: orders
+    name: ORDERS
+    description: Customer orders
+    columns:
+      - id: id
+        logical:
+          name: ID
+          type: Integer
+          isPrimaryKey: true
+      - id: user_id
+        logical:
+          name: User ID
+          type: Integer
+    sampleData: []
+relationships:
+  - from:
+      table: users
+      column: id
+    to:
+      table: orders
+      column: user_id
+    type: one-to-many
+domains:
+  - id: core
+    name: Core Domain
+    tables:
+      - orders
+      - users
+annotations:
+  - id: note_1
+    text: Test Note
+    type: sticky
+    offset:
+      x: 1000
+      'y': 1000
+layout:
+  users:
+    x: 30
+    'y': 30

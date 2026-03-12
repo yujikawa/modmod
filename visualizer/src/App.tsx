@@ -71,7 +71,9 @@ function Flow() {
     currentModelSlug,
     isPresentationMode,
     setIsPresentationMode,
-    pathFinderResult
+    pathFinderResult,
+    refreshModelData,
+    fetchAvailableFiles
   } = useStore()
   
   const [nodes, setNodes, onNodesChange] = useNodesState([])
@@ -79,6 +81,68 @@ function Flow() {
   const { fitView, getViewport, setViewport, screenToFlowPosition, getNodes } = useReactFlow()
   const [edgeSyncTrigger, setEdgeSyncTrigger] = useState(0)
   const lastLoadedModel = useRef<string | null>(null)
+  const wsRef = useRef<WebSocket | null>(null)
+  const reconnectTimeoutRef = useRef<number | null>(null)
+  const reconnectDelayRef = useRef<number>(1000)
+
+  // Live Sync via WebSocket
+  useEffect(() => {
+    if (!isCliMode) return;
+
+    const connect = () => {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}`;
+      const ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        console.log('🔌 Connected to Modscape Dev Server (Live Sync active)');
+        reconnectDelayRef.current = 1000;
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'update') {
+            console.log('🔄 File update signal received from server');
+            refreshModelData();
+          } else if (data.type === 'files_changed') {
+            console.log('📁 File list update signal received from server');
+            fetchAvailableFiles();
+          }
+        } catch (e) {
+          console.error('Failed to parse WS message:', e);
+        }
+      };
+
+      ws.onclose = () => {
+        console.warn('🔌 Disconnected from Modscape Dev Server. Reconnecting...');
+        wsRef.current = null;
+        
+        // Exponential backoff
+        if (reconnectTimeoutRef.current) window.clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = window.setTimeout(() => {
+          reconnectDelayRef.current = Math.min(reconnectDelayRef.current * 1.5, 30000);
+          connect();
+        }, reconnectDelayRef.current);
+      };
+
+      ws.onerror = () => {
+        ws.close();
+      };
+
+      wsRef.current = ws;
+    };
+
+    connect();
+
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.onclose = null; // Prevent reconnection on unmount
+        wsRef.current.close();
+      }
+      if (reconnectTimeoutRef.current) window.clearTimeout(reconnectTimeoutRef.current);
+    };
+  }, [isCliMode, refreshModelData, fetchAvailableFiles]);
 
   const isConnectionLocked = showER && showLineage
   const isViewingDisabled = !showER && !showLineage

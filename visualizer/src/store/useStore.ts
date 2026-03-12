@@ -122,7 +122,7 @@ export const useStore = create<AppState>((set, get) => ({
   hoveredColumnId: null,
   error: null,
   isCliMode: (typeof window !== 'undefined' && (window as any).MODSCAPE_CLI_MODE === true),
-  isAutoSaveEnabled: false,
+  isAutoSaveEnabled: true,
   savingStatus: 'idle',
   lastUpdateSource: 'visual',
 
@@ -526,13 +526,25 @@ export const useStore = create<AppState>((set, get) => ({
       // 1. Refresh available files list
       await get().fetchAvailableFiles();
       
-      // 2. Refresh current model content if selected
-      if (currentModelSlug) {
-        const url = `/api/model?model=${currentModelSlug}`;
+      // 2. Identify target slug (from state, URL, or fallback to first available)
+      let targetSlug = currentModelSlug;
+      if (!targetSlug) {
+        const params = new URLSearchParams(window.location.search);
+        targetSlug = params.get('model');
+      }
+      
+      // If still no slug, use the first one from the freshly fetched list
+      if (!targetSlug && get().availableFiles.length > 0) {
+        targetSlug = get().availableFiles[0].slug;
+      }
+      
+      // 3. Refresh current model content
+      if (targetSlug) {
+        const url = `/api/model?model=${targetSlug}`;
         const res = await fetch(url);
         const data = await res.json();
         const schema = normalizeSchema(data);
-        set({ schema, error: null });
+        set({ schema, currentModelSlug: targetSlug, error: null });
         get().syncToYamlInput();
       }
       

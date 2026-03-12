@@ -1,8 +1,6 @@
 schema: spec-driven
 
 context: |
-  言語：日本語
-  すべての成果物は日本語で作成してください。
   This repository develops Modscape, a YAML-driven data modeling visualizer
   designed for Modern Data Stack architectures.
 
@@ -96,4 +94,5 @@ rules:
   tasks:
     - Break tasks into small incremental steps
     - Prefer iterative UI improvements over large rewrites
-    - Check whether you can build using `npm run build-ui` after implemation 
+    - Check whether you can build using `npm run build-ui` after implemation
+    - If UI changes occur, ALWAYS update visual snapshots using `npm run test:e2e -- --update-snapshots` and verify they are committed. 

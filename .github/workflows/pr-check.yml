@@ -36,6 +36,20 @@ jobs:
       - name: CLI Build UI
         run: npm run build-ui
 
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E Tests
+        run: npm run test:e2e
+
+      - name: Upload Test Results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
+
       - name: Test Static Site Build
         run: |
           # Verify that the build command works with actual samples
