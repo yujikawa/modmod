@@ -1,6 +1,6 @@
 tables:
   - id: users
-    name: UPDATED_USERS
+    name: USERS
     description: System users
     columns:
       - id: id
