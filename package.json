@@ -19,7 +19,8 @@
   ],
   "scripts": {
     "build-ui": "cd visualizer && npm run build && rm -rf ../visualizer-dist && mv dist ../visualizer-dist",
-    "dev": "node src/index.js dev"
+    "dev": "node src/index.js dev",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@inquirer/prompts": "^8.3.0",
@@ -29,5 +30,8 @@
     "js-yaml": "^4.1.1",
     "open": "^11.0.0",
     "ws": "^8.18.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2"
   }
 }

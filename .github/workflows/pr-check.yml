@@ -36,6 +36,12 @@ jobs:
       - name: CLI Build UI
         run: npm run build-ui
 
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E Tests
+        run: npm run test:e2e
+
       - name: Test Static Site Build
         run: |
           # Verify that the build command works with actual samples

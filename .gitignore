@@ -6,3 +6,9 @@ test-build
 visualizer/dist
 visualizer-dist
 visualizer/node_modules
+
+# Tests
+test-results/
+playwright-report/
+blob-report/
+
