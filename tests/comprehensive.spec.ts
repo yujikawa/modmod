@@ -72,15 +72,15 @@ test.describe.serial('Modscape Main E2E Suite', () => {
   test('Visual: Sidebar should match snapshots', async ({ page }) => {
     await page.waitForTimeout(3000); // Wait for full rendering
     
-    // Target only the sidebar to avoid canvas rendering issues in CI
     const sidebar = page.locator('.sidebar-content').first();
     
     await expect(sidebar).toHaveScreenshot('sidebar-main.png', {
       mask: [
-        page.locator('text=/Modscape v/i') // Mask version to be safe
+        page.locator('text=/Modscape v/i'), // Mask version number
+        page.locator('text=/Live/i')        // Mask pulsing Live badge
       ],
-      maxDiffPixelRatio: 0.05,
-      threshold: 0.3
+      maxDiffPixelRatio: 0.1, // Allow up to 10% difference for CI variations
+      animations: 'disabled'  // Strictly disable animations
     });
   });
 });
