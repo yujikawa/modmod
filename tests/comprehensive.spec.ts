@@ -83,7 +83,7 @@ test.describe.serial('Modscape Main E2E Suite', () => {
         page.locator('text=/Live/i')        // Mask pulsing Live badge
       ],
       maxDiffPixelRatio: 0.2, // Allow up to 20% difference for CI variations
-      threshold: 0.5,         // Be very forgiving with color variations
+      threshold: 0.5,         // High tolerance for color variations
       animations: 'disabled'  // Strictly disable animations
     });
   });
