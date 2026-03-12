@@ -8,6 +8,10 @@ import { build } from './build.js';
 import { initProject } from './init.js';
 import { exportModel } from './export.js';
 import { createModel } from './create.js';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const pkg = require('../package.json');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const VISUALIZER_PATH = path.resolve(__dirname, '../visualizer');
@@ -16,7 +20,7 @@ const program = new Command();
 program
   .name('modscape')
   .description('Modscape: A YAML-driven data modeling visualizer CLI')
-  .version('1.0.9');
+  .version(pkg.version);
 
 program
   .command('init')

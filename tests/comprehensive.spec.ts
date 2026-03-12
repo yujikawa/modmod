@@ -20,9 +20,14 @@ test.describe.serial('Modscape Main E2E Suite', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await waitForLiveSync(page);
-    // Force one reload to ensure the model is correctly loaded from the runtime file
-    await page.reload();
-    await waitForLiveSync(page);
+    
+    // Initial attempt to see if nodes are there
+    const nodeFound = await page.locator('.react-flow__node-table').first().isVisible();
+    if (!nodeFound) {
+        // Force reload if empty
+        await page.reload();
+        await waitForLiveSync(page);
+    }
   });
 
   test.afterEach(async () => {

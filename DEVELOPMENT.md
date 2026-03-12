@@ -19,22 +19,25 @@ npm run dev -- samples/ecommerce.yaml
 - **Live Sync機能**: 外部エディタでファイルを保存すると、ブラウザ側が自動的に更新されます。
 
 ### 自動テスト (E2E / ビジュアルテスト)
-Playwright を使用した自動テストを実行します。機能のデグレードやデザイン崩れを防ぐために重要です。
+Playwright を使用した自動テストを実行します。Modscape では UI ビルドとテスト結果が密接に関連しているため、一括実行コマンドの使用を推奨します。
 
 ```bash
-# すべてのテストを実行
+# 【推奨】UIをビルドしてから全テストを実行
+npm run test:all
+
+# 【推奨】UIをビルドしてからビジュアルスナップショットを更新
+# UIの意図的な変更を行った後は必ず実行してください
+npm run test:update
+
+# (デバッグ用) すでにビルド済みの状態でテストのみ実行
 npm run test:e2e
 
 # UIモードで実行 (ブラウザの動きを確認しながらデバッグ可能)
 npx playwright test --ui
-
-# ビジュアルテストの正解画像（スナップショット）を更新
-# UIの意図的な変更を行った後は必ず実行してください
-npm run test:e2e -- --update-snapshots
 ```
 
 ### UI（React/Vite）のビルド
-フロントエンド（`visualizer/`）の変更を CLI に反映させるには、UI をビルドして `visualizer-dist` を生成する必要があります。
+フロントエンド（`visualizer/`）の単体ビルドコマンドです。通常は上記テストコマンド内で自動実行されます。
 
 ```bash
 npm run build-ui
