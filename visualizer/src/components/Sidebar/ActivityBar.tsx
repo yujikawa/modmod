@@ -14,7 +14,9 @@ import {
   Play,
   CircleHelp,
   X,
-  Command
+  Command,
+  Zap,
+  FileText
 } from 'lucide-react'
 import { useReactFlow } from 'reactflow'
 import logo from '/favicon.svg?url'
@@ -38,7 +40,9 @@ const ActivityBar = () => {
     theme,
     toggleTheme,
     getSelectedTable,
-    getSelectedDomain
+    getSelectedDomain,
+    activeTab,
+    setActiveTab
   } = useStore()
 
   const { screenToFlowPosition } = useReactFlow()
@@ -116,6 +120,25 @@ const ActivityBar = () => {
             <img src={logo} alt="Logo" className="w-6 h-6 rounded-md shadow-lg" />
           )}
         </button>
+
+        {/* Tab Selection Section */}
+        <div className="flex flex-col items-center mb-4 gap-2">
+          <div className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter opacity-80 mb-1">
+            Tabs
+          </div>
+          <div className="flex flex-col gap-2">
+            <button onClick={() => setActiveTab('editor')} className={iconClass(activeTab === 'editor', 'text-blue-500')}>
+              <FileText size={20} />
+              <Tooltip text="YAML Editor" />
+            </button>
+            <button onClick={() => setActiveTab('connect')} className={iconClass(activeTab === 'connect', 'text-amber-500')}>
+              <Zap size={20} />
+              <Tooltip text="Quick Connect (L)" />
+            </button>
+          </div>
+        </div>
+
+        <div className={`w-8 border-t mb-4 ${theme === 'dark' ? 'border-slate-800' : 'border-slate-200'}`} />
 
         {/* View Section */}
         <div className="flex flex-col items-center mb-4 gap-2">

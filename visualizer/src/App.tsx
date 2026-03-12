@@ -179,8 +179,24 @@ function Flow() {
 
       const key = e.key.toLowerCase();
 
+      // Navigation Shortcuts
+      if (e.key === '/') {
+        e.preventDefault();
+        useStore.getState().setIsRightPanelOpen(true);
+        useStore.getState().setActiveRightPanelTab('tables');
+        return;
+      }
+
       // Object Creation Shortcuts
-      if (key === 't' || key === 'd' || key === 's') {
+      if (key === 't' || key === 'd' || key === 's' || key === 'l') {
+        e.preventDefault();
+        if (key === 'l') {
+          const currentTab = useStore.getState().activeTab;
+          useStore.getState().setActiveTab(currentTab === 'connect' ? 'editor' : 'connect');
+          useStore.getState().setIsSidebarOpen(true);
+          return;
+        }
+
         const center = screenToFlowPosition({
           x: window.innerWidth / 2,
           y: window.innerHeight / 2,
@@ -621,13 +637,13 @@ function Flow() {
   const isValidConnection = useCallback((connection: Connection) => {
     return connection.source !== connection.target;
   }, []);
+return (
+  <div className="flex-1 relative h-full flex flex-col overflow-hidden">
+    <div className="flex-1 relative">
+      {!isPresentationMode && <SelectionToolbar />}
+      <PresentationOverlay />
 
-  return (
-    <div className="flex-1 relative h-full flex flex-col overflow-hidden">
-      <div className="flex-1 relative">
-        {!isPresentationMode && <SelectionToolbar />}
-        <PresentationOverlay />
-        
+      {/* Badges */}
         {/* Badges ... (Omitting inner badge JSX for brevity, but they stay) */}
         {isConnectionLocked && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-2 text-center pointer-events-none">

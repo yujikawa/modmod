@@ -35,8 +35,9 @@ interface AppState {
   // UI State
   isSidebarOpen: boolean;
   isRightPanelOpen: boolean;
+  isQuickConnectBarOpen: boolean;
   isPresentationMode: boolean;
-  activeTab: 'editor' | 'entities';
+  activeTab: 'editor' | 'entities' | 'connect';
   activeRightPanelTab: 'tables' | 'path' | 'notes';
   focusNodeId: string | null;
   pathFinderResult: { nodeIds: string[], edgeIds: string[] } | null;
@@ -74,6 +75,7 @@ interface AppState {
   addTable: (x: number, y: number) => void;
   addDomain: (x: number, y: number) => void;
   addRelationship: (source: string, target: string, sourceHandle?: string | null, targetHandle?: string | null) => void;
+  bulkAddRelationship: (source: { table: string, column?: string }, targetPattern: string, type: Relationship['type'] | 'lineage') => void;
   addLineage: (source: string, target: string) => void;
   updateRelationship: (index: number, updates: Partial<Relationship>) => void;
   removeEdge: (sourceId: string, targetId: string) => void;
@@ -98,7 +100,8 @@ interface AppState {
   // Sidebar Actions
   setIsSidebarOpen: (isOpen: boolean) => void;
   setIsRightPanelOpen: (isOpen: boolean) => void;
-  setActiveTab: (tab: 'editor' | 'entities') => void;
+  setIsQuickConnectBarOpen: (isOpen: boolean) => void;
+  setActiveTab: (tab: 'editor' | 'entities' | 'connect') => void;
   setActiveRightPanelTab: (tab: 'tables' | 'path' | 'notes') => void;
   setPathFinderResult: (result: { nodeIds: string[], edgeIds: string[] } | null) => void;
   setFocusNodeId: (id: string | null) => void;
@@ -146,6 +149,7 @@ export const useStore = create<AppState>((set, get) => ({
   // UI Defaults
   isSidebarOpen: true,
   isRightPanelOpen: false,
+  isQuickConnectBarOpen: false,
   isPresentationMode: false,
   activeTab: 'editor',
   activeRightPanelTab: 'tables',
@@ -201,6 +205,7 @@ export const useStore = create<AppState>((set, get) => ({
   setIsCliMode: (isCli) => set({ isCliMode: isCli }),
   setIsSidebarOpen: (isOpen) => set({ isSidebarOpen: isOpen }),
   setIsRightPanelOpen: (isOpen) => set({ isRightPanelOpen: isOpen }),
+  setIsQuickConnectBarOpen: (isOpen) => set({ isQuickConnectBarOpen: isOpen }),
   setActiveTab: (tab) => set({ activeTab: tab }),
   setActiveRightPanelTab: (tab) => set({ activeRightPanelTab: tab, pathFinderResult: null }),
   setPathFinderResult: (result) => set({ pathFinderResult: result }),
@@ -686,6 +691,77 @@ export const useStore = create<AppState>((set, get) => ({
     };
 
     set({ schema: normalizeSchema(newSchema) });
+    get().syncToYamlInput();
+    get().saveSchema();
+  },
+
+  bulkAddRelationship: (source, targetPattern, type) => {
+    const { schema } = get();
+    if (!schema) return;
+
+    if (type === 'lineage') {
+      const parts = targetPattern.split('.');
+      const targetTablePattern = parts[0];
+      
+      if (targetTablePattern === '*') {
+        // Bulk Lineage: NOT supporting wildcard for lineage yet as it's less common, 
+        // but could be implemented if needed.
+        return;
+      }
+      
+      get().addLineage(source.table, targetTablePattern);
+      return;
+    }
+
+    let newRelationships = [...(schema.relationships || [])];
+    const parts = targetPattern.split('.');
+    const targetTablePattern = parts[0];
+    const targetCol = parts[1]; // might be undefined
+
+    if (targetTablePattern === '*') {
+      // Wildcard Mode: Search across all tables for a specific column
+      if (!targetCol) return; // Wildcard requires a column
+
+      schema.tables.forEach(table => {
+        if (table.id === source.table) return;
+
+        const hasColumn = table.columns?.some(c => c.id === targetCol);
+        if (hasColumn) {
+          const isDuplicate = newRelationships.some(rel => 
+            rel.from.table === source.table && 
+            rel.from.column === source.column && 
+            rel.to.table === table.id && 
+            rel.to.column === targetCol
+          );
+
+          if (!isDuplicate) {
+            newRelationships.push({
+              from: { table: source.table, column: source.column },
+              to: { table: table.id, column: targetCol },
+              type
+            });
+          }
+        }
+      });
+    } else {
+      // Direct Mode: table.col or just table
+      const isDuplicate = newRelationships.some(rel => 
+        rel.from.table === source.table && 
+        rel.from.column === source.column && 
+        rel.to.table === targetTablePattern && 
+        rel.to.column === targetCol
+      );
+
+      if (!isDuplicate) {
+        newRelationships.push({
+          from: { table: source.table, column: source.column },
+          to: { table: targetTablePattern, column: targetCol },
+          type
+        });
+      }
+    }
+
+    set({ schema: normalizeSchema({ ...schema, relationships: newRelationships }) });
     get().syncToYamlInput();
     get().saveSchema();
   },
