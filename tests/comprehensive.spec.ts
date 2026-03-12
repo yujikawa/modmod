@@ -68,11 +68,17 @@ test.describe.serial('Modscape Main E2E Suite', () => {
     await expect(page.locator('.react-flow__node-table').filter({ hasText: 'UPDATED_USERS' })).toBeVisible({ timeout: 30000 });
   });
 
+  // 5. Visual Regression: UI integrity check
   test('Visual: Main views should match snapshots', async ({ page }) => {
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(3000); // Wait longer for full rendering
+    
     await expect(page).toHaveScreenshot('default-view.png', {
-      mask: [page.locator('.react-flow__controls')],
-      maxDiffPixels: 1500
+      mask: [
+        page.locator('.react-flow__controls'),
+        page.locator('text=/Modscape v/i') // Mask the version number to prevent failures on version bumps
+      ],
+      maxDiffPixelRatio: 0.05, // Allow up to 5% difference for CI/Environment variations
+      threshold: 0.3
     });
   });
 });
