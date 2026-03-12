@@ -1,6 +1,6 @@
 tables:
   - id: users
-    name: USERS
+    name: UPDATED_USERS
     description: System users
     columns:
       - id: id
@@ -39,8 +39,8 @@ domains:
   - id: core
     name: Core Domain
     tables:
-      - users
       - orders
+      - users
 annotations:
   - id: note_1
     text: Test Note
@@ -48,4 +48,7 @@ annotations:
     offset:
       x: 1000
       'y': 1000
-layout: {}
+layout:
+  users:
+    x: 30
+    'y': 30
