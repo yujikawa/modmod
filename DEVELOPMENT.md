@@ -16,7 +16,22 @@ npm run dev -- samples/ecommerce.yaml
 ```
 - `npm run dev` の後の `--` は、それ以降の引数をスクリプトに直接渡すために必要です。
 - ディレクトリを指定すると、サイドバーのドロップダウンでファイルを切り替えられます。
-- ブラウザが自動的に開き、モデルの変更（ホットリロード）が反映されます。
+- **Live Sync機能**: 外部エディタでファイルを保存すると、ブラウザ側が自動的に更新されます。
+
+### 自動テスト (E2E / ビジュアルテスト)
+Playwright を使用した自動テストを実行します。機能のデグレードやデザイン崩れを防ぐために重要です。
+
+```bash
+# すべてのテストを実行
+npm run test:e2e
+
+# UIモードで実行 (ブラウザの動きを確認しながらデバッグ可能)
+npx playwright test --ui
+
+# ビジュアルテストの正解画像（スナップショット）を更新
+# UIの意図的な変更を行った後は必ず実行してください
+npm run test:e2e -- --update-snapshots
+```
 
 ### UI（React/Vite）のビルド
 フロントエンド（`visualizer/`）の変更を CLI に反映させるには、UI をビルドして `visualizer-dist` を生成する必要があります。
@@ -27,36 +42,28 @@ npm run build-ui
 > [!NOTE]
 > `visualizer-dist` は Git 管理から除外されています。npm 公開時や GitHub Actions 上で自動生成されます。
 
-### 静的サイトのビルド（デモ出力）
-YAML モデルを埋め込んだ、ポータブルな HTML サイトを書き出します。
-
-```bash
-# samples ディレクトリの全ファイルを dist に書き出し
-node src/index.js build samples/ -o dist
-```
-
 ---
 
 ## 🚀 リリースとデプロイ (CI/CD)
 
-GitHub Actions を使用して、デモの公開と npm へのリリースを自動化しています。
+GitHub Actions を使用して、テストの実行、デモの公開、npm へのリリースを自動化しています。
 
-### 1. デモサイトの更新 (GitHub Pages)
-`main` ブランチにプッシュされると、`src/`, `visualizer/`, `samples/` のいずれかに変更がある場合にのみ自動で [GitHub Pages](https://yujikawa.github.io/modscape/) が更新されます。
-- **README** や **LICENSE** の修正のみでは実行されません（リソース節約のため）。
+### 1. PRチェック (Continuous Integration)
+プルリクエストが作成されると、自動的に E2E テストとビルドチェックが走ります。テストが失敗した場合は、GitHub Actions の Artifacts から Playwright のレポート（スクリーンショット付）を確認できます。
 
-### 2. npm への公開
+### 2. デモサイトの更新 (GitHub Pages)
+`main` ブランチにプッシュされると、自動で [GitHub Pages](https://yujikawa.github.io/modscape/) が更新されます。
+
+### 3. npm への公開
 バージョンタグをプッシュすることで、自動的に npm レジストリへ公開されます。
 
 ```bash
-# 1. バージョンを上げる (package.json の更新と git tag の作成)
+# 1. バージョンを上げる
 npm version patch # または minor, major
 
 # 2. タグと一緒にプッシュ
 git push origin main --tags
 ```
-> [!IMPORTANT]
-> GitHub のリポジトリ設定（Secrets）に `NPM_TOKEN` が登録されている必要があります。
 
 ---
 
@@ -71,16 +78,18 @@ git push origin main --tags
 | :--- | :--- | :---: |
 | `fact` | 数値・集計データ | 📊 |
 | `dimension` | 属性・マスタデータ | 🏷️ |
+| `mart` | データマート・最終出力 | 📈 |
 | `hub` | 中心・ビジネスキー (Data Vault) | 🌐 |
 | `link` | 関係・リンク (Data Vault) | 🔗 |
 | `satellite` | 履歴・詳細 (Data Vault) | 🛰️ |
+| `table` | 汎用テーブル | 📋 |
 
 ---
 
 ## 🛠 プロジェクト構造
 - `src/`: CLI（Node.js/Express）のソースコード
 - `visualizer/`: フロントエンド（React/Vite/ReactFlow）のソースコード
-- `visualizer-dist/`: **ビルド済みのフロントエンド資産**（Git管理外、npm配布用）
+- `visualizer-dist/`: ビルド済みのフロントエンド資産（npm配布用）
+- `tests/`: Playwright による E2E テストコード
 - `samples/`: YAML形式のデータモデルのサンプル集
 - `openspec/`: OpenSpecによる開発プロセスの管理
-

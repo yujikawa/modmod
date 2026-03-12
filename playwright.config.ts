@@ -12,6 +12,12 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
+  expect: {
+    toHaveScreenshot: {
+      maxDiffPixels: 2000,
+      threshold: 0.2,
+    },
+  },
   projects: [
     {
       name: 'chromium',

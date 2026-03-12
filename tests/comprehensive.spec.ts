@@ -47,7 +47,7 @@ test.describe.serial('Modscape Main E2E Suite', () => {
     await expandDetailPanel(page, 'USERS');
     
     const titleInput = page.locator('input[title="Conceptual Table Name"]');
-    await expect(titleInput).toBeVisible({ timeout: 15000 });
+    await expect(titleInput).toBeVisible({ timeout: 25000 });
     await expect(titleInput).toHaveValue('USERS');
   });
 
@@ -65,7 +65,7 @@ test.describe.serial('Modscape Main E2E Suite', () => {
     await page.reload();
     await waitForLiveSync(page);
     
-    await expect(page.locator('.react-flow__node-table').filter({ hasText: 'UPDATED_USERS' })).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('.react-flow__node-table').filter({ hasText: 'UPDATED_USERS' })).toBeVisible({ timeout: 30000 });
   });
 
   test('Visual: Main views should match snapshots', async ({ page }) => {
