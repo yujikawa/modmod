@@ -20,6 +20,7 @@ import AnnotationNode from './components/AnnotationNode'
 import DetailPanel from './components/DetailPanel'
 import Sidebar from './components/Sidebar/Sidebar'
 import RightPanel from './components/RightPanel/RightPanel'
+import CommandPalette from './components/CommandPalette'
 import PresentationOverlay from './components/PresentationOverlay'
 import SelectionToolbar from './components/SelectionToolbar'
 import ButtonEdge from './components/ButtonEdge'
@@ -40,8 +41,9 @@ const edgeTypes = {
 
 function Flow() {
   const { 
-    schema, 
-    setSelectedTableId, 
+    schema,
+    setSelectedTableId,
+    setSelectedTableIds,
     selectedTableId,
     selectedEdgeId,
     setSelectedEdgeId,
@@ -184,6 +186,13 @@ function Flow() {
         e.preventDefault();
         useStore.getState().setIsRightPanelOpen(true);
         useStore.getState().setActiveRightPanelTab('tables');
+        return;
+      }
+
+      // Command Palette (Ctrl+K or Cmd+K)
+      if (key === 'k' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        useStore.getState().setIsCommandPaletteOpen(!useStore.getState().isCommandPaletteOpen);
         return;
       }
 
@@ -619,12 +628,15 @@ function Flow() {
   }, [isCliMode, updateNodesPosition]);
 
   const onSelectionChange = useCallback(({ nodes }: { nodes: Node[] }) => {
+    const tableIds = nodes.filter(n => n.type === 'table').map(n => n.id);
+    setSelectedTableIds(tableIds);
+    
     if (nodes.length > 1) {
       setSelectedTableId(null);
       setSelectedEdgeId(null);
       setSelectedAnnotationId(null);
     }
-  }, [setSelectedTableId, setSelectedEdgeId, setSelectedAnnotationId]);
+  }, [setSelectedTableId, setSelectedTableIds, setSelectedEdgeId, setSelectedAnnotationId]);
 
   const onNodeDoubleClick = useCallback(() => {
     // No-op to prevent unexpected expansion
@@ -642,6 +654,7 @@ return (
     <div className="flex-1 relative">
       {!isPresentationMode && <SelectionToolbar />}
       <PresentationOverlay />
+      <CommandPalette />
 
       {/* Badges */}
         {/* Badges ... (Omitting inner badge JSX for brevity, but they stay) */}

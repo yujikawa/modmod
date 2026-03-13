@@ -13,6 +13,7 @@ export interface ModelFile {
 interface AppState {
   schema: Schema | null;
   selectedTableId: string | null;
+  selectedTableIds: string[];
   selectedEdgeId: string | null;
   selectedAnnotationId: string | null;
   hoveredColumnId: string | null;
@@ -36,6 +37,7 @@ interface AppState {
   isSidebarOpen: boolean;
   isRightPanelOpen: boolean;
   isQuickConnectBarOpen: boolean;
+  isCommandPaletteOpen: boolean;
   isPresentationMode: boolean;
   activeTab: 'editor' | 'entities' | 'connect';
   activeRightPanelTab: 'tables' | 'path' | 'notes';
@@ -52,6 +54,7 @@ interface AppState {
   // Actions
   setSchema: (schema: any) => void;
   setSelectedTableId: (id: string | null) => void;
+  setSelectedTableIds: (ids: string[]) => void;
   setSelectedEdgeId: (id: string | null) => void;
   setSelectedAnnotationId: (id: string | null) => void;
   setIsDetailPanelSuppressed: (suppressed: boolean) => void;
@@ -84,6 +87,7 @@ interface AppState {
   updateDomain: (id: string, updates: Partial<Domain>) => void;
   toggleDomainLock: (id: string) => void;
   assignTableToDomain: (tableId: string, domainId?: string | null) => void;
+  bulkAssignTablesToDomain: (tableIds: string[], domainId: string | null) => void;
   toggleTableSelection: (id: string) => void;
   toggleEdgeSelection: (id: string) => void;
   toggleAnnotationSelection: (id: string) => void;
@@ -101,6 +105,7 @@ interface AppState {
   setIsSidebarOpen: (isOpen: boolean) => void;
   setIsRightPanelOpen: (isOpen: boolean) => void;
   setIsQuickConnectBarOpen: (isOpen: boolean) => void;
+  setIsCommandPaletteOpen: (isOpen: boolean) => void;
   setActiveTab: (tab: 'editor' | 'entities' | 'connect') => void;
   setActiveRightPanelTab: (tab: 'tables' | 'path' | 'notes') => void;
   setPathFinderResult: (result: { nodeIds: string[], edgeIds: string[] } | null) => void;
@@ -121,6 +126,7 @@ let saveTimeout: any = null;
 export const useStore = create<AppState>((set, get) => ({
   schema: null,
   selectedTableId: null,
+  selectedTableIds: [],
   selectedEdgeId: null,
   selectedAnnotationId: null,
   hoveredColumnId: null,
@@ -150,6 +156,7 @@ export const useStore = create<AppState>((set, get) => ({
   isSidebarOpen: true,
   isRightPanelOpen: false,
   isQuickConnectBarOpen: false,
+  isCommandPaletteOpen: false,
   isPresentationMode: false,
   activeTab: 'editor',
   activeRightPanelTab: 'tables',
@@ -187,6 +194,11 @@ export const useStore = create<AppState>((set, get) => ({
     selectedAnnotationId: null,
     isDetailPanelMinimized: id ? get().isDetailPanelMinimized : true // 選択時は現在の状態を維持、解除時は次に備えて最小化
   }),
+
+  setSelectedTableIds: (ids) => set({
+    selectedTableIds: ids,
+    selectedTableId: ids.length === 1 ? ids[0] : get().selectedTableId, // If only one selected, sync with selectedTableId for compatibility
+  }),
   setSelectedEdgeId: (id) => set({ 
     selectedEdgeId: id, 
     selectedTableId: null, 
@@ -206,7 +218,8 @@ export const useStore = create<AppState>((set, get) => ({
   setIsSidebarOpen: (isOpen) => set({ isSidebarOpen: isOpen }),
   setIsRightPanelOpen: (isOpen) => set({ isRightPanelOpen: isOpen }),
   setIsQuickConnectBarOpen: (isOpen) => set({ isQuickConnectBarOpen: isOpen }),
-  setActiveTab: (tab) => set({ activeTab: tab }),
+  setIsCommandPaletteOpen: (isOpen) => set({ isCommandPaletteOpen: isOpen }),
+  setActiveTab: (tab) => set({ activeTab: tab, isSidebarOpen: true }),
   setActiveRightPanelTab: (tab) => set({ activeRightPanelTab: tab, pathFinderResult: null }),
   setPathFinderResult: (result) => set({ pathFinderResult: result }),
   setFocusNodeId: (id) => set({ focusNodeId: id }),
@@ -934,6 +947,30 @@ export const useStore = create<AppState>((set, get) => ({
       ...(schema.layout || {}),
       [tableId]: { x: 20, y: 20 }
     };
+
+    set({ schema: { ...schema, domains: newDomains, layout: newLayout } });
+    get().syncToYamlInput();
+    get().saveSchema();
+  },
+
+  bulkAssignTablesToDomain: (tableIds, domainId) => {
+    const { schema } = get();
+    if (!schema) return;
+
+    const newDomains = (schema.domains || []).map(domain => {
+      const filteredTables = domain.tables.filter(id => !tableIds.includes(id));
+      if (domain.id === domainId) {
+        return { ...domain, tables: Array.from(new Set([...filteredTables, ...tableIds])) };
+      }
+      return { ...domain, tables: filteredTables };
+    });
+
+    const newLayout = { ...(schema.layout || {}) };
+    if (domainId) {
+      tableIds.forEach(id => {
+        newLayout[id] = { x: 20, y: 20 };
+      });
+    }
 
     set({ schema: { ...schema, domains: newDomains, layout: newLayout } });
     get().syncToYamlInput();
