@@ -197,7 +197,17 @@ function Flow() {
       }
 
       // Object Creation Shortcuts
-      if (key === 't' || key === 'd' || key === 's' || key === 'l') {
+      if (key === 't' || key === 'd' || key === 's' || key === 'l' || key === 'v' || key === 'h') {
+        // Alignment shortcuts (require multi-select)
+        if (key === 'v' || key === 'h') {
+          const { selectedTableIds, distributeSelectedTables } = useStore.getState();
+          if (selectedTableIds.length > 1) {
+            e.preventDefault();
+            distributeSelectedTables(key === 'v' ? 'vertical' : 'horizontal');
+          }
+          return;
+        }
+
         e.preventDefault();
         if (key === 'l') {
           const currentTab = useStore.getState().activeTab;

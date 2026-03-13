@@ -83,11 +83,13 @@ interface AppState {
   updateRelationship: (index: number, updates: Partial<Relationship>) => void;
   removeEdge: (sourceId: string, targetId: string) => void;
   removeNode: (id: string) => void;
+  bulkRemoveTables: (ids: string[]) => void;
   updateTable: (id: string, updates: Partial<Table>) => void;
   updateDomain: (id: string, updates: Partial<Domain>) => void;
   toggleDomainLock: (id: string) => void;
   assignTableToDomain: (tableId: string, domainId?: string | null) => void;
   bulkAssignTablesToDomain: (tableIds: string[], domainId: string | null) => void;
+  distributeSelectedTables: (direction: 'horizontal' | 'vertical') => void;
   toggleTableSelection: (id: string) => void;
   toggleEdgeSelection: (id: string) => void;
   toggleAnnotationSelection: (id: string) => void;
@@ -973,6 +975,75 @@ export const useStore = create<AppState>((set, get) => ({
     }
 
     set({ schema: { ...schema, domains: newDomains, layout: newLayout } });
+    get().syncToYamlInput();
+    get().saveSchema();
+  },
+
+  distributeSelectedTables: (direction) => {
+    const { schema, selectedTableIds } = get();
+    if (!schema || selectedTableIds.length < 2) return;
+
+    // 1. Get current positions of selected tables
+    const tablePositions = selectedTableIds.map(id => ({
+      id,
+      pos: schema.layout?.[id] || { x: 0, y: 0 }
+    }));
+
+    // 2. Sort based on direction
+    if (direction === 'vertical') {
+      tablePositions.sort((a, b) => a.pos.y - b.pos.y);
+    } else {
+      tablePositions.sort((a, b) => a.pos.x - b.pos.x);
+    }
+
+    // 3. Re-calculate positions with fixed spacing
+    const newLayout = { ...(schema.layout || {}) };
+    const basePos = tablePositions[0].pos;
+    const SPACING_V = 320;
+    const SPACING_H = 280;
+
+    tablePositions.forEach((item, index) => {
+      newLayout[item.id] = {
+        x: direction === 'vertical' ? basePos.x : basePos.x + (index * SPACING_H),
+        y: direction === 'vertical' ? basePos.y + (index * SPACING_V) : basePos.y
+      };
+    });
+
+    set({ schema: { ...schema, layout: newLayout } });
+    get().syncToYamlInput();
+    get().saveSchema();
+  },
+
+  bulkRemoveTables: (ids) => {
+    const { schema } = get();
+    if (!schema) return;
+
+    // Remove tables from tables list and their layout
+    const newTables = schema.tables.filter(t => !ids.includes(t.id));
+    const newLayout = { ...(schema.layout || {}) };
+    ids.forEach(id => delete newLayout[id]);
+
+    // Remove associated relationships
+    const newRelationships = (schema.relationships || []).filter(
+      r => !ids.includes(r.from.table) && !ids.includes(r.to.table)
+    );
+
+    // Remove from domains
+    const newDomains = (schema.domains || []).map(d => ({
+      ...d,
+      tables: d.tables.filter(tid => !ids.includes(tid))
+    }));
+
+    set({ 
+      schema: { 
+        ...schema, 
+        tables: newTables, 
+        relationships: newRelationships,
+        domains: newDomains,
+        layout: newLayout 
+      },
+      selectedTableIds: [] // Clear selection
+    });
     get().syncToYamlInput();
     get().saveSchema();
   },

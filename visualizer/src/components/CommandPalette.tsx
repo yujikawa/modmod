@@ -11,7 +11,9 @@ import {
   Plus, 
   Sun,
   Maximize,
-  LayoutTemplate
+  LayoutTemplate,
+  AlignVerticalJustifyCenter,
+  AlignHorizontalJustifyCenter
 } from 'lucide-react'
 
 const CommandPalette = () => {
@@ -22,6 +24,7 @@ const CommandPalette = () => {
     selectedTableIds,
     setSelectedTableIds,
     bulkAssignTablesToDomain,
+    distributeSelectedTables,
     setFocusNodeId,
     addTable,
     addDomain,
@@ -46,6 +49,8 @@ const CommandPalette = () => {
     if (lowVal === 'fit') return { type: 'fit' }
     if (lowVal === 'layout' || lowVal === 'auto') return { type: 'layout' }
     if (lowVal === 'clear' || lowVal === 'cls') return { type: 'clear' }
+    if (lowVal === 'stack v' || lowVal === 'v') return { type: 'stack-v' }
+    if (lowVal === 'stack h' || lowVal === 'h') return { type: 'stack-h' }
 
     if (lowVal.startsWith('mv ')) {
       const parts = val.split(/\s+/)
@@ -73,8 +78,9 @@ const CommandPalette = () => {
       return [
         { id: 'search', label: 'Find table...', icon: <Search size={14} />, desc: 'Search and jump to entity', action: () => setInput('search ') },
         { id: 'add-table', label: 'Add table...', icon: <Plus size={14} />, desc: 'Create a new table node', action: () => setInput('add table ') },
-        { id: 'add-domain', label: 'Add domain...', icon: <Plus size={14} />, desc: 'Create a new domain container', action: () => setInput('add domain ') },
-        { id: 'mv', label: 'Move tables...', icon: <Move size={14} />, desc: 'Move selected or by pattern (mv * to ...)', action: () => setInput('mv ') },
+        { id: 'stack-v', label: 'Stack Vertically', icon: <AlignVerticalJustifyCenter size={14} />, desc: 'Align selected tables in a column (V)', action: () => handleExecute({ type: 'stack-v' }) },
+        { id: 'stack-h', label: 'Stack Horizontally', icon: <AlignHorizontalJustifyCenter size={14} />, desc: 'Align selected tables in a row (H)', action: () => handleExecute({ type: 'stack-h' }) },
+        { id: 'mv', label: 'Move tables...', icon: <Move size={14} />, desc: 'Move selected or by pattern', action: () => setInput('mv ') },
         { id: 'layout', label: 'Auto Layout', icon: <LayoutTemplate size={14} />, desc: 'Organize canvas', action: () => handleExecute({ type: 'layout' }) },
         { id: 'fit', label: 'Fit View', icon: <Maximize size={14} />, desc: 'Show entire model', action: () => handleExecute({ type: 'fit' }) },
         { id: 'theme', label: 'Switch Theme', icon: <Sun size={14} />, desc: 'Toggle dark/light mode', action: () => setInput('theme ') },
@@ -141,7 +147,6 @@ const CommandPalette = () => {
     return []
   }, [schema, parsed, selectedTableIds, theme])
 
-  // Automatic scrolling when index changes
   useEffect(() => {
     if (listRef.current) {
       const selectedElement = listRef.current.children[selectedIndex] as HTMLElement
@@ -175,6 +180,22 @@ const CommandPalette = () => {
       case 'clear':
         setSelectedTableIds([])
         showFeedback('success', 'Selection cleared')
+        break
+      case 'stack-v':
+        if (selectedTableIds.length > 1) {
+            distributeSelectedTables('vertical')
+            showFeedback('success', 'Tables stacked vertically')
+        } else {
+            showFeedback('info', 'Select 2+ tables first')
+        }
+        break
+      case 'stack-h':
+        if (selectedTableIds.length > 1) {
+            distributeSelectedTables('horizontal')
+            showFeedback('success', 'Tables stacked horizontally')
+        } else {
+            showFeedback('info', 'Select 2+ tables first')
+        }
         break
       case 'search':
         if (suggestions[selectedIndex]?.id !== 'hint') {
