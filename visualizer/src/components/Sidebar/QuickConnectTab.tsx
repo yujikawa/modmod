@@ -71,6 +71,8 @@ const QuickConnectTab = () => {
   }
 
   const handleKeyDown = (e: React.KeyboardEvent, field: 'source' | 'target') => {
+    e.stopPropagation() // Prevent background canvas from moving
+    
     const suggestions = field === 'source' ? filteredSourceSuggestions : filteredTargetSuggestions
     
     if (e.key === 'ArrowDown') {

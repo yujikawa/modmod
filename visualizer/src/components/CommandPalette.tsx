@@ -1,6 +1,17 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useStore } from '../store/useStore'
-import { Command, Search, Move, ChevronRight, Check, Info, MousePointer2, Layers } from 'lucide-react'
+import { 
+  Command, 
+  Search, 
+  Move, 
+  ChevronRight, 
+  Check, 
+  Info, 
+  MousePointer2, 
+  Layers, 
+  Plus, 
+  Sun
+} from 'lucide-react'
 
 const CommandPalette = () => {
   const { 
@@ -10,6 +21,9 @@ const CommandPalette = () => {
     selectedTableIds,
     bulkAssignTablesToDomain,
     setFocusNodeId,
+    addTable,
+    addDomain,
+    toggleTheme,
     theme 
   } = useStore()
 
@@ -21,8 +35,11 @@ const CommandPalette = () => {
   // Base command definitions
   const baseCommands = [
     { id: 'cmd-mv-selected', label: 'Move selected to...', cmd: 'mv ', icon: <MousePointer2 size={14} />, desc: 'Assign selected tables to a domain' },
-    { id: 'cmd-mv-bulk', label: 'Bulk move by pattern...', cmd: 'mv * to ', icon: <Layers size={14} />, desc: 'mv [pattern] to [domain]' },
+    { id: 'cmd-add-table', label: 'Add table...', cmd: 'add table ', icon: <Plus size={14} />, desc: 'Create a new table node' },
+    { id: 'cmd-add-domain', label: 'Add domain...', cmd: 'add domain ', icon: <Layers size={14} />, desc: 'Create a new domain container' },
     { id: 'cmd-search', label: 'Find table...', cmd: 'search ', icon: <Search size={14} />, desc: 'Search and focus on a table' },
+    { id: 'cmd-theme', label: 'Switch theme...', cmd: 'theme ', icon: <Sun size={14} />, desc: 'Toggle dark/light mode' },
+    { id: 'cmd-mv-bulk', label: 'Bulk move by pattern...', cmd: 'mv * to ', icon: <Layers size={14} />, desc: 'mv [pattern] to [domain]' },
   ]
 
   // Command Parser Logic
@@ -43,6 +60,18 @@ const CommandPalette = () => {
         const domainId = parts.slice(1).join(' ')
         return { type: 'mv-selected', domainId }
       }
+    }
+
+    if (val.startsWith('add table ')) {
+        return { type: 'add-table', name: input.substring(10).trim() }
+    }
+
+    if (val.startsWith('add domain ')) {
+        return { type: 'add-domain', name: input.substring(11).trim() }
+    }
+
+    if (val.startsWith('theme ')) {
+        return { type: 'theme', mode: val.split(' ')[1] }
     }
 
     if (val.startsWith('search ') || val.startsWith('find ')) {
@@ -95,6 +124,18 @@ const CommandPalette = () => {
                     icon: <Search size={14} />,
                     desc: 'Focus on canvas',
                     action: () => handleExecute(id)
+                }))
+        }
+
+        if (parsedCommand.type === 'theme') {
+            return ['dark', 'light']
+                .filter(m => m.includes((parsedCommand as any).mode || ''))
+                .map(m => ({
+                    id: m,
+                    label: `Switch to ${m} mode`,
+                    icon: <Sun size={14} />,
+                    desc: 'Change UI appearance',
+                    action: () => handleExecute(m)
                 }))
         }
     }
@@ -150,6 +191,28 @@ const CommandPalette = () => {
             setFocusNodeId(tableId)
             setIsCommandPaletteOpen(false)
         }
+    } else if (parsedCommand.type === 'add-table') {
+        const name = (parsedCommand as any).name
+        if (name) {
+            addTable(400, 300, name)
+            showFeedback('success', `Table "${name}" created`)
+        } else {
+            showFeedback('info', 'Please type a table name: add table <name>')
+        }
+    } else if (parsedCommand.type === 'add-domain') {
+        const name = (parsedCommand as any).name
+        if (name) {
+            addDomain(400, 300, name)
+            showFeedback('success', `Domain "${name}" created`)
+        } else {
+            showFeedback('info', 'Please type a domain name: add domain <name>')
+        }
+    } else if (parsedCommand.type === 'theme') {
+        const mode = suggestionId || (parsedCommand as any).mode
+        if (mode === 'dark' || mode === 'light') {
+            if (theme !== mode) toggleTheme()
+            showFeedback('success', `Switched to ${mode} mode`)
+        }
     }
   }
 
@@ -162,6 +225,8 @@ const CommandPalette = () => {
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    e.stopPropagation() // Stop events from bubbling up to the canvas listener
+    
     if (e.key === 'Escape') {
       setIsCommandPaletteOpen(false)
     } else if (e.key === 'ArrowDown') {
@@ -234,7 +299,7 @@ const CommandPalette = () => {
                   key={s.id}
                   className={`px-4 py-3 flex items-center justify-between cursor-pointer transition-colors ${
                     selectedIndex === i 
-                      ? (theme === 'dark' ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-600')
+                      ? 'bg-blue-600 text-white' 
                       : (theme === 'dark' ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-slate-50 text-slate-600')
                   }`}
                   onClick={() => s.action()}

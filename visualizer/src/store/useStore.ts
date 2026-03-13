@@ -75,8 +75,8 @@ interface AppState {
   refreshModelData: () => Promise<void>;
   
   // Modeling Actions
-  addTable: (x: number, y: number) => void;
-  addDomain: (x: number, y: number) => void;
+  addTable: (x: number, y: number, name?: string) => void;
+  addDomain: (x: number, y: number, name?: string) => void;
   addRelationship: (source: string, target: string, sourceHandle?: string | null, targetHandle?: string | null) => void;
   bulkAddRelationship: (source: { table: string, column?: string }, targetPattern: string, type: Relationship['type'] | 'lineage') => void;
   addLineage: (source: string, target: string) => void;
@@ -582,12 +582,12 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
-  addTable: (x, y) => {
+  addTable: (x, y, name) => {
     const schema = get().schema || { tables: [], relationships: [], domains: [], layout: {} };
-    const newId = `new_table_${Date.now()}`;
+    const newId = name ? name.toLowerCase().replace(/\s+/g, '_') : `new_table_${Date.now()}`;
     const newTable: Table = {
       id: newId,
-      name: 'NEW_TABLE',
+      name: name || 'NEW_TABLE',
       appearance: { type: 'table' },
       columns: [
         { id: 'id', logical: { name: 'ID', type: 'Integer', isPrimaryKey: true } }
@@ -614,12 +614,12 @@ export const useStore = create<AppState>((set, get) => ({
     get().saveSchema();
   },
   
-  addDomain: (x, y) => {
+  addDomain: (x, y, name) => {
     const schema = get().schema || { tables: [], relationships: [], domains: [], layout: {} };
-    const newId = `new_domain_${Date.now()}`;
+    const newId = name ? name.toLowerCase().replace(/\s+/g, '_') : `new_domain_${Date.now()}`;
     const newDomain = {
       id: newId,
-      name: 'NEW_DOMAIN',
+      name: name || 'NEW_DOMAIN',
       description: 'Domain purpose',
       tables: [],
       color: 'rgba(59, 130, 246, 0.05)'

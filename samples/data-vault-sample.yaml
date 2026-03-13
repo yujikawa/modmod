@@ -203,13 +203,7 @@ domains:
       - sat_product_details
       - sat_customer_details
     isLocked: false
-annotations:
-  - id: note_1773385982387
-    text: New Note
-    type: sticky
-    offset:
-      x: 254.75947187141213
-      'y': 353.0740528128588
+annotations: []
 layout:
   raw_vault:
     x: -197
