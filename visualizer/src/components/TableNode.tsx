@@ -35,10 +35,12 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
     isPresentationMode,
     selectedTableId,
     selectedAnnotationId,
+    highlightedNodeIds,
     toggleTableSelection
   } = useStore()
 
   const isActuallySelected = selected;
+  const isHighlighted = highlightedNodeIds.includes(id);
   const isAnythingSelected = !!(selectedTableId || selectedAnnotationId);
   const shouldDim = isPresentationMode && isAnythingSelected && !isActuallySelected;
   const hasColumns = table.columns && table.columns.length > 0;
@@ -227,7 +229,7 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
           color: 'var(--text-primary)',
           boxShadow: isActuallySelected 
             ? '0 0 0 4px rgba(59, 130, 246, 0.2)' 
-            : (theme === 'dark' ? '0 4px 6px -1px rgba(0, 0, 0, 0.3)' : '0 4px 12px -2px rgba(0, 0, 0, 0.1)'),
+            : (isHighlighted ? '0 0 20px 4px rgba(59, 130, 246, 0.5)' : (theme === 'dark' ? '0 4px 6px -1px rgba(0, 0, 0, 0.3)' : '0 4px 12px -2px rgba(0, 0, 0, 0.1)')),
           fontFamily: 'sans-serif',
           display: 'flex',
           flexDirection: 'column',

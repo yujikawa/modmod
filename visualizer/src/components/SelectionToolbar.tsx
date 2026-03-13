@@ -1,4 +1,4 @@
-import { Trash2, X, Database, Layout, GitGraph, Tag, AlignVerticalJustifyCenter, AlignHorizontalJustifyCenter, Layers } from 'lucide-react'
+import { X, Database, Layout, GitGraph, Tag, AlignVerticalJustifyCenter, AlignHorizontalJustifyCenter, Layers } from 'lucide-react'
 import { useStore } from '../store/useStore'
 
 const SelectionToolbar = () => {
@@ -9,9 +9,6 @@ const SelectionToolbar = () => {
     selectedTableIds,
     setSelectedTableIds,
     distributeSelectedTables,
-    bulkRemoveTables,
-    removeNode,
-    removeEdge,
     setSelectedTableId,
     setSelectedEdgeId,
     setSelectedAnnotationId,
@@ -24,18 +21,6 @@ const SelectionToolbar = () => {
   const isMultiSelect = selectedTableIds.length > 1
 
   if (!table && !domain && !relationshipData && !isMultiSelect) return null
-
-  const handleDelete = () => {
-    if (isMultiSelect) {
-      bulkRemoveTables(selectedTableIds)
-    } else if (table) {
-      removeNode(table.id)
-    } else if (domain) {
-      removeNode(domain.id)
-    } else if (relationshipData) {
-      removeEdge(relationshipData.relationship.from.table, relationshipData.relationship.to.table)
-    }
-  }
 
   const handleClearSelection = () => {
     setSelectedTableId(null)
@@ -96,18 +81,11 @@ const SelectionToolbar = () => {
         )}
 
         <button
-          onClick={handleDelete}
-          className="flex items-center justify-center w-8 h-8 hover:bg-red-500/20 text-slate-400 hover:text-red-500 rounded-lg transition-all group"
-          title={isMultiSelect ? "Delete Selected Tables" : "Delete Selected (Del)"}
-        >
-          <Trash2 size={16} />
-        </button>
-        <button
           onClick={handleClearSelection}
           className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all ${
             theme === 'dark' ? 'hover:bg-slate-800 text-slate-500 hover:text-slate-300' : 'hover:bg-slate-100 text-slate-400 hover:text-slate-600'
           }`}
-          title="Clear Selection"
+          title="Clear Selection (Esc)"
         >
           <X size={16} />
         </button>

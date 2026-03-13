@@ -4,7 +4,6 @@ import { useReactFlow } from 'reactflow'
 import { 
   Command, 
   Search, 
-  Move, 
   ChevronRight, 
   Check, 
   Info, 
@@ -12,8 +11,9 @@ import {
   Sun,
   Maximize,
   LayoutTemplate,
-  AlignVerticalJustifyCenter,
-  AlignHorizontalJustifyCenter
+  Zap,
+  MousePointer2,
+  Move
 } from 'lucide-react'
 
 const CommandPalette = () => {
@@ -21,15 +21,9 @@ const CommandPalette = () => {
     schema, 
     isCommandPaletteOpen, 
     setIsCommandPaletteOpen,
-    selectedTableIds,
-    setSelectedTableIds,
-    bulkAssignTablesToDomain,
-    distributeSelectedTables,
+    executePipeline,
+    setHighlightedNodeIds,
     setFocusNodeId,
-    addTable,
-    addDomain,
-    toggleTheme,
-    calculateAutoLayout,
     theme 
   } = useStore()
 
@@ -40,113 +34,119 @@ const CommandPalette = () => {
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
-  // 1. Parser: Understand what the user is typing
-  const parsed = useMemo(() => {
-    const val = input.trim()
-    const lowVal = val.toLowerCase()
-    if (!val) return { type: 'empty' }
+  // 1. Pipeline Analysis: Real-time calculation of stages
+  const pipeline = useMemo(() => {
+    if (!input.trim()) return { stages: [], outputIds: [] }
+    return executePipeline(input, true) // previewOnly = true
+  }, [input, executePipeline])
 
-    if (lowVal === 'fit') return { type: 'fit' }
-    if (lowVal === 'layout' || lowVal === 'auto') return { type: 'layout' }
-    if (lowVal === 'clear' || lowVal === 'cls') return { type: 'clear' }
-    if (lowVal === 'stack v' || lowVal === 'v') return { type: 'stack-v' }
-    if (lowVal === 'stack h' || lowVal === 'h') return { type: 'stack-h' }
-
-    if (lowVal.startsWith('mv ')) {
-      const parts = val.split(/\s+/)
-      const toIndex = parts.findIndex(p => p.toLowerCase() === 'to')
-      if (toIndex > -1) {
-        return { type: 'mv-bulk', pattern: parts.slice(1, toIndex).join(' '), domainId: parts.slice(toIndex + 1).join(' ') }
-      }
-      return { type: 'mv-selected', domainId: parts.slice(1).join(' ') }
-    }
-
-    if (lowVal.startsWith('add table ')) return { type: 'add-table', name: val.substring(10).trim() }
-    if (lowVal.startsWith('add domain ')) return { type: 'add-domain', name: val.substring(11).trim() }
-    if (lowVal.startsWith('theme ')) return { type: 'theme', mode: lowVal.split(/\s+/)[1] }
-    if (lowVal.startsWith('search ')) return { type: 'search', query: val.substring(7).trim() }
-    if (lowVal.startsWith('find ')) return { type: 'search', query: val.substring(5).trim() }
-
-    return { type: 'search', query: val, isImplicit: true }
-  }, [input])
-
-  // 2. Suggestions
+  // 2. Advanced Suggestions logic (Context-aware)
   const suggestions = useMemo(() => {
     if (!schema) return []
+    const val = input.trim().toLowerCase()
 
-    if (parsed.type === 'empty') {
+    // --- CASE A: Empty State ---
+    if (!val) {
       return [
-        { id: 'search', label: 'Find table...', icon: <Search size={14} />, desc: 'Search and jump to entity', action: () => setInput('search ') },
+        { id: 'select', label: 'Select tables...', icon: <MousePointer2 size={14} />, desc: 'select [pattern] or select *', action: () => setInput('select ') },
+        { id: 'search', label: 'Find table...', icon: <Search size={14} />, desc: 'Jump to entity', action: () => setInput('search ') },
         { id: 'add-table', label: 'Add table...', icon: <Plus size={14} />, desc: 'Create a new table node', action: () => setInput('add table ') },
-        { id: 'stack-v', label: 'Stack Vertically', icon: <AlignVerticalJustifyCenter size={14} />, desc: 'Align selected tables in a column (V)', action: () => handleExecute({ type: 'stack-v' }) },
-        { id: 'stack-h', label: 'Stack Horizontally', icon: <AlignHorizontalJustifyCenter size={14} />, desc: 'Align selected tables in a row (H)', action: () => handleExecute({ type: 'stack-h' }) },
-        { id: 'mv', label: 'Move tables...', icon: <Move size={14} />, desc: 'Move selected or by pattern', action: () => setInput('mv ') },
-        { id: 'layout', label: 'Auto Layout', icon: <LayoutTemplate size={14} />, desc: 'Organize canvas', action: () => handleExecute({ type: 'layout' }) },
-        { id: 'fit', label: 'Fit View', icon: <Maximize size={14} />, desc: 'Show entire model', action: () => handleExecute({ type: 'fit' }) },
+        { id: 'add-domain', label: 'Add domain...', icon: <Plus size={14} />, desc: 'Create a new domain container', action: () => setInput('add domain ') },
+        { id: 'layout', label: 'Auto Layout', icon: <LayoutTemplate size={14} />, desc: 'Organize canvas', action: () => handleExecute('layout') },
+        { id: 'fit', label: 'Fit View', icon: <Maximize size={14} />, desc: 'Show entire model', action: () => handleExecute('fit') },
         { id: 'theme', label: 'Switch Theme', icon: <Sun size={14} />, desc: 'Toggle dark/light mode', action: () => setInput('theme ') },
       ]
     }
 
-    if (parsed.type === 'search') {
-      const q = (parsed as any).query.toLowerCase()
-      return schema.tables
-        .filter(t => t.id.toLowerCase().includes(q) || t.name.toLowerCase().includes(q))
-        .slice(0, 15)
-        .map(t => ({
-          id: t.id,
-          label: `Go to ${t.name}`,
-          icon: <Search size={14} />,
-          desc: t.id,
-          action: () => { setFocusNodeId(t.id); setIsCommandPaletteOpen(false); }
-        }))
+    // --- CASE B: Contextual Argument Suggestions (Inside Pipeline) ---
+    const stages = input.split('|')
+    const lastStage = stages[stages.length - 1]
+    const tokens = lastStage.trim().split(/\s+/)
+    const cmd = tokens[0].toLowerCase()
+    const prefix = stages.slice(0, -1).join('|') + (stages.length > 1 ? '|' : '')
+
+    // select <query>
+    if (cmd === 'select') {
+        const tableQuery = tokens.slice(1).join(' ').toLowerCase()
+        return (schema.tables || [])
+            .filter(t => t.id.toLowerCase().includes(tableQuery) || t.name.toLowerCase().includes(tableQuery))
+            .slice(0, 8)
+            .map(t => ({
+                id: t.id,
+                label: t.name,
+                icon: <Search size={14} />,
+                desc: `Table: ${t.id}`,
+                action: () => setInput(`${prefix} select ${t.id}`)
+            }))
     }
 
-    if (parsed.type === 'mv-selected' || parsed.type === 'mv-bulk') {
-      const q = (parsed as any).domainId.toLowerCase()
-      const isBulk = parsed.type === 'mv-bulk'
-      const domainSuggestions = (schema.domains || [])
-        .filter(d => d.id.toLowerCase().includes(q))
-        .map(d => ({
-          id: d.id,
-          label: `Move to ${d.name}`,
-          icon: <Move size={14} />,
-          desc: isBulk ? `Pattern: ${(parsed as any).pattern}` : `${selectedTableIds.length} tables selected`,
-          action: () => handleExecute({ ...parsed, domainId: d.id })
-        }))
-      
-      if (!isBulk && selectedTableIds.length === 0) {
-          return [{ id: 'hint', label: 'No tables selected', icon: <Info size={14} />, desc: 'Select tables on canvas first', action: () => {} }]
-      }
-      return domainSuggestions
+    // mv <query> or mv ... to <query>
+    if (cmd === 'mv') {
+        const toIndex = tokens.findIndex(t => t.toLowerCase() === 'to')
+        const domainQuery = toIndex > -1 ? tokens.slice(toIndex + 1).join(' ').toLowerCase() : tokens.slice(1).join(' ').toLowerCase()
+        const cmdPart = toIndex > -1 ? tokens.slice(0, toIndex + 1).join(' ') : 'mv'
+        
+        return (schema.domains || [])
+            .filter(d => d.id.toLowerCase().includes(domainQuery) || d.name.toLowerCase().includes(domainQuery))
+            .slice(0, 8)
+            .map(d => ({
+                id: d.id,
+                label: d.name,
+                icon: <Move size={14} />,
+                desc: `Domain: ${d.id}`,
+                action: () => setInput(`${prefix} ${cmdPart} ${d.id}`)
+            }))
     }
 
-    if (parsed.type === 'theme') {
-      const q = (parsed as any).mode || ''
-      return ['dark', 'light']
-        .filter(m => m.includes(q))
-        .map(m => ({
-          id: m,
-          label: `Switch to ${m} mode`,
-          icon: <Sun size={14} />,
-          desc: 'UI Theme',
-          action: () => { if (theme !== m) toggleTheme(); setIsCommandPaletteOpen(false); }
-        }))
+    // theme <query>
+    if (cmd === 'theme') {
+        const themeQuery = tokens.slice(1).join(' ').toLowerCase()
+        return ['dark', 'light']
+            .filter(m => m.includes(themeQuery))
+            .map(m => ({
+                id: m,
+                label: m,
+                icon: <Sun size={14} />,
+                desc: 'UI Appearance',
+                action: () => setInput(`${prefix} theme ${m}`)
+            }))
     }
 
-    if (parsed.type === 'add-table' || parsed.type === 'add-domain') {
-        const name = (parsed as any).name
-        return [{
-            id: 'exec',
-            label: `Create ${parsed.type === 'add-table' ? 'table' : 'domain'} "${name || '...'}"`,
-            icon: <Plus size={14} />,
-            desc: 'Press Enter to create at center',
-            action: () => handleExecute(parsed)
-        }]
+    // search <query> (Implicit or explicit)
+    if (cmd === 'search' || cmd === 'find' || (!['mv', 'add', 'select', 'theme', 'layout', 'fit'].includes(cmd))) {
+        const searchQuery = cmd === 'search' || cmd === 'find' ? tokens.slice(1).join(' ').toLowerCase() : lastStage.trim().toLowerCase()
+        return (schema.tables || [])
+            .filter(t => t.id.toLowerCase().includes(searchQuery) || t.name.toLowerCase().includes(searchQuery))
+            .slice(0, 10)
+            .map(t => ({
+                id: t.id,
+                label: `Go to ${t.name}`,
+                icon: <Search size={14} />,
+                desc: t.id,
+                action: () => { 
+                    if (cmd === 'search' || cmd === 'find' || stages.length === 1) {
+                        setFocusNodeId(t.id); 
+                        setIsCommandPaletteOpen(false); 
+                    } else {
+                        setInput(`${prefix} select ${t.id}`)
+                    }
+                }
+            }))
     }
 
     return []
-  }, [schema, parsed, selectedTableIds, theme])
+  }, [schema, input, setFocusNodeId, setIsCommandPaletteOpen])
 
+  // 3. Highlight nodes in pipeline
+  useEffect(() => {
+    if (isCommandPaletteOpen) {
+        setHighlightedNodeIds(pipeline.outputIds)
+    } else {
+        setHighlightedNodeIds([])
+    }
+  }, [isCommandPaletteOpen, pipeline.outputIds, setHighlightedNodeIds])
+
+  // Automatic scrolling
   useEffect(() => {
     if (listRef.current) {
       const selectedElement = listRef.current.children[selectedIndex] as HTMLElement
@@ -165,75 +165,24 @@ const CommandPalette = () => {
     }
   }, [isCommandPaletteOpen])
 
-  const handleExecute = (cmdOverride?: any) => {
-    const cmd = cmdOverride || parsed
-    
-    switch (cmd.type) {
-      case 'fit':
+  const handleExecute = (overrideInput?: string) => {
+    const finalInput = overrideInput || input
+    if (!finalInput.trim()) return
+
+    // Simple one-off UI commands
+    if (finalInput === 'fit') {
         fitView({ duration: 800 })
         showFeedback('success', 'View fitted')
-        break
-      case 'layout':
-        calculateAutoLayout()
-        showFeedback('success', 'Auto layout applied')
-        break
-      case 'clear':
-        setSelectedTableIds([])
-        showFeedback('success', 'Selection cleared')
-        break
-      case 'stack-v':
-        if (selectedTableIds.length > 1) {
-            distributeSelectedTables('vertical')
-            showFeedback('success', 'Tables stacked vertically')
-        } else {
-            showFeedback('info', 'Select 2+ tables first')
-        }
-        break
-      case 'stack-h':
-        if (selectedTableIds.length > 1) {
-            distributeSelectedTables('horizontal')
-            showFeedback('success', 'Tables stacked horizontally')
-        } else {
-            showFeedback('info', 'Select 2+ tables first')
-        }
-        break
-      case 'search':
-        if (suggestions[selectedIndex]?.id !== 'hint') {
-            suggestions[selectedIndex]?.action()
-        }
-        break
-      case 'mv-selected':
-        if (selectedTableIds.length > 0 && cmd.domainId) {
-          bulkAssignTablesToDomain(selectedTableIds, cmd.domainId)
-          showFeedback('success', `${selectedTableIds.length} tables moved to ${cmd.domainId}`)
-        } else if (selectedTableIds.length === 0) {
-          showFeedback('info', 'First, select tables on canvas')
-        }
-        break
-      case 'mv-bulk':
-        if (cmd.pattern && cmd.domainId) {
-          const regex = new RegExp('^' + cmd.pattern.replace(/\*/g, '.*') + '$', 'i')
-          const matchedIds = (schema?.tables || []).filter(t => regex.test(t.id)).map(t => t.id)
-          if (matchedIds.length > 0) {
-            bulkAssignTablesToDomain(matchedIds, cmd.domainId)
-            showFeedback('success', `${matchedIds.length} tables moved to ${cmd.domainId}`)
-          } else {
-            showFeedback('info', `No tables match "${cmd.pattern}"`)
-          }
-        }
-        break
-      case 'add-table':
-        if (cmd.name) {
-          addTable(400, 300, cmd.name)
-          showFeedback('success', `Table "${cmd.name}" created`)
-        }
-        break
-      case 'add-domain':
-        if (cmd.name) {
-          addDomain(400, 300, cmd.name)
-          showFeedback('success', `Domain "${cmd.name}" created`)
-        }
-        break
+        return
+    }
+    
+    // Execute via engine
+    const result = executePipeline(finalInput, false)
+    if (result.stages.length > 0 && result.stages.every(s => s.status === 'success')) {
+        showFeedback('success', 'Pipeline executed successfully')
+    } else {
+        const errorStage = result.stages.find(s => s.status === 'error')
+        if (errorStage) showFeedback('info', errorStage.message)
     }
   }
 
@@ -241,7 +190,9 @@ const CommandPalette = () => {
     setFeedback({ type, msg })
     setTimeout(() => {
       setFeedback(null)
-      if (type === 'success') setIsCommandPaletteOpen(false)
+      if (type === 'success') {
+        setInput('') 
+      }
     }, 1500)
   }
 
@@ -255,9 +206,12 @@ const CommandPalette = () => {
       e.preventDefault()
       setSelectedIndex(prev => (prev - 1 + (suggestions.length || 1)) % (suggestions.length || 1))
     } else if (e.key === 'Enter') {
-      if (suggestions[selectedIndex] && parsed.type !== 'add-table' && parsed.type !== 'add-domain') {
+      // If we have suggestions AND we are implicitly searching (no | yet)
+      // OR we are explicitly selecting from the list, apply the suggestion.
+      if (!input.includes('|') && suggestions.length > 0 && suggestions[selectedIndex]) {
         suggestions[selectedIndex].action()
       } else {
+        // In a pipeline or when no suggestions, execute the whole thing
         handleExecute()
       }
     }
@@ -274,16 +228,19 @@ const CommandPalette = () => {
       <div className={`relative w-full max-w-2xl rounded-2xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.5)] border-2 overflow-hidden animate-in slide-in-from-top-4 duration-300 ${
         theme === 'dark' ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'
       }`}>
+        {/* Input Header */}
         <div className={`flex items-center px-4 py-4 gap-3 border-b ${
           theme === 'dark' ? 'border-slate-800/50' : 'border-slate-100'
         }`}>
-          <Command size={20} className="text-blue-500" />
+          <div className="p-1.5 bg-blue-600 rounded-lg text-white shadow-lg shadow-blue-500/20">
+            <Command size={18} />
+          </div>
           <input
             ref={inputRef}
             type="text"
-            placeholder="Type anything to search or a command (mv, add, theme...)"
-            className={`flex-1 bg-transparent border-none outline-none text-base font-bold ${
-              theme === 'dark' ? 'placeholder-slate-500' : 'placeholder-slate-400'
+            placeholder="select * | mv Core | stack v"
+            className={`flex-1 bg-transparent border-none outline-none text-lg font-bold tracking-tight ${
+              theme === 'dark' ? 'placeholder-slate-600' : 'placeholder-slate-400'
             }`}
             value={input}
             onChange={(e) => { setInput(e.target.value); setSelectedIndex(0); }}
@@ -294,45 +251,103 @@ const CommandPalette = () => {
           }`}>ESC</kbd>
         </div>
 
-        {feedback && (
-          <div className={`px-4 py-3 flex items-center gap-2 animate-in slide-in-from-left-2 ${
-            feedback.type === 'success' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-blue-500/10 text-blue-500'
+        {/* Feedback / Plan Area */}
+        {feedback ? (
+          <div className={`px-4 py-6 flex flex-col items-center justify-center gap-3 animate-in zoom-in-95 duration-200 ${
+            feedback.type === 'success' ? 'text-emerald-500' : 'text-blue-500'
           }`}>
-            {feedback.type === 'success' ? <Check size={14} /> : <Info size={14} />}
-            <span className="text-xs font-bold uppercase tracking-widest">{feedback.msg}</span>
+            <div className={`p-3 rounded-full ${feedback.type === 'success' ? 'bg-emerald-500/10' : 'bg-blue-500/10'}`}>
+                {feedback.type === 'success' ? <Check size={32} /> : <Info size={32} />}
+            </div>
+            <span className="text-sm font-black uppercase tracking-widest">{feedback.msg}</span>
           </div>
-        )}
-
-        {!feedback && (
-          <div ref={listRef} className="max-h-[400px] overflow-auto py-2 scroll-smooth">
-            {suggestions.length > 0 ? (
-              suggestions.map((s, i) => (
-                <div
-                  key={s.id}
-                  className={`px-4 py-3 flex items-center justify-between cursor-pointer transition-colors ${
-                    selectedIndex === i ? 'bg-blue-600 text-white' : (theme === 'dark' ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-slate-50 text-slate-600')
-                  }`}
-                  onClick={() => s.action()}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={selectedIndex === i ? 'text-white' : 'text-slate-500'}>{s.icon}</div>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-bold">{s.label}</span>
-                      {s.desc && <span className={`text-[10px] ${selectedIndex === i ? 'text-blue-100' : 'text-slate-500'}`}>{s.desc}</span>}
-                    </div>
-                  </div>
-                  {selectedIndex === i && s.id !== 'hint' && <ChevronRight size={14} className="opacity-50" />}
+        ) : (
+          <>
+            {/* Pipeline Plan */}
+            {input.trim() && (
+              <div className={`px-4 py-4 border-b flex flex-col gap-3 ${
+                theme === 'dark' ? 'bg-slate-950/20' : 'bg-slate-50/50'
+              }`}>
+                <div className="flex items-center justify-between">
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Execution Plan</h4>
+                    <Zap size={12} className="text-blue-500 animate-pulse" />
                 </div>
-              ))
-            ) : (
-              input && (
-                <div className="px-4 py-8 text-center text-slate-500 italic text-sm">No matches found. Try searching for a table name.</div>
-              )
+                <div className="flex flex-col gap-2">
+                  {pipeline.stages.length > 0 ? (
+                    pipeline.stages.map((stage, i) => (
+                      <div key={i} className="flex items-center gap-3 group">
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                          stage.status === 'success' ? 'bg-emerald-500/20 text-emerald-500' : 
+                          stage.status === 'active' ? 'bg-blue-500 text-white animate-pulse' : 'bg-slate-800 text-slate-500'
+                        }`}>
+                          {i + 1}
+                        </div>
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-black uppercase tracking-wider">{stage.command}</span>
+                            <span className="text-[10px] text-slate-500 font-medium">{stage.message}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-[10px] text-slate-500 italic">Parsing command...</div>
+                  )}
+                </div>
+              </div>
             )}
-          </div>
+
+            {/* Suggestions or Working Set */}
+            <div className="flex flex-col">
+              {suggestions.length > 0 && (
+                <div ref={listRef} className="max-h-[300px] overflow-auto py-2 border-b border-slate-800/30">
+                  {suggestions.map((s, i) => (
+                    <div
+                      key={`${s.id}-${i}`}
+                      className={`px-4 py-3 flex items-center justify-between cursor-pointer transition-colors ${
+                        selectedIndex === i ? 'bg-blue-600 text-white' : (theme === 'dark' ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-slate-50 text-slate-600')
+                      }`}
+                      onClick={() => s.action()}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={selectedIndex === i ? 'text-white' : 'text-slate-500'}>{s.icon}</div>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-bold">{s.label}</span>
+                          {s.desc && <span className={`text-[10px] ${selectedIndex === i ? 'text-blue-100' : 'text-slate-500'}`}>{s.desc}</span>}
+                        </div>
+                      </div>
+                      {selectedIndex === i && <ChevronRight size={14} className="opacity-50" />}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {input.includes('|') && (
+                <div className="p-4 flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                      <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Working Set ({pipeline.outputIds.length})</h4>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 max-h-[120px] overflow-auto">
+                    {pipeline.outputIds.length > 0 ? (
+                      pipeline.outputIds.map(id => (
+                        <div key={id} className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                          theme === 'dark' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' : 'bg-blue-50 border-blue-100 text-blue-600'
+                        }`}>
+                          {id}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-[10px] text-slate-500 italic">No tables in current scope</div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
         )}
 
-        <div className={`px-4 py-2 border-t flex items-center justify-between ${
+        {/* Footer */}
+        <div className={`px-4 py-3 border-t flex items-center justify-between ${
           theme === 'dark' ? 'bg-slate-950/30 border-slate-800/50' : 'bg-slate-50/50 border-slate-100'
         }`}>
           <div className="flex items-center gap-4 text-[9px] font-bold text-slate-500 uppercase">
@@ -345,11 +360,10 @@ const CommandPalette = () => {
               <span>Execute</span>
             </div>
           </div>
-          {selectedTableIds.length > 0 && (
-            <div className="text-[9px] font-black text-blue-500 uppercase tracking-widest animate-pulse">
-              {selectedTableIds.length} objects targetable
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${pipeline.outputIds.length > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-slate-700'}`} />
+            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{pipeline.outputIds.length} target entities</span>
+          </div>
         </div>
       </div>
     </div>

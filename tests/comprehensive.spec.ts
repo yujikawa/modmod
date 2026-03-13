@@ -51,7 +51,7 @@ test.describe.serial('Modscape Main E2E Suite', () => {
   test('Command Palette: Visibility and Toggle', async ({ page }) => {
     // Toggle with Ctrl+K
     await page.keyboard.press('Control+k');
-    const palette = page.locator('input[placeholder*="Type anything to search"]');
+    const palette = page.locator('input[placeholder*="select * | mv Core"]');
     await expect(palette).toBeVisible();
     await expect(palette).toBeFocused();
 
