@@ -25,7 +25,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run dev -- tests/fixtures/test-model-runtime.yaml',
-    url: 'http://localhost:5173',
+    url: 'http://localhost:5173/api/files',
     reuseExistingServer: !process.env.CI,
     stdout: 'pipe',
     stderr: 'pipe',

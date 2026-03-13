@@ -4,11 +4,16 @@ import { Page, expect } from '@playwright/test';
  * Wait for the Modscape Live badge.
  */
 export async function waitForLiveSync(page: Page) {
-  // Wait for the badge to be present AND not hidden
+  // 1. Wait for the badge
   const liveBadge = page.locator('span:has-text("Live")').first();
   await expect(liveBadge).toBeVisible({ timeout: 25000 });
-  // Add a small buffer to ensure the socket is actually ready to receive messages
-  await page.waitForTimeout(1000);
+  
+  // 2. Wait for at least one node to be rendered
+  const anyNode = page.locator('.react-flow__node-table').first();
+  await expect(anyNode).toBeVisible({ timeout: 20000 });
+
+  // 3. Small buffer for animations/socket stability
+  await page.waitForTimeout(1500);
 }
 
 /**

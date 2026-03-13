@@ -15,19 +15,13 @@ test.describe.serial('Modscape Main E2E Suite', () => {
   test.beforeAll(async () => {
     originalContent = fs.readFileSync(FIXTURE_PATH, 'utf8');
     fs.writeFileSync(RUNTIME_PATH, originalContent, 'utf8');
+    // Give dev server time to detect the file
+    await new Promise(resolve => setTimeout(resolve, 3000));
   });
 
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await waitForLiveSync(page);
-    
-    // Initial attempt to see if nodes are there
-    const nodeFound = await page.locator('.react-flow__node-table').first().isVisible();
-    if (!nodeFound) {
-        // Force reload if empty
-        await page.reload();
-        await waitForLiveSync(page);
-    }
   });
 
   test.afterEach(async () => {
