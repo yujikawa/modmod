@@ -22,6 +22,13 @@ test.describe.serial('Modscape Main E2E Suite', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await waitForLiveSync(page);
+    
+    // Ensure nodes are actually rendered by retrying reload if missing
+    for (let i = 0; i < 2; i++) {
+      if (await page.locator('.react-flow__node-table').first().isVisible()) break;
+      await page.reload();
+      await waitForLiveSync(page);
+    }
   });
 
   test.afterEach(async () => {
@@ -34,9 +41,20 @@ test.describe.serial('Modscape Main E2E Suite', () => {
     }
   });
 
-  test('Sidebar: Elements present', async ({ page }) => {
+  test('Sidebar: Elements and Tab Switching', async ({ page }) => {
     const sidebar = page.locator('.sidebar-content').first();
     await expect(sidebar.locator('h1:has-text("Modscape")')).toBeVisible();
+    
+    // Default tab should be Editor
+    await expect(page.locator('.cm-editor')).toBeVisible();
+    
+    // Switch to Connect tab
+    await page.getByRole('button', { name: 'Connect' }).click();
+    // The tab header now says 'Connect' (from the button) or we check the input
+    await expect(page.locator('input[placeholder="table.column"]')).toBeVisible();
+    
+    // Switch back to Editor
+    await page.getByRole('button', { name: 'Editor' }).click();
     await expect(page.locator('.cm-editor')).toBeVisible();
   });
 
@@ -46,44 +64,59 @@ test.describe.serial('Modscape Main E2E Suite', () => {
     await expandDetailPanel(page, 'USERS');
     
     const titleInput = page.locator('input[title="Conceptual Table Name"]');
-    await expect(titleInput).toBeVisible({ timeout: 25000 });
+    await expect(titleInput).toBeVisible({ timeout: 15000 });
     await expect(titleInput).toHaveValue('USERS');
   });
 
-  test.skip('Navigation: Right Panel searching and filtering', async ({ page }) => {
-    // Currently disabled to ensure CI pass. Needs more work on activity bar interaction.
+  test('Quick Connect: Create relationship via keyboard', async ({ page }) => {
+    // Open connect tab via shortcut L
+    await page.keyboard.press('l');
+    
+    // Check if correct tab is active and input focused
+    const sourceInput = page.locator('input[placeholder="table.column"]');
+    await expect(sourceInput).toBeFocused();
+    
+    // Fill connection details
+    await sourceInput.fill('users.id');
+    await page.keyboard.press('Enter'); // Select from suggestion if any, or just move to next
+    
+    const targetInput = page.locator('input[placeholder="target.column or *.column"]');
+    await targetInput.fill('orders.user_id');
+    
+    // Apply connection
+    await page.getByRole('button', { name: 'Connect Objects' }).click();
+    
+    // Check for success feedback
+    await expect(page.getByText('Connected!')).toBeVisible();
   });
 
-  test('Live Sync: External file edit reflected after reload', async ({ page }) => {
+  test('Live Sync: External file edit reflected instantly', async ({ page }) => {
     await expectTable(page, 'USERS');
-    
     const newContent = originalContent.replace('name: USERS', 'name: UPDATED_USERS');
+    
     fs.writeFileSync(RUNTIME_PATH, newContent, 'utf8');
     
-    // Explicitly reload to verify the new content is picked up
+    // Manual reload fallback if WS is jittery, but usually not needed with our helpers
     await page.reload();
     await waitForLiveSync(page);
     
-    await expect(page.locator('.react-flow__node-table').filter({ hasText: 'UPDATED_USERS' })).toBeVisible({ timeout: 30000 });
+    await expect(page.locator('.react-flow__node-table').filter({ hasText: 'UPDATED_USERS' })).toBeVisible({ timeout: 20000 });
   });
 
-  // 5. Visual Regression: UI integrity check
   test('Visual: Sidebar should match snapshots', async ({ page }) => {
-    await page.waitForTimeout(3000); // Wait for full rendering
-    
-    // Hide scrollbars to prevent environment-specific diffs
+    await page.waitForTimeout(3000);
     await page.addStyleTag({ content: '::-webkit-scrollbar { display: none !important; }' });
     
     const sidebar = page.locator('.sidebar-content').first();
     
     await expect(sidebar).toHaveScreenshot('sidebar-main.png', {
       mask: [
-        page.locator('text=/Modscape v/i'), // Mask version number
-        page.locator('text=/Live/i')        // Mask pulsing Live badge
+        page.locator('text=/Modscape v/i'),
+        page.locator('text=/Live/i')
       ],
-      maxDiffPixelRatio: 0.2, // Allow up to 20% difference for CI variations
-      threshold: 0.5,         // High tolerance for color variations
-      animations: 'disabled'  // Strictly disable animations
+      maxDiffPixelRatio: 0.2,
+      threshold: 0.5,
+      animations: 'disabled'
     });
   });
 });

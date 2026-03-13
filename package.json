@@ -21,8 +21,8 @@
     "build-ui": "cd visualizer && npm run build && rm -rf ../visualizer-dist && mv dist ../visualizer-dist",
     "dev": "node src/index.js dev",
     "test:e2e": "playwright test",
-    "test:all": "npm run build-ui && npm run test:e2e",
-    "test:update": "npm run build-ui && npm run test:e2e -- --update-snapshots"
+    "test:all": "npm run build-ui && sleep 1 && npm run test:e2e",
+    "test:update": "npm run build-ui && sleep 1 && npm run test:e2e -- --update-snapshots"
   },
   "dependencies": {
     "@inquirer/prompts": "^8.3.0",

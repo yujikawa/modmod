@@ -3,7 +3,7 @@ import FileSelector from './FileSelector'
 import QuickConnectTab from './QuickConnectTab'
 import ActivityBar from './ActivityBar'
 import { useStore } from '../../store/useStore'
-import { X } from 'lucide-react'
+import { FileText, Zap } from 'lucide-react'
 import logo from '/favicon.svg?url'
 
 const Sidebar = () => {
@@ -52,24 +52,36 @@ const Sidebar = () => {
           <FileSelector />
         </div>
 
+        {/* Tab Selection */}
+        <div className="px-4 mt-6">
+          <div className={`flex p-1 rounded-xl ${theme === 'dark' ? 'bg-slate-800/50' : 'bg-slate-100'}`}>
+            <button
+              onClick={() => setActiveTab('editor')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                activeTab === 'editor'
+                  ? (theme === 'dark' ? 'bg-slate-700 text-blue-400 shadow-lg' : 'bg-white text-blue-600 shadow-sm')
+                  : 'text-slate-500 hover:text-slate-400'
+              }`}
+            >
+              <FileText size={14} />
+              Editor
+            </button>
+            <button
+              onClick={() => setActiveTab('connect')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                activeTab === 'connect'
+                  ? (theme === 'dark' ? 'bg-slate-700 text-blue-400 shadow-lg' : 'bg-white text-blue-600 shadow-sm')
+                  : 'text-slate-500 hover:text-slate-400'
+              }`}
+            >
+              <Zap size={14} />
+              Connect
+            </button>
+          </div>
+        </div>
+
         {/* Dynamic Content: Editor or Quick Connect */}
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden mt-4">
-          <div className="px-4 py-2 flex items-center justify-between">
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
-              {activeTab === 'connect' ? 'Quick Connect' : 'YAML Editor'}
-            </h3>
-            {activeTab === 'connect' && (
-              <button 
-                onClick={() => setActiveTab('editor')}
-                className={`p-1 rounded-md transition-all ${
-                  theme === 'dark' ? 'hover:bg-slate-800 text-slate-500' : 'hover:bg-slate-100 text-slate-400'
-                }`}
-                title="Back to Editor"
-              >
-                <X size={14} />
-              </button>
-            )}
-          </div>
           {activeTab === 'connect' ? <QuickConnectTab /> : <EditorTab />}
         </div>
 

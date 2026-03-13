@@ -97,38 +97,36 @@ const QuickConnectTab = () => {
 
   return (
     <div className="flex-1 flex flex-col gap-6 p-4 overflow-auto sidebar-content">
-      {/* Mode Switcher */}
-      <section>
-        <div className={`flex rounded-xl p-1 ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-100'}`}>
-          <button 
-            onClick={() => { setMode('er'); setRelType('one-to-many'); }}
-            className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 transition-all ${
-              mode === 'er' 
-                ? (theme === 'dark' ? 'bg-slate-700 text-blue-400 shadow-md' : 'bg-white text-blue-600 shadow-sm') 
-                : 'text-slate-500 hover:text-slate-400'
-            }`}
-          >
-            <Network size={14} />
-            <span className="text-[10px] font-bold uppercase tracking-widest">ER</span>
-          </button>
-          <button 
-            onClick={() => { setMode('lineage'); setRelType('lineage'); }}
-            className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 transition-all ${
-              mode === 'lineage' 
-                ? (theme === 'dark' ? 'bg-slate-700 text-blue-400 shadow-md' : 'bg-white text-blue-600 shadow-sm') 
-                : 'text-slate-500 hover:text-slate-400'
-            }`}
-          >
-            <GitGraph size={14} />
-            <span className="text-[10px] font-bold uppercase tracking-widest">Flow</span>
-          </button>
-        </div>
-      </section>
-
       <div className="flex flex-col gap-4">
-        {/* Source Input */}
+        {/* Source Input + Mode Toggle */}
         <section className="relative">
-          <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1.5 block">Source</label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">Source</label>
+            <div className={`flex rounded-full p-0.5 border ${theme === 'dark' ? 'bg-slate-950/50 border-slate-800' : 'bg-slate-100 border-slate-200'}`}>
+              <button 
+                onClick={() => { setMode('er'); setRelType('one-to-many'); }}
+                className={`px-2 py-0.5 rounded-full flex items-center gap-1 transition-all ${
+                  mode === 'er' 
+                    ? (theme === 'dark' ? 'bg-slate-700 text-blue-400 shadow-sm' : 'bg-white text-blue-600 shadow-sm') 
+                    : 'text-[9px] font-bold text-slate-500 hover:text-slate-400 uppercase tracking-tighter'
+                }`}
+              >
+                <Network size={10} />
+                <span className="text-[9px] font-black uppercase tracking-tighter">ER</span>
+              </button>
+              <button 
+                onClick={() => { setMode('lineage'); setRelType('lineage'); }}
+                className={`px-2 py-0.5 rounded-full flex items-center gap-1 transition-all ${
+                  mode === 'lineage' 
+                    ? (theme === 'dark' ? 'bg-slate-700 text-blue-400 shadow-sm' : 'bg-white text-blue-600 shadow-sm') 
+                    : 'text-[9px] font-bold text-slate-500 hover:text-slate-400 uppercase tracking-tighter'
+                }`}
+              >
+                <GitGraph size={10} />
+                <span className="text-[9px] font-black uppercase tracking-tighter">Flow</span>
+              </button>
+            </div>
+          </div>
           <input
             ref={sourceRef}
             type="text"
