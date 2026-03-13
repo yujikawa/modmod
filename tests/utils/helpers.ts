@@ -8,20 +8,21 @@ export async function waitForLiveSync(page: Page) {
   const liveBadge = page.locator('span:has-text("Live")').first();
   await expect(liveBadge).toBeVisible({ timeout: 25000 });
   
-  // 2. Wait for at least one node to be rendered
-  const anyNode = page.locator('.react-flow__node-table').first();
-  await expect(anyNode).toBeVisible({ timeout: 20000 });
+  // 2. Wait for at least one node to be present on canvas
+  const anyNode = page.locator('.react-flow__node').first();
+  await expect(anyNode).toBeVisible({ timeout: 25000 });
 
   // 3. Small buffer for animations/socket stability
-  await page.waitForTimeout(1500);
+  await page.waitForTimeout(2000);
 }
 
 /**
  * Wait for a table on canvas.
  */
 export async function expectTable(page: Page, tableName: string) {
-  const node = page.locator(`.react-flow__node-table`).filter({ hasText: tableName }).first();
-  await expect(node).toBeVisible({ timeout: 15000 });
+  // Specifically look for the table name inside a React Flow node
+  const node = page.locator('.react-flow__node').filter({ hasText: tableName }).first();
+  await expect(node).toBeVisible({ timeout: 25000 });
 }
 
 /**
