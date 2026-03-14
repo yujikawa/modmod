@@ -8,6 +8,7 @@ import { build } from './build.js';
 import { initProject } from './init.js';
 import { exportModel } from './export.js';
 import { createModel } from './create.js';
+import { importDbt } from './import-dbt.js';
 import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
@@ -65,6 +66,15 @@ program
   .option('-o, --output <path>', 'output file or directory')
   .action((paths, options) => {
     exportModel(paths, options);
+  });
+
+program
+  .command('import-dbt')
+  .description('Import dbt metadata (manifest.json) into a Modscape YAML model')
+  .argument('<manifest>', 'path to dbt manifest.json')
+  .option('-o, --output <path>', 'output YAML file path', 'dbt-model.yaml')
+  .action((manifest, options) => {
+    importDbt(manifest, options);
   });
 
 program.parse();
