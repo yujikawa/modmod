@@ -355,7 +355,7 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
                               {col.logical?.additivity === 'fully' && <span style={{ color: '#4ade80' }} title="Fully Additive">Σ</span>}
                               {col.logical?.additivity === 'semi' && <span style={{ color: '#fbbf24' }} title="Semi-Additive">Σ~</span>}
                               {col.logical?.additivity === 'non' && <span style={{ color: '#f87171' }} title="Non-Additive">⊘</span>}
-                              <span className="truncate" title={logicalName}>
+                              <span className="truncate" title={col.logical?.description || logicalName}>
                                 {logicalName}
                               </span>
                             </div>

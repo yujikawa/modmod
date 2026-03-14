@@ -39,7 +39,8 @@ export async function importDbt(manifestPath, options) {
             id: col.name,
             logical: {
               name: col.name,
-              type: col.data_type || 'unknown'
+              type: col.data_type || 'unknown',
+              description: col.description || '' // Column description added in v1.3.0
             }
           });
         }
@@ -47,11 +48,14 @@ export async function importDbt(manifestPath, options) {
 
       const tableEntry = {
         id: tableName,
-        name: node.description || tableName, // Conceptual Layer (Description)
-        logical_name: tableName,              // Logical Layer (Name)
-        physical_name: node.alias || tableName, // Physical Layer
+        name: tableName,        // Conceptual Name (Short)
+        logical_name: tableName, // Logical Name (Short)
+        physical_name: node.alias || tableName,
         appearance: {
           type: 'table'
+        },
+        conceptual: {
+          description: node.description || '' // 👈 Correct place for long description
         },
         columns: columns,
         lineage: {
@@ -65,8 +69,6 @@ export async function importDbt(manifestPath, options) {
       const filePath = node.original_file_path || '';
       if (filePath) {
         const pathParts = filePath.split('/');
-        // Typically models/marts/finance/...
-        // We take the parent directory of the file as the domain
         if (pathParts.length > 1) {
           const domainName = pathParts[pathParts.length - 2];
           if (domainName !== 'models' && domainName !== 'sources') {
@@ -101,7 +103,7 @@ export async function importDbt(manifestPath, options) {
 
     const outputModel = {
       tables: tables,
-      relationships: [], // Could be added from tests in future
+      relationships: [],
       domains: Array.from(domainsMap.values())
     };
 
