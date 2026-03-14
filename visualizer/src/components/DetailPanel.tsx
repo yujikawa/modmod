@@ -364,10 +364,10 @@ const DetailPanel = () => {
                       : 'bg-white border-slate-200 text-slate-900 focus:ring-blue-400 focus:border-blue-400 shadow-sm'
                   }`}
                 >
-                  <option value="one-to-one">One-to-One</option>
-                  <option value="one-to-many">One-to-Many</option>
-                  <option value="many-to-one">Many-to-One</option>
-                  <option value="many-to-many">Many-to-Many</option>
+                  <option value="one-to-one">1:1 (one-to-one)</option>
+                  <option value="one-to-many">1:N (one-to-many)</option>
+                  <option value="many-to-one">N:1 (many-to-one)</option>
+                  <option value="many-to-many">N:N (many-to-many)</option>
                 </select>
               </section>
 

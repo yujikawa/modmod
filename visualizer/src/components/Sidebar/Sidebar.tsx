@@ -1,11 +1,13 @@
 import EditorTab from './EditorTab'
 import FileSelector from './FileSelector'
+import QuickConnectTab from './QuickConnectTab'
 import ActivityBar from './ActivityBar'
 import { useStore } from '../../store/useStore'
+import { FileText, Zap } from 'lucide-react'
 import logo from '/favicon.svg?url'
 
 const Sidebar = () => {
-  const { isSidebarOpen, isCliMode, theme, savingStatus } = useStore()
+  const { isSidebarOpen, isCliMode, theme, savingStatus, activeTab, setActiveTab } = useStore()
 
   return (
     <div 
@@ -50,12 +52,37 @@ const Sidebar = () => {
           <FileSelector />
         </div>
 
-        {/* Editor Content (Dedicated) */}
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden mt-4">
-          <div className="px-4 py-2">
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500">YAML Editor</h3>
+        {/* Tab Selection */}
+        <div className="px-4 mt-6">
+          <div className={`flex p-1 rounded-xl ${theme === 'dark' ? 'bg-slate-800/50' : 'bg-slate-100'}`}>
+            <button
+              onClick={() => setActiveTab('editor')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                activeTab === 'editor'
+                  ? (theme === 'dark' ? 'bg-slate-700 text-blue-400 shadow-lg' : 'bg-white text-blue-600 shadow-sm')
+                  : 'text-slate-500 hover:text-slate-400'
+              }`}
+            >
+              <FileText size={14} />
+              Editor
+            </button>
+            <button
+              onClick={() => setActiveTab('connect')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                activeTab === 'connect'
+                  ? (theme === 'dark' ? 'bg-slate-700 text-blue-400 shadow-lg' : 'bg-white text-blue-600 shadow-sm')
+                  : 'text-slate-500 hover:text-slate-400'
+              }`}
+            >
+              <Zap size={14} />
+              Connect
+            </button>
           </div>
-          <EditorTab />
+        </div>
+
+        {/* Dynamic Content: Editor or Quick Connect */}
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden mt-4">
+          {activeTab === 'connect' ? <QuickConnectTab /> : <EditorTab />}
         </div>
 
         {/* Footer */}
@@ -63,7 +90,7 @@ const Sidebar = () => {
           theme === 'dark' ? 'border-slate-800 bg-slate-950/20' : 'border-slate-100 bg-slate-50/50'
         }`}>
           <p className="text-[10px] text-slate-500 font-medium px-1">
-            Modscape v1.1.8
+            Modscape v1.2.0
           </p>
         </div>
       </div>

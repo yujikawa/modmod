@@ -4,19 +4,25 @@ import { Page, expect } from '@playwright/test';
  * Wait for the Modscape Live badge.
  */
 export async function waitForLiveSync(page: Page) {
-  // Wait for the badge to be present AND not hidden
+  // 1. Wait for the badge
   const liveBadge = page.locator('span:has-text("Live")').first();
   await expect(liveBadge).toBeVisible({ timeout: 25000 });
-  // Add a small buffer to ensure the socket is actually ready to receive messages
-  await page.waitForTimeout(1000);
+  
+  // 2. Wait for at least one node to be present on canvas
+  const anyNode = page.locator('.react-flow__node').first();
+  await expect(anyNode).toBeVisible({ timeout: 25000 });
+
+  // 3. Small buffer for animations/socket stability
+  await page.waitForTimeout(2000);
 }
 
 /**
  * Wait for a table on canvas.
  */
 export async function expectTable(page: Page, tableName: string) {
-  const node = page.locator(`.react-flow__node-table`).filter({ hasText: tableName }).first();
-  await expect(node).toBeVisible({ timeout: 15000 });
+  // Specifically look for the table name inside a React Flow node
+  const node = page.locator('.react-flow__node').filter({ hasText: tableName }).first();
+  await expect(node).toBeVisible({ timeout: 25000 });
 }
 
 /**

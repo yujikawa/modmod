@@ -213,6 +213,14 @@ const ActivityBar = () => {
 
             <div className="space-y-6">
               <section>
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">General</h3>
+                <ShortcutRow label="Command Palette" keys={['Ctrl', 'K']} />
+                <ShortcutRow label="Quick Connect" keys={['L']} />
+                <ShortcutRow label="Find Entities" keys={['/']} />
+                <ShortcutRow label="Switch Theme" keys={['\\']} />
+              </section>
+
+              <section>
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Quick Create</h3>
                 <ShortcutRow label="New Table" keys={['T']} />
                 <ShortcutRow label="New Domain" keys={['D']} />
@@ -224,12 +232,6 @@ const ActivityBar = () => {
                 <ShortcutRow label="Pan / Scroll" keys={['↑', '↓', '←', '→']} />
                 <ShortcutRow label="Clear Selection" keys={['Esc']} />
                 <ShortcutRow label="Delete Selected" keys={['Del', '⌫']} />
-              </section>
-
-              <section>
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Navigation</h3>
-                <ShortcutRow label="Find Entities" keys={['/']} />
-                <ShortcutRow label="Exit Fullscreen" keys={['Esc']} />
               </section>
             </div>
 

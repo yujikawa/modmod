@@ -8,7 +8,10 @@
 
 **Modscape** is a YAML-driven data modeling visualizer specialized for **Modern Data Stack** architectures. It bridges the gap between raw physical schemas and high-level business logic, empowering data teams to design, document, and share their data stories.
 
-[Live Demo](https://yujikawa.github.io/modscape/)
+🌐 **Live Demo:**
+https://yujikawa.github.io/modscape/
+
+![Modscape Screenshot](https://raw.githubusercontent.com/yujikawa/modscape/main/docs/assets/modscape.png)
 
 ## Why Modscape?
 
@@ -26,7 +29,7 @@ In modern data analysis platforms, data modeling is no longer just about drawing
 - **Redesigned Modeling Nodes**: Protruding "Index Tabs" for entity types (FACT, DIM, HUB, LINK, etc.) and auto-truncating physical names for a professional look.
 - **Interactive Visual Canvas**: 
   - **Drag-to-Connect**: Create relationships between columns intuitively with "Magnetic Snapping".
-  - **Semantic Edge Badges**: Visually identify cardinality with `( 1 )` and `[ M ]` badges at the connection points.
+  - **Semantic Edge Badges**: Visually identify cardinality with `( 1 )` and `[ N ]` badges at the connection points.
   - **Data Lineage Mode**: Visualize data flow with animated dashed arrows.
   - **Domain-Grouped Navigation**: Organize tables into visual business domains and navigate them via a structured sidebar.
 - **Unified Undo/Redo & Auto-save**: 

@@ -53,7 +53,7 @@ tables:
       - [102, 2, 300.75]
 
 relationships:
-  # Relationships: Defines Entity-Relationship connections (solid lines with 1:M badges)
+  # Relationships: Defines Entity-Relationship connections (solid lines with 1:N badges)
   - from: { table: source_table, column: id }
     to: { table: derived_table, column: source_id }
     type: one-to-many

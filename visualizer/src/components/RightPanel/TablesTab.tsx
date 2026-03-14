@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useStore } from '../../store/useStore'
 import { 
   Search, 
@@ -14,11 +14,21 @@ const TablesTab = () => {
     schema, 
     theme,
     setSelectedTableId,
-    setFocusNodeId
+    setFocusNodeId,
+    isRightPanelOpen,
+    activeRightPanelTab
   } = useStore()
 
   const [search, setSearch] = useState('')
   const [collapsedDomains, setCollapsedDomains] = useState<Set<string>>(new Set())
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (isRightPanelOpen && activeRightPanelTab === 'tables') {
+      const timer = setTimeout(() => inputRef.current?.focus(), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isRightPanelOpen, activeRightPanelTab])
 
   const toggleDomain = (id: string) => {
     const newCollapsed = new Set(collapsedDomains)
@@ -80,6 +90,7 @@ const TablesTab = () => {
       <div className="relative mb-4 shrink-0">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
         <input 
+          ref={inputRef}
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}

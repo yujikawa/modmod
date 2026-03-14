@@ -20,6 +20,7 @@ import AnnotationNode from './components/AnnotationNode'
 import DetailPanel from './components/DetailPanel'
 import Sidebar from './components/Sidebar/Sidebar'
 import RightPanel from './components/RightPanel/RightPanel'
+import CommandPalette from './components/CommandPalette'
 import PresentationOverlay from './components/PresentationOverlay'
 import SelectionToolbar from './components/SelectionToolbar'
 import ButtonEdge from './components/ButtonEdge'
@@ -40,8 +41,9 @@ const edgeTypes = {
 
 function Flow() {
   const { 
-    schema, 
-    setSelectedTableId, 
+    schema,
+    setSelectedTableId,
+    setSelectedTableIds,
     selectedTableId,
     selectedEdgeId,
     setSelectedEdgeId,
@@ -179,8 +181,41 @@ function Flow() {
 
       const key = e.key.toLowerCase();
 
+      // Navigation Shortcuts
+      if (e.key === '/') {
+        e.preventDefault();
+        useStore.getState().setIsRightPanelOpen(true);
+        useStore.getState().setActiveRightPanelTab('tables');
+        return;
+      }
+
+      // Command Palette (Ctrl+K or Cmd+K)
+      if (key === 'k' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        useStore.getState().setIsCommandPaletteOpen(!useStore.getState().isCommandPaletteOpen);
+        return;
+      }
+
       // Object Creation Shortcuts
-      if (key === 't' || key === 'd' || key === 's') {
+      if (key === 't' || key === 'd' || key === 's' || key === 'l' || key === 'v' || key === 'h') {
+        // Alignment shortcuts (require multi-select)
+        if (key === 'v' || key === 'h') {
+          const { selectedTableIds, distributeSelectedTables } = useStore.getState();
+          if (selectedTableIds.length > 1) {
+            e.preventDefault();
+            distributeSelectedTables(key === 'v' ? 'vertical' : 'horizontal');
+          }
+          return;
+        }
+
+        e.preventDefault();
+        if (key === 'l') {
+          const currentTab = useStore.getState().activeTab;
+          useStore.getState().setActiveTab(currentTab === 'connect' ? 'editor' : 'connect');
+          useStore.getState().setIsSidebarOpen(true);
+          return;
+        }
+
         const center = screenToFlowPosition({
           x: window.innerWidth / 2,
           y: window.innerHeight / 2,
@@ -603,12 +638,15 @@ function Flow() {
   }, [isCliMode, updateNodesPosition]);
 
   const onSelectionChange = useCallback(({ nodes }: { nodes: Node[] }) => {
+    const tableIds = nodes.filter(n => n.type === 'table').map(n => n.id);
+    setSelectedTableIds(tableIds);
+    
     if (nodes.length > 1) {
       setSelectedTableId(null);
       setSelectedEdgeId(null);
       setSelectedAnnotationId(null);
     }
-  }, [setSelectedTableId, setSelectedEdgeId, setSelectedAnnotationId]);
+  }, [setSelectedTableId, setSelectedTableIds, setSelectedEdgeId, setSelectedAnnotationId]);
 
   const onNodeDoubleClick = useCallback(() => {
     // No-op to prevent unexpected expansion
@@ -621,13 +659,14 @@ function Flow() {
   const isValidConnection = useCallback((connection: Connection) => {
     return connection.source !== connection.target;
   }, []);
+return (
+  <div className="flex-1 relative h-full flex flex-col overflow-hidden">
+    <div className="flex-1 relative">
+      {!isPresentationMode && <SelectionToolbar />}
+      <PresentationOverlay />
+      <CommandPalette />
 
-  return (
-    <div className="flex-1 relative h-full flex flex-col overflow-hidden">
-      <div className="flex-1 relative">
-        {!isPresentationMode && <SelectionToolbar />}
-        <PresentationOverlay />
-        
+      {/* Badges */}
         {/* Badges ... (Omitting inner badge JSX for brevity, but they stay) */}
         {isConnectionLocked && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-2 text-center pointer-events-none">

@@ -13,8 +13,10 @@ export interface ModelFile {
 interface AppState {
   schema: Schema | null;
   selectedTableId: string | null;
+  selectedTableIds: string[];
   selectedEdgeId: string | null;
   selectedAnnotationId: string | null;
+  highlightedNodeIds: string[];
   hoveredColumnId: string | null;
   error: string | null;
   isCliMode: boolean;
@@ -35,8 +37,10 @@ interface AppState {
   // UI State
   isSidebarOpen: boolean;
   isRightPanelOpen: boolean;
+  isQuickConnectBarOpen: boolean;
+  isCommandPaletteOpen: boolean;
   isPresentationMode: boolean;
-  activeTab: 'editor' | 'entities';
+  activeTab: 'editor' | 'entities' | 'connect';
   activeRightPanelTab: 'tables' | 'path' | 'notes';
   focusNodeId: string | null;
   pathFinderResult: { nodeIds: string[], edgeIds: string[] } | null;
@@ -51,8 +55,10 @@ interface AppState {
   // Actions
   setSchema: (schema: any) => void;
   setSelectedTableId: (id: string | null) => void;
+  setSelectedTableIds: (ids: string[]) => void;
   setSelectedEdgeId: (id: string | null) => void;
   setSelectedAnnotationId: (id: string | null) => void;
+  setHighlightedNodeIds: (ids: string[]) => void;
   setIsDetailPanelSuppressed: (suppressed: boolean) => void;
   setIsDetailPanelMinimized: (minimized: boolean) => void;
   setHoveredColumnId: (id: string | null) => void;
@@ -71,17 +77,22 @@ interface AppState {
   refreshModelData: () => Promise<void>;
   
   // Modeling Actions
-  addTable: (x: number, y: number) => void;
-  addDomain: (x: number, y: number) => void;
+  addTable: (x: number, y: number, name?: string) => void;
+  addDomain: (x: number, y: number, name?: string) => void;
   addRelationship: (source: string, target: string, sourceHandle?: string | null, targetHandle?: string | null) => void;
+  bulkAddRelationship: (source: { table: string, column?: string }, targetPattern: string, type: Relationship['type'] | 'lineage') => void;
   addLineage: (source: string, target: string) => void;
   updateRelationship: (index: number, updates: Partial<Relationship>) => void;
   removeEdge: (sourceId: string, targetId: string) => void;
   removeNode: (id: string) => void;
+  bulkRemoveTables: (ids: string[]) => void;
   updateTable: (id: string, updates: Partial<Table>) => void;
   updateDomain: (id: string, updates: Partial<Domain>) => void;
   toggleDomainLock: (id: string) => void;
   assignTableToDomain: (tableId: string, domainId?: string | null) => void;
+  bulkAssignTablesToDomain: (tableIds: string[], domainId: string | null) => void;
+  distributeSelectedTables: (direction: 'horizontal' | 'vertical') => void;
+  executePipeline: (input: string, previewOnly?: boolean) => { stages: any[], outputIds: string[] };
   toggleTableSelection: (id: string) => void;
   toggleEdgeSelection: (id: string) => void;
   toggleAnnotationSelection: (id: string) => void;
@@ -98,7 +109,9 @@ interface AppState {
   // Sidebar Actions
   setIsSidebarOpen: (isOpen: boolean) => void;
   setIsRightPanelOpen: (isOpen: boolean) => void;
-  setActiveTab: (tab: 'editor' | 'entities') => void;
+  setIsQuickConnectBarOpen: (isOpen: boolean) => void;
+  setIsCommandPaletteOpen: (isOpen: boolean) => void;
+  setActiveTab: (tab: 'editor' | 'entities' | 'connect') => void;
   setActiveRightPanelTab: (tab: 'tables' | 'path' | 'notes') => void;
   setPathFinderResult: (result: { nodeIds: string[], edgeIds: string[] } | null) => void;
   setFocusNodeId: (id: string | null) => void;
@@ -118,8 +131,10 @@ let saveTimeout: any = null;
 export const useStore = create<AppState>((set, get) => ({
   schema: null,
   selectedTableId: null,
+  selectedTableIds: [],
   selectedEdgeId: null,
   selectedAnnotationId: null,
+  highlightedNodeIds: [],
   hoveredColumnId: null,
   error: null,
   isCliMode: (typeof window !== 'undefined' && (window as any).MODSCAPE_CLI_MODE === true),
@@ -146,6 +161,8 @@ export const useStore = create<AppState>((set, get) => ({
   // UI Defaults
   isSidebarOpen: true,
   isRightPanelOpen: false,
+  isQuickConnectBarOpen: false,
+  isCommandPaletteOpen: false,
   isPresentationMode: false,
   activeTab: 'editor',
   activeRightPanelTab: 'tables',
@@ -155,537 +172,216 @@ export const useStore = create<AppState>((set, get) => ({
   showLineage: true,
   showAnnotations: true,
   connectionStartHandle: null,
-  theme: (typeof window !== 'undefined' && (localStorage.getItem('modscape-theme') as any)) || 
-         (window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark'),
+  theme: 'dark',
   isDetailPanelSuppressed: false,
   isDetailPanelMinimized: true,
 
-  setSchema: (data) => {
+  setSchema: (schema) => {
+    const normalized = normalizeSchema(schema);
+    set({ schema: normalized });
+    get().syncToYamlInput();
+  },
+
+  parseAndSetSchema: (yamlStr) => {
     try {
-      const schema = normalizeSchema(data);
+      const schema = parseYAML(yamlStr);
       set({ schema, error: null });
-      get().syncToYamlInput();
     } catch (e: any) {
       set({ error: e.message });
     }
   },
 
-  setShowER: (show) => set({ showER: show }),
-  setShowLineage: (show) => set({ showLineage: show }),
-  setShowAnnotations: (show) => set({ showAnnotations: show }),
-  setIsPresentationMode: (enabled) => set({ isPresentationMode: enabled }),
-  setIsAutoSaveEnabled: (enabled) => set({ isAutoSaveEnabled: enabled }),
-  setLastUpdateSource: (source) => set({ lastUpdateSource: source }),
-  
   setSelectedTableId: (id) => set({ 
     selectedTableId: id, 
     selectedEdgeId: null, 
     selectedAnnotationId: null,
-    isDetailPanelMinimized: id ? get().isDetailPanelMinimized : true // 選択時は現在の状態を維持、解除時は次に備えて最小化
+    isDetailPanelMinimized: id ? get().isDetailPanelMinimized : true
   }),
+
+  setSelectedTableIds: (ids) => set({
+    selectedTableIds: ids,
+    selectedTableId: ids.length === 1 ? ids[0] : get().selectedTableId,
+  }),
+
   setSelectedEdgeId: (id) => set({ 
     selectedEdgeId: id, 
     selectedTableId: null, 
     selectedAnnotationId: null,
     isDetailPanelMinimized: id ? get().isDetailPanelMinimized : true
   }),
+
   setSelectedAnnotationId: (id) => set({ 
     selectedAnnotationId: id, 
     selectedTableId: null, 
     selectedEdgeId: null,
     isDetailPanelMinimized: id ? get().isDetailPanelMinimized : true
   }),
+
+  setHighlightedNodeIds: (ids) => set({ highlightedNodeIds: ids }),
+
   setIsDetailPanelSuppressed: (suppressed) => set({ isDetailPanelSuppressed: suppressed }),
   setIsDetailPanelMinimized: (minimized) => set({ isDetailPanelMinimized: minimized }),
   setHoveredColumnId: (id) => set({ hoveredColumnId: id }),
   setIsCliMode: (isCli) => set({ isCliMode: isCli }),
   setIsSidebarOpen: (isOpen) => set({ isSidebarOpen: isOpen }),
   setIsRightPanelOpen: (isOpen) => set({ isRightPanelOpen: isOpen }),
-  setActiveTab: (tab) => set({ activeTab: tab }),
-  setActiveRightPanelTab: (tab) => set({ activeRightPanelTab: tab, pathFinderResult: null }),
+  setIsQuickConnectBarOpen: (isOpen) => set({ isQuickConnectBarOpen: isOpen }),
+  setIsCommandPaletteOpen: (isOpen) => set({ isCommandPaletteOpen: isOpen }),
+  setActiveTab: (tab) => set({ activeTab: tab, isSidebarOpen: true }),
+  setActiveRightPanelTab: (tab) => set({ activeRightPanelTab: tab, isRightPanelOpen: true }),
+  setIsPresentationMode: (enabled) => set({ isPresentationMode: enabled }),
+  setIsAutoSaveEnabled: (enabled) => set({ isAutoSaveEnabled: enabled }),
+  setLastUpdateSource: (source) => set({ lastUpdateSource: source }),
   setPathFinderResult: (result) => set({ pathFinderResult: result }),
   setFocusNodeId: (id) => set({ focusNodeId: id }),
   setConnectionStartHandle: (handle) => set({ connectionStartHandle: handle }),
   
-  toggleTheme: () => {
-    const { theme } = get();
-    const nextTheme = theme === 'dark' ? 'light' : 'dark';
-    set({ theme: nextTheme });
-    localStorage.setItem('modscape-theme', nextTheme);
-  },
+  toggleTheme: () => set((state) => ({ theme: state.theme === 'dark' ? 'light' : 'dark' })),
 
-  calculateAutoLayout: () => {
-    const { schema } = get();
-    if (!schema) return;
-
-    const newLayout = { ...(schema.layout || {}) };
-    const TABLE_WIDTH = 320;
-    const TABLE_HEIGHT = 220; 
-    const NODE_SPACING = 80;
-    const DOMAIN_PADDING = 120;
-
-    // Pass 1: Inner Pass (Tables inside each Domain)
-    const domainLayouts: Record<string, { width: number, height: number, tableOffsets: Record<string, { x: number, y: number }> }> = {};
-
-    schema.domains?.forEach(domain => {
-      const tablesInDomain = domain.tables;
-      if (tablesInDomain.length === 0) {
-        domainLayouts[domain.id] = { width: 400, height: 200, tableOffsets: {} };
-        return;
-      }
-
-      const g = new dagre.graphlib.Graph();
-      g.setGraph({ rankdir: 'TB', nodesep: NODE_SPACING, ranksep: NODE_SPACING });
-      g.setDefaultEdgeLabel(() => ({}));
-
-      tablesInDomain.forEach(id => {
-        const layout = schema.layout?.[id];
-        g.setNode(id, { width: layout?.width || TABLE_WIDTH, height: layout?.height || TABLE_HEIGHT });
-      });
-
-      // Inner relationships
-      (schema.relationships || []).forEach(rel => {
-        if (tablesInDomain.includes(rel.from.table) && tablesInDomain.includes(rel.to.table)) {
-          g.setEdge(rel.from.table, rel.to.table);
-        }
-      });
-
-      // Inner lineage
-      schema.tables.forEach(table => {
-        if (tablesInDomain.includes(table.id) && table.lineage?.upstream) {
-          table.lineage.upstream.forEach(upId => {
-            if (tablesInDomain.includes(upId)) g.setEdge(upId, table.id);
-          });
-        }
-      });
-
-      dagre.layout(g);
-
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-      const tableOffsets: Record<string, { x: number, y: number }> = {};
-
-      g.nodes().forEach(v => {
-        const node = g.node(v);
-        tableOffsets[v] = { x: node.x, y: node.y };
-        minX = Math.min(minX, node.x - node.width / 2);
-        minY = Math.min(minY, node.y - node.height / 2);
-        maxX = Math.max(maxX, node.x + node.width / 2);
-        maxY = Math.max(maxY, node.y + node.height / 2);
-      });
-
-      const width = (maxX - minX) + DOMAIN_PADDING;
-      const height = (maxY - minY) + DOMAIN_PADDING;
-
-      // Make relative to top-left
-      tablesInDomain.forEach(tid => {
-        tableOffsets[tid].x = Math.round(tableOffsets[tid].x - minX - (g.node(tid).width / 2) + DOMAIN_PADDING / 2);
-        tableOffsets[tid].y = Math.round(tableOffsets[tid].y - minY - (g.node(tid).height / 2) + DOMAIN_PADDING / 2);
-      });
-
-      domainLayouts[domain.id] = { width, height, tableOffsets };
-    });
-
-    // Pass 2: Outer Pass (Domains and Unassigned Tables)
-    const topLevelIds = [
-      ...(schema.domains?.map(d => d.id) || []),
-      ...schema.tables.filter(t => !schema.domains?.some(d => d.tables.includes(t.id))).map(t => t.id)
-    ];
-
-    const gGlobal = new dagre.graphlib.Graph();
-    gGlobal.setGraph({ rankdir: 'LR', nodesep: 200, ranksep: 300 });
-    gGlobal.setDefaultEdgeLabel(() => ({}));
-
-    topLevelIds.forEach(id => {
-      const isDomain = schema.domains?.some(d => d.id === id);
-      const w = isDomain ? domainLayouts[id].width : (schema.layout?.[id]?.width || TABLE_WIDTH);
-      const h = isDomain ? domainLayouts[id].height : (schema.layout?.[id]?.height || TABLE_HEIGHT);
-      gGlobal.setNode(id, { width: w, height: h });
-    });
-
-    const getContainerId = (tid: string) => schema.domains?.find(d => d.tables.includes(tid))?.id || tid;
-
-    schema.relationships?.forEach(rel => {
-      const src = getContainerId(rel.from.table);
-      const dst = getContainerId(rel.to.table);
-      if (src !== dst) gGlobal.setEdge(src, dst);
-    });
-
-    schema.tables.forEach(table => {
-      if (table.lineage?.upstream) {
-        const dst = getContainerId(table.id);
-        table.lineage.upstream.forEach(upId => {
-          const src = getContainerId(upId);
-          if (src !== dst) gGlobal.setEdge(src, dst);
-        });
-      }
-    });
-
-    dagre.layout(gGlobal);
-
-    gGlobal.nodes().forEach(v => {
-      const node = gGlobal.node(v);
-      const absX = Math.round(node.x - node.width / 2);
-      const absY = Math.round(node.y - node.height / 2);
-
-      const domain = schema.domains?.find(d => d.id === v);
-      if (domain) {
-        newLayout[v] = { x: absX, y: absY, width: domainLayouts[v].width, height: domainLayouts[v].height };
-        domain.tables.forEach(tid => {
-          newLayout[tid] = { x: domainLayouts[v].tableOffsets[tid].x, y: domainLayouts[v].tableOffsets[tid].y };
-        });
-      } else {
-        newLayout[v] = { x: absX, y: absY };
-      }
-    });
-
-    set({ schema: { ...schema, layout: newLayout }, lastUpdateSource: 'visual' });
-    get().syncToYamlInput();
-    get().saveSchema(true);
-  },
-
-  fetchAvailableFiles: async () => {
-    const injectedData = (window as any).__MODSCAPE_DATA__;
-    if (injectedData && injectedData.models) {
-      const files = injectedData.models.map((m: any) => ({
-        slug: m.slug,
-        name: m.name,
-        path: ''
-      }));
-      set({ availableFiles: files });
-      return;
-    }
-
-    try {
-      const res = await fetch('/api/files');
-      const files = await res.json();
-      set({ availableFiles: files });
-    } catch (e) {
-      console.error('Failed to fetch files:', e);
-    }
-  },
-
-  setCurrentModel: async (slug: string) => {
-    const injectedData = (window as any).__MODSCAPE_DATA__;
-    if (injectedData && injectedData.models) {
-      const model = injectedData.models.find((m: any) => m.slug === slug);
-      if (model) {
-        set({ 
-          currentModelSlug: slug, 
-          schema: normalizeSchema(model.schema), 
-          selectedTableId: null, 
-          selectedEdgeId: null,
-          selectedAnnotationId: null,
-          error: null 
-        });
-        get().syncToYamlInput();
-        
-        const searchParams = new URLSearchParams(window.location.search);
-        searchParams.set('model', slug);
-        const newRelativePathQuery = window.location.pathname + '?' + searchParams.toString();
-        window.history.pushState(null, '', newRelativePathQuery);
-      }
-      return;
-    }
-
-    try {
-      const url = `/api/model?model=${slug}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      
-      set({ 
-        currentModelSlug: slug, 
-        schema: normalizeSchema(data), 
-        selectedTableId: null, 
-        selectedEdgeId: null,
-        selectedAnnotationId: null,
-        error: null 
-      });
-      get().syncToYamlInput();
-
-      const searchParams = new URLSearchParams(window.location.search);
-      searchParams.set('model', slug);
-      const newRelativePathQuery = window.location.pathname + '?' + searchParams.toString();
-      window.history.pushState(null, '', newRelativePathQuery);
-    } catch (e) {
-      console.error('Failed to fetch model:', e);
-    }
-  },
-
-  parseAndSetSchema: (yamlInput) => {
-    if (!yamlInput || yamlInput.trim() === '') return;
-    try {
-      const schema = parseYAML(yamlInput)
-      set({ schema, error: null })
-      get().saveSchema()
-    } catch (e: any) {
-      set({ error: e.message })
-    }
-  },
+  setShowER: (show) => set({ showER: show }),
+  setShowLineage: (show) => set({ showLineage: show }),
+  setShowAnnotations: (show) => set({ showAnnotations: show }),
 
   updateNodePosition: (id, x, y, parentId) => {
-    const schema = get().schema;
+    const { schema } = get();
     if (!schema) return;
-
-    let newDomains = schema.domains || [];
-
-    if (parentId !== undefined) {
-      newDomains = newDomains.map(d => ({
-        ...d,
-        tables: d.tables.filter(tid => tid !== id)
-      }));
-
-      if (parentId) {
-        newDomains = newDomains.map(d => {
-          if (d.id === parentId) {
-            return { ...d, tables: Array.from(new Set([...d.tables, id])) };
-          }
-          return d;
-        });
-      }
-    }
-
-    const currentLayout = schema.layout?.[id] || { x: 0, y: 0 };
-    const newLayout = {
-      ...(schema.layout || {}),
-      [id]: { ...currentLayout, x: Math.round(x), y: Math.round(y) }
+    const newLayout = { 
+      ...(schema.layout || {}), 
+      [id]: { x, y, ...(parentId ? { parentId } : {}) } 
     };
-
-    set({ schema: { ...schema, domains: newDomains, layout: newLayout } });
+    set({ schema: { ...schema, layout: newLayout } });
     get().syncToYamlInput();
     get().saveSchema();
   },
 
-  updateNodesPosition: (nodes) => {
-    const schema = get().schema;
-    if (!schema || nodes.length === 0) return;
-
+  updateNodesPosition: (updates) => {
+    const { schema } = get();
+    if (!schema) return;
     const newLayout = { ...(schema.layout || {}) };
-    
-    nodes.forEach(node => {
-      const currentLayout = newLayout[node.id] || { x: 0, y: 0 };
-      newLayout[node.id] = { 
-        ...currentLayout, 
-        x: Math.round(node.x), 
-        y: Math.round(node.y) 
-      };
+    updates.forEach(({ id, x, y, parentId }) => {
+      newLayout[id] = { x, y, ...(parentId ? { parentId } : {}) };
     });
-
-    set({ schema: { ...schema, layout: newLayout }, lastUpdateSource: 'visual' });
+    set({ schema: { ...schema, layout: newLayout } });
     get().syncToYamlInput();
     get().saveSchema();
   },
 
   updateNodeDimensions: (id, width, height) => {
-    const schema = get().schema;
+    const { schema } = get();
     if (!schema) return;
-
     const currentLayout = schema.layout?.[id] || { x: 0, y: 0 };
-    const newLayout = {
-      ...(schema.layout || {}),
-      [id]: { ...currentLayout, width: Math.round(width), height: Math.round(height) }
+    const newLayout = { 
+      ...(schema.layout || {}), 
+      [id]: { ...currentLayout, width, height } 
     };
-
     set({ schema: { ...schema, layout: newLayout } });
     get().syncToYamlInput();
     get().saveSchema();
   },
 
   saveSchema: async (force = false) => {
-    const { schema, currentModelSlug, isAutoSaveEnabled, isCliMode } = get();
-    if (!schema || !isCliMode) return;
-    if (!isAutoSaveEnabled && !force) return;
-
-    set({ savingStatus: 'saving' });
+    const { schema, isCliMode, isAutoSaveEnabled, lastUpdateSource } = get();
+    if (!isCliMode || (!isAutoSaveEnabled && !force) || lastUpdateSource === 'user') return;
 
     if (saveTimeout) clearTimeout(saveTimeout);
-
+    
     saveTimeout = setTimeout(async () => {
       try {
-        const url = currentModelSlug ? `/api/save?model=${currentModelSlug}` : '/api/save';
-        const yamlString = yaml.dump(schema, { indent: 2, lineWidth: -1, noRefs: true });
-        
-        await fetch(url, {
+        const yamlStr = yaml.dump(schema, { indent: 2, lineWidth: -1, noRefs: true });
+        await fetch('/api/save', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ yaml: yamlString })
+          body: JSON.stringify({ yaml: yamlStr })
         });
-        set({ savingStatus: 'saved', lastSavedAt: Date.now() });
+        set({ lastSavedAt: Date.now(), savingStatus: 'saved' });
         setTimeout(() => set({ savingStatus: 'idle' }), 2000);
       } catch (e) {
-        console.error('Failed to save schema:', e);
         set({ savingStatus: 'error' });
       }
-    }, 500);
+    }, 1000);
+    set({ savingStatus: 'saving' });
   },
 
   refreshModelData: async () => {
-    const { currentModelSlug, isCliMode, savingStatus, lastSavedAt } = get();
-    if (!isCliMode) return;
-    
-    // Guard: Skip refresh if we are currently saving or just saved (within 3s)
-    // to prevent self-triggered updates from causing UI flickering or state reversal.
-    if (savingStatus === 'saving' || (Date.now() - lastSavedAt < 3000)) {
-      console.log('🔇 Skipping refresh: update originated from recent browser save or save in progress');
-      return;
-    }
-    
+    const { lastSavedAt } = get();
+    if (Date.now() - lastSavedAt < 3000) return;
+
     try {
-      set({ savingStatus: 'saving' });
-      
-      // 1. Refresh available files list
-      await get().fetchAvailableFiles();
-      
-      // 2. Identify target slug (from state, URL, or fallback to first available)
-      let targetSlug = currentModelSlug;
-      if (!targetSlug) {
-        const params = new URLSearchParams(window.location.search);
-        targetSlug = params.get('model');
-      }
-      
-      // If still no slug, use the first one from the freshly fetched list
-      if (!targetSlug && get().availableFiles.length > 0) {
-        targetSlug = get().availableFiles[0].slug;
-      }
-      
-      // 3. Refresh current model content
-      if (targetSlug) {
-        const url = `/api/model?model=${targetSlug}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        const schema = normalizeSchema(data);
-        set({ schema, currentModelSlug: targetSlug, error: null });
-        get().syncToYamlInput();
-      }
-      
-      set({ savingStatus: 'idle' });
+      const res = await fetch('/api/model' + window.location.search);
+      const data = await res.json();
+      set({ schema: normalizeSchema(data) });
+      get().syncToYamlInput();
     } catch (e) {
       console.error('Failed to refresh data:', e);
-      set({ error: 'Failed to refresh data from server', savingStatus: 'error' });
     }
   },
 
-  addTable: (x, y) => {
+  addTable: (x, y, name) => {
     const schema = get().schema || { tables: [], relationships: [], domains: [], layout: {} };
-    const newId = `new_table_${Date.now()}`;
+    const newId = name ? name.toLowerCase().replace(/\s+/g, '_') : `new_table_${Date.now()}`;
     const newTable: Table = {
       id: newId,
-      name: 'NEW_TABLE',
+      name: name || 'NEW_TABLE',
       appearance: { type: 'table' },
-      columns: [
-        { id: 'id', logical: { name: 'ID', type: 'Integer', isPrimaryKey: true } }
-      ]
+      columns: [{ id: 'id', logical: { name: 'ID', type: 'Integer', isPrimaryKey: true } }]
     };
-    
     const newSchema = {
       ...schema,
       tables: [...(schema.tables || []), newTable],
-      layout: {
-        ...(schema.layout || {}),
-        [newId]: { x: Math.round(x), y: Math.round(y) }
-      }
+      layout: { ...(schema.layout || {}), [newId]: { x: Math.round(x), y: Math.round(y) } }
     };
-    
-    set({ 
-      schema: normalizeSchema(newSchema), 
-      error: null,
-      selectedTableId: newId,
-      selectedEdgeId: null,
-      selectedAnnotationId: null
-    });
+    set({ schema: normalizeSchema(newSchema), selectedTableId: newId });
     get().syncToYamlInput();
     get().saveSchema();
   },
-  
-  addDomain: (x, y) => {
+
+  addDomain: (x, y, name) => {
     const schema = get().schema || { tables: [], relationships: [], domains: [], layout: {} };
-    const newId = `new_domain_${Date.now()}`;
+    const newId = name ? name.toLowerCase().replace(/\s+/g, '_') : `new_domain_${Date.now()}`;
     const newDomain = {
       id: newId,
-      name: 'NEW_DOMAIN',
+      name: name || 'NEW_DOMAIN',
       description: 'Domain purpose',
       tables: [],
       color: 'rgba(59, 130, 246, 0.05)'
     };
-    
     const newSchema = {
       ...schema,
       domains: [...(schema.domains || []), newDomain],
-      layout: {
-        ...(schema.layout || {}),
-        [newId]: { x: Math.round(x), y: Math.round(y), width: 600, height: 400 }
-      }
+      layout: { ...(schema.layout || {}), [newId]: { x: Math.round(x), y: Math.round(y), width: 600, height: 400 } }
     };
-    
-    set({ 
-      schema: normalizeSchema(newSchema), 
-      error: null,
-      selectedTableId: newId,
-      selectedEdgeId: null,
-      selectedAnnotationId: null
-    });
+    set({ schema: normalizeSchema(newSchema), selectedTableId: newId });
     get().syncToYamlInput();
     get().saveSchema();
   },
 
   addRelationship: (source, target, sourceHandle, targetHandle) => {
-    const schema = get().schema;
+    const { schema } = get();
     if (!schema) return;
-
-    // 1. Handle Lineage
-    const isLineage = sourceHandle?.includes('lineage') || targetHandle?.includes('lineage');
-    
-    if (isLineage) {
-      get().addLineage(source, target);
-      return;
-    }
-
-    // 2. Handle ER (Bidirectional Support)
-    let finalSource = source;
-    let finalTarget = target;
-    let finalSourceHandle = sourceHandle;
-    let finalTargetHandle = targetHandle;
-
-    const isSourceTargetRole = sourceHandle?.includes('target');
-    const isTargetSourceRole = targetHandle?.includes('source');
-
-    if (isSourceTargetRole || isTargetSourceRole) {
-      finalSource = target;
-      finalTarget = source;
-      finalSourceHandle = targetHandle;
-      finalTargetHandle = sourceHandle;
-    }
-
-    const parseColumn = (nodeId: string, handleId: string | null | undefined) => {
-      if (!handleId) return undefined;
-      const baseId = handleId.replace(`${nodeId}-`, '');
-      if (baseId.startsWith('er-') || baseId.startsWith('lin-')) return undefined;
-      return baseId.split('-')[0] || undefined;
-    };
-
-    const sourceCol = parseColumn(finalSource, finalSourceHandle);
-    const targetCol = parseColumn(finalTarget, finalTargetHandle);
-
-    const isDuplicate = (schema.relationships || []).some(rel => 
-      rel.from.table === finalSource && 
-      rel.from.column === sourceCol && 
-      rel.to.table === finalTarget && 
-      rel.to.column === targetCol
-    );
-
-    if (isDuplicate) return;
-
-    const newRelationship: Relationship = {
-      from: { table: finalSource, column: sourceCol },
-      to: { table: finalTarget, column: targetCol },
+    const newRel: Relationship = {
+      from: { table: source, column: sourceHandle?.split('-')[1] },
+      to: { table: target, column: targetHandle?.split('-')[1] },
       type: 'one-to-many'
     };
-
-    const newSchema = {
-      ...schema,
-      relationships: [...(schema.relationships || []), newRelationship]
-    };
-
+    const newSchema = { ...schema, relationships: [...(schema.relationships || []), newRel] };
     set({ schema: normalizeSchema(newSchema) });
+    get().syncToYamlInput();
+    get().saveSchema();
+  },
+
+  bulkAddRelationship: (source, targetPattern, type) => {
+    const { schema } = get();
+    if (!schema) return;
+    const regex = new RegExp('^' + targetPattern.replace(/\*/g, '.*') + '$', 'i');
+    const matchedTables = schema.tables.filter(t => regex.test(t.id) || (t.columns || []).some(c => regex.test(`${t.id}.${c.id}`)));
+    
+    const newRels = matchedTables.map(t => {
+        let targetCol = undefined;
+        if (targetPattern.includes('.')) targetCol = targetPattern.split('.')[1];
+        return { from: source, to: { table: t.id, column: targetCol }, type };
+    });
+
+    set({ schema: { ...schema, relationships: [...(schema.relationships || []), ...newRels] } });
     get().syncToYamlInput();
     get().saveSchema();
   },
@@ -693,72 +389,27 @@ export const useStore = create<AppState>((set, get) => ({
   addLineage: (source, target) => {
     const { schema } = get();
     if (!schema) return;
-
-    const newTables = schema.tables.map(table => {
-      if (table.id === target) {
-        const currentUpstream = table.lineage?.upstream || [];
-        if (!currentUpstream.includes(source)) {
-          return {
-            ...table,
-            lineage: {
-              ...table.lineage,
-              upstream: [...currentUpstream, source]
-            }
-          };
-        }
-      }
-      return table;
-    });
-
-    const newSchema = { ...schema, tables: newTables };
-    set({ schema: normalizeSchema(newSchema) });
+    const newRel: Relationship = { from: { table: source }, to: { table: target }, type: 'lineage' as any };
+    set({ schema: { ...schema, relationships: [...(schema.relationships || []), newRel] } });
     get().syncToYamlInput();
     get().saveSchema();
   },
 
   updateRelationship: (index, updates) => {
     const { schema } = get();
-    if (!schema || !schema.relationships) return;
-
-    const newRelationships = schema.relationships.map((rel, i) => {
-      if (i === index) {
-        return { ...rel, ...updates };
-      }
-      return rel;
-    });
-
-    set({ schema: { ...schema, relationships: newRelationships } });
+    if (!schema) return;
+    const newRels = [...schema.relationships];
+    newRels[index] = { ...newRels[index], ...updates };
+    set({ schema: { ...schema, relationships: newRels } });
     get().syncToYamlInput();
     get().saveSchema();
   },
 
-  removeEdge: (source, target) => {
+  removeEdge: (sourceId, targetId) => {
     const { schema } = get();
     if (!schema) return;
-
-    const newRelationships = (schema.relationships || []).filter(
-      r => {
-        const isMatch = (r.from.table === source && r.to.table === target) ||
-                        (r.from.table === target && r.to.table === source);
-        return !isMatch;
-      }
-    );
-
-    const newTables = schema.tables.map(table => {
-      if (table.id === target && table.lineage?.upstream) {
-        return {
-          ...table,
-          lineage: {
-            ...table.lineage,
-            upstream: table.lineage.upstream.filter(id => id !== source)
-          }
-        };
-      }
-      return table;
-    });
-
-    const newSchema = { ...schema, relationships: newRelationships, tables: newTables };
-    set({ schema: normalizeSchema(newSchema), selectedEdgeId: null });
+    const newRels = schema.relationships.filter(r => !(r.from.table === sourceId && r.to.table === targetId));
+    set({ schema: { ...schema, relationships: newRels }, selectedEdgeId: null });
     get().syncToYamlInput();
     get().saveSchema();
   },
@@ -766,28 +417,36 @@ export const useStore = create<AppState>((set, get) => ({
   removeNode: (id) => {
     const { schema } = get();
     if (!schema) return;
-
+    const isDomain = (schema.domains || []).some(d => d.id === id);
     const newTables = schema.tables.filter(t => t.id !== id);
-    const newDomains = (schema.domains || []).filter(d => d.id !== id).map(d => ({
-      ...d,
-      tables: d.tables.filter(tid => tid !== id)
-    }));
-    const newRelationships = (schema.relationships || []).filter(r => r.from.table !== id && r.to.table !== id);
-    const newAnnotations = (schema.annotations || []).filter(a => a.id !== id && a.targetId !== id);
-    
+    const newDomains = (schema.domains || []).filter(d => d.id !== id).map(d => ({ ...d, tables: d.tables.filter(tid => tid !== id) }));
+    const newRelationships = schema.relationships.filter(r => r.from.table !== id && r.to.table !== id);
     const newLayout = { ...(schema.layout || {}) };
     delete newLayout[id];
 
-    const newSchema = {
-      ...schema,
-      tables: newTables,
-      domains: newDomains,
-      relationships: newRelationships,
-      annotations: newAnnotations,
-      layout: newLayout
-    };
+    // CRITICAL: If a domain was deleted, clear parentId for all tables that were inside it
+    if (isDomain) {
+      Object.keys(newLayout).forEach(key => {
+        if (newLayout[key].parentId === id) {
+          delete newLayout[key].parentId;
+        }
+      });
+    }
 
-    set({ schema: normalizeSchema(newSchema), selectedTableId: null, selectedAnnotationId: null });
+    set({ schema: { ...schema, tables: newTables, domains: newDomains, relationships: newRelationships, layout: newLayout }, selectedTableId: null });
+    get().syncToYamlInput();
+    get().saveSchema();
+  },
+
+  bulkRemoveTables: (ids) => {
+    const { schema } = get();
+    if (!schema) return;
+    const newTables = schema.tables.filter(t => !ids.includes(t.id));
+    const newLayout = { ...(schema.layout || {}) };
+    ids.forEach(id => delete newLayout[id]);
+    const newRelationships = (schema.relationships || []).filter(r => !ids.includes(r.from.table) && !ids.includes(r.to.table));
+    const newDomains = (schema.domains || []).map(d => ({ ...d, tables: d.tables.filter(tid => !ids.includes(tid)) }));
+    set({ schema: { ...schema, tables: newTables, relationships: newRelationships, domains: newDomains, layout: newLayout }, selectedTableIds: [] });
     get().syncToYamlInput();
     get().saveSchema();
   },
@@ -795,142 +454,271 @@ export const useStore = create<AppState>((set, get) => ({
   updateTable: (id, updates) => {
     const { schema } = get();
     if (!schema) return;
-
-    const newTables = schema.tables.map(table => {
-      if (table.id === id) {
-        return { ...table, ...updates };
-      }
-      return table;
-    });
-
-    const newSchema = { ...schema, tables: newTables };
-    set({ schema: normalizeSchema(newSchema) });
+    const newTables = schema.tables.map(t => t.id === id ? { ...t, ...updates } : t);
+    set({ schema: { ...schema, tables: newTables } });
     get().syncToYamlInput();
     get().saveSchema();
   },
 
   updateDomain: (id, updates) => {
     const { schema } = get();
-    if (!schema || !schema.domains) return;
-
-    const newDomains = schema.domains.map(domain => {
-      if (domain.id === id) {
-        return { ...domain, ...updates };
-      }
-      return domain;
-    });
-
-    const newSchema = { ...schema, domains: newDomains };
-    set({ schema: normalizeSchema(newSchema) });
+    if (!schema) return;
+    const newDomains = (schema.domains || []).map(d => d.id === id ? { ...d, ...updates } : d);
+    set({ schema: { ...schema, domains: newDomains } });
     get().syncToYamlInput();
     get().saveSchema();
   },
 
   toggleDomainLock: (id) => {
     const { schema } = get();
-    if (!schema || !schema.domains) return;
-
-    const newDomains = schema.domains.map(domain => {
-      if (domain.id === id) {
-        return { ...domain, isLocked: !domain.isLocked };
-      }
-      return domain;
-    });
-
-    set({ schema: { ...schema, domains: newDomains } });
-    get().syncToYamlInput();
+    if (!schema || !schema.layout) return;
+    const current = schema.layout[id] || { x: 0, y: 0 };
+    const newLayout = { 
+      ...schema.layout, 
+      [id]: { ...current, isLocked: !current.isLocked } 
+    };
+    set({ schema: { ...schema, layout: newLayout } });
     get().saveSchema();
   },
 
   assignTableToDomain: (tableId, domainId) => {
     const { schema } = get();
     if (!schema) return;
-
     const newDomains = (schema.domains || []).map(domain => {
       const filteredTables = domain.tables.filter(id => id !== tableId);
-      if (domain.id === domainId) {
-        return { ...domain, tables: Array.from(new Set([...filteredTables, tableId])) };
-      }
+      if (domain.id === domainId) return { ...domain, tables: Array.from(new Set([...filteredTables, tableId])) };
       return { ...domain, tables: filteredTables };
     });
-
-    const newLayout = {
-      ...(schema.layout || {}),
-      [tableId]: { x: 20, y: 20 }
-    };
-
+    const newLayout = { ...(schema.layout || {}), [tableId]: { x: 20, y: 20 } };
     set({ schema: { ...schema, domains: newDomains, layout: newLayout } });
     get().syncToYamlInput();
     get().saveSchema();
   },
 
-  toggleTableSelection: (id) => {
-    const { selectedTableId, isDetailPanelMinimized } = get();
-    if (selectedTableId === id) {
-      set({ selectedTableId: null, isDetailPanelMinimized: true });
-    } else {
-      set({ 
-        selectedTableId: id, 
-        selectedEdgeId: null, 
-        selectedAnnotationId: null,
-        isDetailPanelMinimized: isDetailPanelMinimized // 現在の状態（バーならバー）を維持
-      });
+  bulkAssignTablesToDomain: (tableIds, domainId) => {
+    const { schema } = get();
+    if (!schema) return;
+    const newDomains = (schema.domains || []).map(domain => {
+      const filteredTables = domain.tables.filter(id => !tableIds.includes(id));
+      if (domain.id === domainId) return { ...domain, tables: Array.from(new Set([...filteredTables, ...tableIds])) };
+      return { ...domain, tables: filteredTables };
+    });
+    const newLayout = { ...(schema.layout || {}) };
+    if (domainId) tableIds.forEach(id => { newLayout[id] = { x: 20, y: 20 }; });
+    set({ schema: { ...schema, domains: newDomains, layout: newLayout } });
+    get().syncToYamlInput();
+    get().saveSchema();
+  },
+
+  distributeSelectedTables: (direction) => {
+    const { schema, selectedTableIds } = get();
+    if (!schema || selectedTableIds.length < 2) return;
+    const tablePositions = selectedTableIds.map(id => ({ id, pos: schema.layout?.[id] || { x: 0, y: 0 } }));
+    if (direction === 'vertical') tablePositions.sort((a, b) => a.pos.y - b.pos.y);
+    else tablePositions.sort((a, b) => a.pos.x - b.pos.x);
+    const newLayout = { ...(schema.layout || {}) };
+    const basePos = tablePositions[0].pos;
+    tablePositions.forEach((item, index) => {
+      newLayout[item.id] = {
+        x: direction === 'vertical' ? basePos.x : basePos.x + (index * 280),
+        y: direction === 'vertical' ? basePos.y + (index * 320) : basePos.y
+      };
+    });
+    set({ schema: { ...schema, layout: newLayout } });
+    get().syncToYamlInput();
+    get().saveSchema();
+  },
+
+  executePipeline: (input, previewOnly = false) => {
+    const { schema, selectedTableIds } = get();
+    if (!schema) return { stages: [], outputIds: [] };
+    const rawStages = input.split('|').map(s => s.trim()).filter(Boolean);
+    const stages: any[] = [];
+    let currentIds: string[] = [];
+    let tempSchema = JSON.parse(JSON.stringify(schema));
+
+    rawStages.forEach((raw) => {
+      const parts = raw.split(/\s+/);
+      const cmd = parts[0].toLowerCase();
+      const args = parts.slice(1);
+      let outputIds: string[] = [...currentIds];
+      let message = '';
+      let status: 'success' | 'error' | 'active' = 'success';
+
+      try {
+        if (cmd === 'select') {
+          const pattern = args.join(' ');
+          if (pattern === '*') {
+            outputIds = [
+                ...tempSchema.tables.map((t: any) => t.id),
+                ...(tempSchema.domains || []).map((d: any) => d.id)
+            ];
+          } else if (pattern) {
+            const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$', 'i');
+            const matchedTables = tempSchema.tables
+                .filter((t: any) => t.id === pattern || regex.test(t.id) || regex.test(t.name))
+                .map((t: any) => t.id);
+            const matchedDomains = (tempSchema.domains || [])
+                .filter((d: any) => d.id === pattern || regex.test(d.id) || regex.test(d.name))
+                .map((d: any) => d.id);
+            outputIds = [...matchedTables, ...matchedDomains];
+          } else outputIds = [];
+          
+          if (outputIds.length > 0) { 
+            message = `Matched ${outputIds.length} objects`; 
+            status = 'success'; 
+          } else { 
+            status = 'error'; 
+            message = `No objects matched "${pattern}"`; 
+          }
+        } else if (cmd === 'selected') {
+          outputIds = [...selectedTableIds];
+          message = `Using ${outputIds.length} selected tables`;
+          status = 'success';
+        } else if (cmd === 'mv') {
+          const toIndex = parts.findIndex(p => p.toLowerCase() === 'to');
+          const domainId = toIndex > -1 ? parts.slice(toIndex + 1).join(' ') : args.join(' ');
+          if (!currentIds || currentIds.length === 0) { status = 'error'; message = 'No tables to move. Add a "select" stage.'; }
+          else if (domainId) {
+            const domainExists = (tempSchema.domains || []).some((d: any) => d.id === domainId);
+            if (!domainExists) { status = 'error'; message = `Domain "${domainId}" not found`; }
+            else {
+              tempSchema.domains = (tempSchema.domains || []).map((d: any) => {
+                const filtered = d.tables.filter((tid: string) => !currentIds.includes(tid));
+                if (d.id === domainId) return { ...d, tables: Array.from(new Set([...filtered, ...currentIds])) };
+                return { ...d, tables: filtered };
+              });
+              currentIds.forEach(id => { if (tempSchema.layout) tempSchema.layout[id] = { x: 20, y: 20 }; });
+              message = `Move ${currentIds.length} to ${domainId}`;
+              status = 'success';
+            }
+          } else { status = 'active'; message = 'Waiting for domain...'; }
+        } else if (cmd === 'stack' || cmd === 'v' || cmd === 'h') {
+          const dir = (cmd === 'v' || args.includes('v') || args.includes('vertical')) ? 'vertical' : 'horizontal';
+          const tablePositions = currentIds.map(id => ({ id, pos: tempSchema.layout?.[id] || { x: 0, y: 0 } }));
+          if (dir === 'vertical') tablePositions.sort((a, b) => a.pos.y - b.pos.y);
+          else tablePositions.sort((a, b) => a.pos.x - b.pos.x);
+          const basePos = tablePositions.length > 0 ? tablePositions[0].pos : { x: 0, y: 0 };
+          tablePositions.forEach((item, i) => {
+            if (tempSchema.layout) tempSchema.layout[item.id] = {
+              x: dir === 'vertical' ? basePos.x : basePos.x + (i * 280),
+              y: dir === 'vertical' ? basePos.y + (i * 320) : basePos.y
+            };
+          });
+          message = `Stacked ${currentIds.length} ${dir}`;
+          status = 'success';
+        } else if (cmd === 'delete') {
+          const tableIdsToDelete = currentIds.filter(id => tempSchema.tables.some((t: any) => t.id === id));
+          const domainIdsToDelete = currentIds.filter(id => (tempSchema.domains || []).some((d: any) => d.id === id));
+          
+          tempSchema.tables = tempSchema.tables.filter((t: any) => !tableIdsToDelete.includes(t.id));
+          tempSchema.domains = (tempSchema.domains || []).filter((d: any) => !domainIdsToDelete.includes(d.id));
+          
+          // CRITICAL: Cleanup parentId references if domains were deleted
+          if (domainIdsToDelete.length > 0 && tempSchema.layout) {
+            const layout = { ...tempSchema.layout };
+            Object.keys(layout).forEach(key => {
+              if (domainIdsToDelete.includes(layout[key].parentId)) {
+                const { parentId, ...rest } = layout[key];
+                layout[key] = rest;
+              }
+              if (domainIdsToDelete.includes(key)) {
+                delete layout[key];
+              }
+            });
+            tempSchema.layout = layout;
+          }
+
+          outputIds = [];
+          message = `Deleted ${tableIdsToDelete.length} tables and ${domainIdsToDelete.length} domains`;
+          status = 'success';
+        } else if (cmd === 'clear') {
+          tempSchema.domains = (tempSchema.domains || []).map((d: any) => ({ ...d, tables: d.tables.filter((tid: string) => !currentIds.includes(tid)) }));
+          message = `Cleared domain for ${currentIds.length} tables`;
+          status = 'success';
+        } else if (cmd === 'add') {
+          const subCmd = args[0]?.toLowerCase();
+          const name = args.slice(1).join(' ');
+          
+          const generateUniqueId = (baseName: string) => {
+            const baseId = baseName.toLowerCase().replace(/\s+/g, '_');
+            let uniqueId = baseId || `new_${subCmd}_${Date.now()}`;
+            let counter = 1;
+            const exists = (id: string) => 
+                tempSchema.tables.some((t: any) => t.id === id) || 
+                (tempSchema.domains || []).some((d: any) => d.id === id);
+            
+            while (exists(uniqueId)) {
+                uniqueId = `${baseId}_${counter}`;
+                counter++;
+            }
+            return uniqueId;
+          };
+
+          if (subCmd === 'table') {
+            const newId = generateUniqueId(name);
+            tempSchema.tables.push({
+              id: newId,
+              name: name || 'NEW_TABLE',
+              columns: [{ id: 'id', logical: { name: 'ID', type: 'Integer', isPrimaryKey: true } }]
+            });
+            if (!tempSchema.layout) tempSchema.layout = {};
+            tempSchema.layout[newId] = { x: 400, y: 300 };
+            message = `Added table ${newId}`;
+            status = 'success';
+          } else if (subCmd === 'domain') {
+            const newId = generateUniqueId(name);
+            tempSchema.domains.push({
+              id: newId,
+              name: name || 'NEW_DOMAIN',
+              tables: [],
+              color: 'rgba(59, 130, 246, 0.05)'
+            });
+            if (!tempSchema.layout) tempSchema.layout = {};
+            tempSchema.layout[newId] = { x: 400, y: 300, width: 600, height: 400 };
+            message = `Added domain ${newId}`;
+            status = 'success';
+          }
+        } else { status = 'error'; message = `Unknown command: ${cmd}`; }
+      } catch (e) { status = 'error'; message = 'Execution error'; }
+      stages.push({ command: cmd, args, inputIds: currentIds, outputIds, status, message });
+      currentIds = outputIds;
+    });
+
+    if (!previewOnly && stages.length > 0 && stages.every(s => s.status === 'success')) {
+      set({ schema: normalizeSchema(tempSchema) });
+      get().syncToYamlInput();
+      get().saveSchema();
     }
+    return { stages, outputIds: currentIds };
+  },
+
+  toggleTableSelection: (id) => {
+    const { selectedTableId } = get();
+    if (selectedTableId === id) set({ selectedTableId: null, isDetailPanelMinimized: true });
+    else set({ selectedTableId: id, selectedEdgeId: null, selectedAnnotationId: null, isDetailPanelMinimized: true });
   },
 
   toggleEdgeSelection: (id) => {
-    const { selectedEdgeId, isDetailPanelMinimized } = get();
-    if (selectedEdgeId === id) {
-      set({ selectedEdgeId: null, isDetailPanelMinimized: true });
-    } else {
-      set({ 
-        selectedEdgeId: id, 
-        selectedTableId: null, 
-        selectedAnnotationId: null,
-        isDetailPanelMinimized: isDetailPanelMinimized
-      });
-    }
+    const { selectedEdgeId } = get();
+    if (selectedEdgeId === id) set({ selectedEdgeId: null });
+    else set({ selectedEdgeId: id, selectedTableId: null, selectedAnnotationId: null });
   },
 
   toggleAnnotationSelection: (id) => {
-    const { selectedAnnotationId, isDetailPanelMinimized } = get();
-    if (selectedAnnotationId === id) {
-      set({ selectedAnnotationId: null, isDetailPanelMinimized: true });
-    } else {
-      set({ 
-        selectedAnnotationId: id, 
-        selectedTableId: null, 
-        selectedEdgeId: null,
-        isDetailPanelMinimized: isDetailPanelMinimized
-      });
-    }
+    const { selectedAnnotationId } = get();
+    if (selectedAnnotationId === id) set({ selectedAnnotationId: null });
+    else set({ selectedAnnotationId: id, selectedTableId: null, selectedEdgeId: null });
   },
 
   addAnnotation: (offset, targetId, targetType) => {
     const { schema } = get();
     if (!schema) return;
     const newId = `note_${Date.now()}`;
-    const newAnnotation: Annotation = {
-      id: newId,
-      targetId,
-      targetType,
-      text: 'New Note',
-      type: 'sticky',
-      offset
-    };
-    const newSchema = {
-      ...schema,
-      annotations: [...(schema.annotations || []), newAnnotation]
-    };
-    set({ 
-      schema: normalizeSchema(newSchema), 
-      selectedAnnotationId: newId,
-      selectedTableId: null,
-      selectedEdgeId: null
-    });
-    if (!targetId) {
-      get().setFocusNodeId(newId);
-    }
+    const newAnnotation: Annotation = { id: newId, targetId, targetType, text: 'New Note', type: 'sticky', offset };
+    const newSchema = { ...schema, annotations: [...(schema.annotations || []), newAnnotation] };
+    set({ schema: normalizeSchema(newSchema), selectedAnnotationId: newId, selectedTableId: null, selectedEdgeId: null });
+    if (!targetId) get().setFocusNodeId(newId);
     get().syncToYamlInput();
     get().saveSchema();
   },
@@ -952,7 +740,33 @@ export const useStore = create<AppState>((set, get) => ({
     get().syncToYamlInput();
     get().saveSchema();
   },
-  
+
+  fetchAvailableFiles: async () => {
+    const injectedData = (window as any).__MODSCAPE_DATA__;
+    if (injectedData?.models) {
+      const files = injectedData.models.map((m: any) => ({ slug: m.slug, name: m.name, path: '' }));
+      set({ availableFiles: files });
+      return;
+    }
+    try {
+      const res = await fetch('/api/files');
+      const data = await res.json();
+      set({ availableFiles: data });
+    } catch (e) { console.error('Failed to fetch files:', e); }
+  },
+
+  setCurrentModel: async (slug) => {
+    try {
+      const res = await fetch(`/api/model?model=${slug}`);
+      const data = await res.json();
+      set({ schema: normalizeSchema(data), currentModelSlug: slug, selectedTableId: null, selectedEdgeId: null, selectedAnnotationId: null, error: null });
+      get().syncToYamlInput();
+      const searchParams = new URLSearchParams(window.location.search);
+      searchParams.set('model', slug);
+      window.history.replaceState(null, '', `${window.location.pathname}?${searchParams.toString()}`);
+    } catch (e) { console.error('Failed to set model:', e); }
+  },
+
   getSelectedTable: () => {
     const { schema, selectedTableId } = get();
     if (!schema || !selectedTableId) return null;
@@ -968,17 +782,10 @@ export const useStore = create<AppState>((set, get) => ({
   getSelectedRelationship: () => {
     const { schema, selectedEdgeId } = get();
     if (!schema || !selectedEdgeId) return null;
-
     if (selectedEdgeId.startsWith('lin-')) {
       const parts = selectedEdgeId.split('-');
-      const source = parts[1];
-      const target = parts[2];
-      return { 
-        relationship: { from: { table: source }, to: { table: target }, type: 'lineage' as any }, 
-        index: -1 
-      };
+      return { relationship: { from: { table: parts[1] }, to: { table: parts[2] }, type: 'lineage' as any }, index: -1 };
     }
-
     if (!selectedEdgeId.startsWith('e-')) return null;
     const index = parseInt(selectedEdgeId.split('-')[1]);
     const relationship = schema.relationships[index];
@@ -990,5 +797,35 @@ export const useStore = create<AppState>((set, get) => ({
     const { schema, selectedAnnotationId } = get();
     if (!schema || !selectedAnnotationId || !schema.annotations) return null;
     return schema.annotations.find(a => a.id === selectedAnnotationId) || null;
+  },
+
+  calculateAutoLayout: () => {
+    const { schema } = get();
+    if (!schema) return;
+    const g = new dagre.graphlib.Graph({ compound: true });
+    g.setGraph({ rankdir: 'LR', nodesep: 80, ranksep: 120, marginx: 40, marginy: 40 });
+    g.setDefaultEdgeLabel(() => ({}));
+    (schema.domains || []).forEach(d => { g.setNode(d.id, { label: d.name, width: 600, height: 400 }); });
+    schema.tables.forEach(t => {
+      const domain = (schema.domains || []).find(d => d.tables.includes(t.id));
+      g.setNode(t.id, { width: 220, height: 300 });
+      if (domain) g.setParent(t.id, domain.id);
+    });
+    (schema.relationships || []).forEach(r => { g.setEdge(r.from.table, r.to.table); });
+    dagre.layout(g);
+    const newLayout: Record<string, any> = {};
+    g.nodes().forEach(v => {
+      const node = g.node(v);
+      const parent = g.parent(v);
+      if (parent) {
+        const pNode = g.node(parent);
+        newLayout[v] = { x: node.x - node.width/2 - (pNode.x - pNode.width/2), y: node.y - node.height/2 - (pNode.y - pNode.height/2), parentId: parent };
+      } else {
+        newLayout[v] = { x: node.x - node.width/2, y: node.y - node.height/2 };
+      }
+    });
+    set({ schema: { ...schema, layout: newLayout } });
+    get().syncToYamlInput();
+    get().saveSchema();
   }
-  }));
+}));

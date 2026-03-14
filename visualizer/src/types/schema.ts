@@ -3,7 +3,14 @@ export interface Schema {
   relationships: Relationship[];
   domains?: Domain[]; // Optional
   annotations?: Annotation[]; // Optional visual notes
-  layout?: Record<string, { x: number; y: number; width?: number; height?: number }>;
+  layout?: Record<string, { 
+    x: number; 
+    y: number; 
+    width?: number; 
+    height?: number; 
+    isLocked?: boolean;
+    parentId?: string;
+  }>;
 }
 
 export interface Annotation {
@@ -81,5 +88,5 @@ export interface Relationship {
     table: string;
     column?: string; // Optional
   };
-  type?: 'one-to-one' | 'one-to-many' | 'many-to-one' | 'many-to-many';
+  type?: 'one-to-one' | 'one-to-many' | 'many-to-one' | 'many-to-many' | 'lineage';
 }

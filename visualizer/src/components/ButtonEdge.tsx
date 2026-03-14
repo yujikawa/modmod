@@ -16,7 +16,7 @@ const parseCardinality = (label: string): [string, string] => {
   
   return parts.map(p => {
     if (p.includes('one')) return '1';
-    if (p.includes('many')) return 'M';
+    if (p.includes('many')) return 'N';
     return '';
   }) as [string, string];
 };
