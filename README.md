@@ -8,7 +8,10 @@
 
 **Modscape** is a YAML-driven data modeling visualizer specialized for **Modern Data Stack** architectures. It bridges the gap between raw physical schemas and high-level business logic, empowering data teams to design, document, and share their data stories.
 
-[Live Demo](https://yujikawa.github.io/modscape/)
+🌐 **Live Demo:**
+https://yujikawa.github.io/modscape/
+
+![Modscape Screenshot](https://raw.githubusercontent.com/yujikawa/modscape/main/docs/assets/modscape.png)
 
 ## Why Modscape?
 

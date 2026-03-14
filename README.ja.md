@@ -8,7 +8,13 @@
 
 **Modscape** は、モダンなデータ基盤（Modern Data Stack）に特化した、YAML駆動のデータモデリング・ビジュアライザーです。物理的なスキーマとビジネスロジックのギャップを埋め、データチームがデータを通じた「ストーリー」を設計、文書化、共有することを可能にします。
 
-[ライブデモ](https://yujikawa.github.io/modscape/)
+
+🌐 **Live Demo:**
+https://yujikawa.github.io/modscape/
+
+
+![Modscape Screenshot](https://raw.githubusercontent.com/yujikawa/modscape/main/docs/assets/modscape.png)
+
 
 ## なぜ Modscape なのか？
 
