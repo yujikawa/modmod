@@ -145,7 +145,10 @@ export const useStore = create<AppState>((set, get) => ({
 
   // YAML Input
   yamlInput: '',
-  setYamlInput: (yaml) => set({ yamlInput: yaml, lastUpdateSource: 'user' }),
+  setYamlInput: (yaml) => {
+    set({ yamlInput: yaml, lastUpdateSource: 'user', lastSavedAt: Date.now() });
+    get().saveSchema();
+  },
   syncToYamlInput: () => {
     const { schema } = get();
     if (schema) {
@@ -186,6 +189,7 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       const schema = parseYAML(yamlStr);
       set({ schema, error: null });
+      get().saveSchema(); // 3sガードを効かせるために呼ぶ（内部でlastUpdateSourceをチェック）
     } catch (e: any) {
       set({ error: e.message });
     }
@@ -280,7 +284,15 @@ export const useStore = create<AppState>((set, get) => ({
 
   saveSchema: async (force = false) => {
     const { schema, isCliMode, isAutoSaveEnabled, lastUpdateSource } = get();
-    if (!isCliMode || (!isAutoSaveEnabled && !force) || lastUpdateSource === 'user') return;
+    
+    // ユーザー操作（エディタ入力等）の場合はファイル書き込みは行わないが、
+    // 3秒ガード用のタイムスタンプだけ更新する
+    if (lastUpdateSource === 'user') {
+      set({ lastSavedAt: Date.now() });
+      return;
+    }
+
+    if (!isCliMode || (!isAutoSaveEnabled && !force)) return;
 
     if (saveTimeout) clearTimeout(saveTimeout);
     
@@ -303,7 +315,10 @@ export const useStore = create<AppState>((set, get) => ({
 
   refreshModelData: async () => {
     const { lastSavedAt } = get();
-    if (Date.now() - lastSavedAt < 3000) return;
+    const diff = Date.now() - lastSavedAt;
+    
+    // 自身が変更・保存してから3秒以内は、サーバーからの通知によるリフレッシュを無視する
+    if (diff < 3000) return;
 
     try {
       const res = await fetch('/api/model' + window.location.search);

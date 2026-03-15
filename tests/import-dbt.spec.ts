@@ -4,21 +4,22 @@ import fs from 'fs';
 import path from 'path';
 import yaml from 'js-yaml';
 
-const FIXTURE_MANIFEST = 'tests/fixtures/manifest.json';
-const OUTPUT_YAML = 'tests/fixtures/import-test-result.yaml';
+const PROJECT_DIR = 'tests/fixtures/dbt_project';
+const OUTPUT_DIR = 'tests/fixtures/import-test-result';
+const OUTPUT_YAML = path.join(OUTPUT_DIR, 'dbt-model.yaml');
 
-test.describe('CLI: import-dbt', () => {
+test.describe('CLI: dbt import', () => {
   test.afterEach(() => {
-    // Ensure the generated YAML is cleaned up after each test
-    if (fs.existsSync(OUTPUT_YAML)) {
-      fs.unlinkSync(OUTPUT_YAML);
+    // Ensure the generated files are cleaned up after each test
+    if (fs.existsSync(OUTPUT_DIR)) {
+      fs.rmSync(OUTPUT_DIR, { recursive: true, force: true });
     }
   });
 
   test('should import dbt manifest and generate valid Modscape YAML', async () => {
     // 1. Run the import command
     // We use node src/index.js directly to avoid issues with bin linking in CI
-    const command = `node src/index.js import-dbt ${FIXTURE_MANIFEST} -o ${OUTPUT_YAML}`;
+    const command = `node src/index.js dbt import ${PROJECT_DIR} -o ${OUTPUT_DIR}`;
     
     try {
       execSync(command);
@@ -36,37 +37,41 @@ test.describe('CLI: import-dbt', () => {
     expect(model.tables).toBeDefined();
     expect(model.tables.length).toBeGreaterThan(0);
 
-    // Verify conceptual-first mapping (name should contain dbt description)
-    const stgOrders = model.tables.find(t => t.id === 'stg_orders');
+    // Verify conceptual-first mapping
+    const stgOrders = model.tables.find(t => t.id === 'model.my_project.stg_orders');
     expect(stgOrders).toBeDefined();
-    expect(stgOrders.name).toContain('staging table'); // from dbt description
+    expect(stgOrders.conceptual.description).toContain('staging table'); // from dbt description
     expect(stgOrders.logical_name).toBe('stg_orders'); // from dbt name
     expect(stgOrders.physical_name).toBe('stg_orders_v1'); // from dbt alias
 
     // Verify lineage
-    expect(stgOrders.lineage.upstream).toContain('orders');
+    expect(stgOrders.lineage.upstream).toContain('source.my_project.raw_orders.orders');
 
     // Verify domains
     expect(model.domains).toBeDefined();
     const stagingDomain = model.domains.find(d => d.id === 'staging');
     expect(stagingDomain).toBeDefined();
-    expect(stagingDomain.tables).toContain('stg_orders');
+    expect(stagingDomain.tables).toContain('model.my_project.stg_orders');
   });
 
   test('should show error message when manifest is missing', async () => {
-    const command = `node src/index.js import-dbt non-existent.json -o ${OUTPUT_YAML}`;
+    const EMPTY_DIR = 'tests/fixtures/empty_project';
+    if (!fs.existsSync(EMPTY_DIR)) fs.mkdirSync(EMPTY_DIR);
     
     // Use spawnSync to easily get stdout and stderr
     const { stderr } = spawnSync('node', [
       'src/index.js',
-      'import-dbt',
-      'non-existent.json',
+      'dbt',
+      'import',
+      EMPTY_DIR,
       '-o',
-      OUTPUT_YAML
+      OUTPUT_DIR
     ]);
     
     const output = stderr.toString();
-    expect(output).toContain('target/manifest.json not found');
+    expect(output).toContain('manifest.json not found');
     expect(fs.existsSync(OUTPUT_YAML)).toBe(false);
+    
+    if (fs.existsSync(EMPTY_DIR)) fs.rmSync(EMPTY_DIR, { recursive: true });
   });
 });

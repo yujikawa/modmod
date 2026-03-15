@@ -9,6 +9,7 @@ const __dirname = path.dirname(__filename);
 const FIXTURE_PATH = path.join(__dirname, 'fixtures/test-model.yaml');
 const RUNTIME_PATH = path.join(__dirname, 'fixtures/test-model-runtime.yaml');
 
+// This suite is skipped by default as it is sensitive to environment timing
 test.describe.skip('Modscape Sync Stability', () => {
   let originalContent: string;
 test.beforeAll(async () => {
@@ -40,18 +41,18 @@ test.beforeEach(async ({ page }) => {
     await editor.click();
     await page.keyboard.type(' # local stability test');
     
-    // Wait for "Saved" indicator
-    await expect(page.locator('text=/Saved/i').first()).toBeVisible({ timeout: 15000 });
+    // Explicitly wait a bit for the debounce timer in EditorTab (300ms) to fire
+    await page.waitForTimeout(1000);
 
     // 2. Immediately overwrite the file from OUTSIDE (within the 3s guard window)
     const externalContent = originalContent.replace('name: USERS', 'name: EXTERNAL_CHANGE');
     fs.writeFileSync(RUNTIME_PATH, externalContent, 'utf8');
     
-    // 3. Wait 1 second
-    await page.waitForTimeout(1000);
+    // 3. Wait 1.5 seconds (still inside the 3s window from step 1)
+    await page.waitForTimeout(1500);
     
     // 4. Verify that 'EXTERNAL_CHANGE' is NOT on the canvas
-    const externalNode = page.locator('.react-flow__node-table').filter({ hasText: 'EXTERNAL_CHANGE' });
+    const externalNode = page.locator('.react-flow__node').filter({ hasText: 'EXTERNAL_CHANGE' });
     await expect(externalNode).not.toBeVisible();
     
     // Original node should still be there
