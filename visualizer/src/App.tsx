@@ -637,12 +637,17 @@ function Flow() {
     updateNodesPosition(updates);
   }, [isCliMode, updateNodesPosition]);
 
-  const onSelectionChange = useCallback(({ nodes }: { nodes: Node[] }) => {
+  const onSelectionChange = useCallback(({ nodes, edges }: { nodes: Node[], edges: Edge[] }) => {
     const tableIds = nodes.filter(n => n.type === 'table').map(n => n.id);
     setSelectedTableIds(tableIds);
     
-    if (nodes.length > 1) {
+    // Clear singular node selection if multiple nodes are selected or if selection is empty
+    if (nodes.length !== 1) {
       setSelectedTableId(null);
+    }
+
+    // Clear singular selections if multiple total objects are selected
+    if (nodes.length + edges.length > 1) {
       setSelectedEdgeId(null);
       setSelectedAnnotationId(null);
     }

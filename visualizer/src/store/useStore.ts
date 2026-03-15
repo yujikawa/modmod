@@ -200,7 +200,6 @@ export const useStore = create<AppState>((set, get) => ({
 
   setSelectedTableIds: (ids) => set({
     selectedTableIds: ids,
-    selectedTableId: ids.length === 1 ? ids[0] : get().selectedTableId,
   }),
 
   setSelectedEdgeId: (id) => set({ 
