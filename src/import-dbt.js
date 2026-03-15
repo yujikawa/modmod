@@ -9,7 +9,7 @@ export async function importDbt(projectDir, options) {
 
   // dbt_project.ymlからプロジェクト名を取得
   const dbtProjectPath = path.join(resolvedDir, 'dbt_project.yml');
-  let projectName = path.basename(resolvedDir); // fallback
+  let projectName = path.basename(resolvedDir);
   if (fs.existsSync(dbtProjectPath)) {
     const dbtProject = yaml.load(fs.readFileSync(dbtProjectPath, 'utf8'));
     projectName = dbtProject.name || projectName;
@@ -29,7 +29,6 @@ export async function importDbt(projectDir, options) {
 
     const tables = [];
     const domainsMap = new Map();
-    const tableIdMap = new Map();
     const tableSplitKeyMap = new Map();
 
     const allNodes = { ...manifest.nodes, ...manifest.sources };
@@ -37,8 +36,7 @@ export async function importDbt(projectDir, options) {
     for (const [uniqueId, node] of Object.entries(allNodes)) {
       if (!['model', 'seed', 'snapshot', 'source'].includes(node.resource_type)) continue;
 
-      const tableName = node.name;
-      tableIdMap.set(uniqueId, tableName);
+      const tableId = node.unique_id;
 
       const columns = [];
       if (node.columns) {
@@ -55,10 +53,10 @@ export async function importDbt(projectDir, options) {
       }
 
       const tableEntry = {
-        id: tableName,
-        name: tableName,
-        logical_name: tableName,
-        physical_name: node.alias || tableName,
+        id: tableId,
+        name: node.name,
+        logical_name: node.name,
+        physical_name: node.alias || node.name,
         appearance: { type: 'table' },
         conceptual: { description: node.description || '' },
         columns,
@@ -79,7 +77,7 @@ export async function importDbt(projectDir, options) {
         const tags = node.tags || node.config?.tags || [];
         splitKey = tags.length > 0 ? tags[0] : 'untagged';
       }
-      tableSplitKeyMap.set(tableName, splitKey);
+      tableSplitKeyMap.set(tableId, splitKey);
 
       // domainsMap（folder構造から常に構築）
       const filePath = node.original_file_path || '';
@@ -91,21 +89,22 @@ export async function importDbt(projectDir, options) {
             if (!domainsMap.has(domainName)) {
               domainsMap.set(domainName, { id: domainName, name: domainName, tables: [] });
             }
-            domainsMap.get(domainName).tables.push(tableName);
+            domainsMap.get(domainName).tables.push(tableId);
           }
         }
       }
     }
 
-    // lineage
+    // lineage（unique_idで直接解決できる）
     for (const [uniqueId, node] of Object.entries(allNodes)) {
-      const tableName = tableIdMap.get(uniqueId);
-      if (!tableName) continue;
-      const tableEntry = tables.find(t => t.id === tableName);
+      if (!['model', 'seed', 'snapshot', 'source'].includes(node.resource_type)) continue;
+      const tableEntry = tables.find(t => t.id === node.unique_id);
       if (tableEntry && node.depends_on?.nodes) {
         for (const upstreamId of node.depends_on.nodes) {
-          const upstreamName = tableIdMap.get(upstreamId);
-          if (upstreamName) tableEntry.lineage.upstream.push(upstreamName);
+          // upstreamIdがallNodesに存在する場合のみ追加
+          if (allNodes[upstreamId]) {
+            tableEntry.lineage.upstream.push(upstreamId);
+          }
         }
       }
     }
@@ -114,7 +113,6 @@ export async function importDbt(projectDir, options) {
     fs.mkdirSync(outputDir, { recursive: true });
 
     if (splitBy) {
-      // ファイルを分割して出力
       const splitMap = new Map();
 
       for (const table of tables) {
@@ -148,7 +146,6 @@ export async function importDbt(projectDir, options) {
       console.log(`  🚀 Run 'modscape dev ${outputDir}' to visualize.`);
 
     } else {
-      // 1ファイルに出力
       const outputPath = path.join(outputDir, 'dbt-model.yaml');
       const outputModel = {
         tables,

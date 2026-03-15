@@ -9,6 +9,7 @@ import { initProject } from './init.js';
 import { exportModel } from './export.js';
 import { createModel } from './create.js';
 import { importDbt } from './import-dbt.js';
+import { syncDbt } from './sync-dbt.js';
 import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
@@ -81,5 +82,16 @@ dbtCommand
   .action((projectDir, options) => {
     importDbt(projectDir, options);
   });
+
+// dbtCommandに追加
+dbtCommand
+  .command('sync')
+  .description('Sync dbt project changes into existing Modscape YAML models')
+  .argument('[project-dir]', 'path to dbt project directory (default: current directory)')
+  .option('-o, --output <dir>', 'output directory (default: modscape-<project-name>)')
+  .action((projectDir, options) => {
+    syncDbt(projectDir, options);
+  });
+
 
 program.parse();
