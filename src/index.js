@@ -68,13 +68,18 @@ program
     exportModel(paths, options);
   });
 
-program
-  .command('import-dbt')
-  .description('Import dbt metadata (manifest.json) into a Modscape YAML model')
-  .argument('<manifest>', 'path to dbt manifest.json')
-  .option('-o, --output <path>', 'output YAML file path', 'dbt-model.yaml')
-  .action((manifest, options) => {
-    importDbt(manifest, options);
+const dbtCommand = program
+  .command('dbt')
+  .description('dbt integration commands');
+
+dbtCommand
+  .command('import')
+  .description('Import dbt project into Modscape YAML models')
+  .argument('[project-dir]', 'path to dbt project directory (default: current directory)')
+  .option('-o, --output <dir>', 'output directory (default: modscape-<project-name>)')
+  .option('--split-by <key>', 'split output by "schema", "tag", or "folder"')
+  .action((projectDir, options) => {
+    importDbt(projectDir, options);
   });
 
 program.parse();
