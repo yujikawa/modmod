@@ -11,7 +11,8 @@ import { createModel } from './create.js';
 import { importDbt } from './import-dbt.js';
 import { syncDbt } from './sync-dbt.js';
 import { createRequire } from 'module';
-
+  import { mergeModels } from './merge.js';
+  
 const require = createRequire(import.meta.url);
 const pkg = require('../package.json');
 
@@ -93,5 +94,14 @@ dbtCommand
     syncDbt(projectDir, options);
   });
 
+
+program
+  .command('merge')
+  .description('Merge multiple YAML models into one')
+  .argument('<paths...>', 'YAML files or directories to merge')
+  .option('-o, --output <path>', 'output file path', 'merged.yaml')
+  .action((paths, options) => {
+    mergeModels(paths, options);
+  });
 
 program.parse();

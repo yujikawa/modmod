@@ -2,13 +2,18 @@ import fs from 'fs';
 import path from 'path';
 import yaml from 'js-yaml';
 
+const getFolderKey = (node) => {
+  if (node.resource_type === 'seed') return 'seeds';
+  return node.fqn?.[1] || 'default';
+};
+
 export async function syncDbt(projectDir, options) {
   const resolvedDir = path.resolve(projectDir || '.');
   const manifestPath = path.join(resolvedDir, 'target', 'manifest.json');
 
-  // dbt_project.ymlからプロジェクト名を取得
   const dbtProjectPath = path.join(resolvedDir, 'dbt_project.yml');
   let projectName = path.basename(resolvedDir);
+
   if (fs.existsSync(dbtProjectPath)) {
     const dbtProject = yaml.load(fs.readFileSync(dbtProjectPath, 'utf8'));
     projectName = dbtProject.name || projectName;
@@ -32,7 +37,6 @@ export async function syncDbt(projectDir, options) {
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
     console.log(`  🔍 Parsing dbt manifest: ${manifestPath}`);
 
-    // manifest.jsonから最新のテーブル情報を構築
     const latestTablesMap = new Map();
     const allNodes = { ...manifest.nodes, ...manifest.sources };
 
@@ -76,8 +80,8 @@ export async function syncDbt(projectDir, options) {
       });
     }
 
-    // 出力フォルダ内のYAMLファイルを全部処理
-    const yamlFiles = fs.readdirSync(outputDir).filter(f => f.endsWith('.yaml') || f.endsWith('.yml'));
+    const yamlFiles = fs.readdirSync(outputDir)
+      .filter(f => f.endsWith('.yaml') || f.endsWith('.yml'));
 
     if (yamlFiles.length === 0) {
       console.error(`  ❌ No YAML files found in: ${outputDir}`);
@@ -96,15 +100,11 @@ export async function syncDbt(projectDir, options) {
 
       const newTables = existing.tables.map(table => {
         const latest = latestTablesMap.get(table.id);
-        if (!latest) {
-          // 削除されたモデル → そのまま残す
-          return table;
-        }
+        if (!latest) return table;
 
         processedTableIds.add(table.id);
         updatedCount++;
 
-        // columns・conceptual・lineageだけ更新、座標・リレーションは維持
         return {
           ...table,
           name: latest.name,
@@ -121,7 +121,6 @@ export async function syncDbt(projectDir, options) {
       console.log(`  📄 Updated: ${yamlPath}`);
     }
 
-    // 既存ファイルに存在しない新規テーブルを最初のYAMLに追加
     const newTables = [];
     for (const [tableId, latest] of latestTablesMap.entries()) {
       if (!processedTableIds.has(tableId)) {
