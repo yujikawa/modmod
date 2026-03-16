@@ -19,6 +19,7 @@ interface AppState {
   highlightedNodeIds: string[];
   hoveredColumnId: string | null;
   error: string | null;
+  isModelLoading: boolean;
   isCliMode: boolean;
   isAutoSaveEnabled: boolean;
   lastSavedAt: number;
@@ -136,6 +137,7 @@ export const useStore = create<AppState>((set, get) => ({
   selectedAnnotationId: null,
   highlightedNodeIds: [],
   hoveredColumnId: null,
+  isModelLoading: false,
   error: null,
   isCliMode: (typeof window !== 'undefined' && (window as any).MODSCAPE_CLI_MODE === true),
   isAutoSaveEnabled: true,
@@ -785,15 +787,16 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   setCurrentModel: async (slug) => {
+    set({ isModelLoading: true });
     try {
       const res = await fetch(`/api/model?model=${slug}`);
       const data = await res.json();
-      set({ schema: normalizeSchema(data), currentModelSlug: slug, selectedTableId: null, selectedEdgeId: null, selectedAnnotationId: null, error: null });
+      set({ schema: normalizeSchema(data), currentModelSlug: slug, selectedTableId: null, selectedEdgeId: null, selectedAnnotationId: null, error: null, isModelLoading: false });
       get().syncToYamlInput();
       const searchParams = new URLSearchParams(window.location.search);
       searchParams.set('model', slug);
       window.history.replaceState(null, '', `${window.location.pathname}?${searchParams.toString()}`);
-    } catch (e) { console.error('Failed to set model:', e); }
+    } catch (e) { console.error('Failed to set model:', e); set({ isModelLoading: false }); }
   },
 
   getSelectedTable: () => {

@@ -75,7 +75,8 @@ function Flow() {
     setIsPresentationMode,
     pathFinderResult,
     refreshModelData,
-    fetchAvailableFiles
+    fetchAvailableFiles,
+    isModelLoading
   } = useStore()
   
   const [nodes, setNodes, onNodesChange] = useNodesState([])
@@ -708,7 +709,7 @@ return (
           </div>
         )}
 
-        {!canvasVisible && (
+        {(!canvasVisible || isModelLoading) && (
           <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, zIndex: 10 }}>
             <div style={{ width: 36, height: 36, border: `3px solid ${theme === 'dark' ? '#334155' : '#e2e8f0'}`, borderTopColor: theme === 'dark' ? '#60a5fa' : '#3b82f6', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
             <span style={{ fontSize: 13, color: theme === 'dark' ? '#94a3b8' : '#64748b', fontWeight: 500 }}>Loading model…</span>
