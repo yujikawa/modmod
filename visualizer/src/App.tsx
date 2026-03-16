@@ -410,17 +410,22 @@ function Flow() {
     setEdgeSyncTrigger(v => v + 1);
   }, [schema, setNodes, currentModelSlug, showAnnotations, selectedTableId, selectedAnnotationId, pathFinderResult])
 
-  // FadeIn + FitView when model switches
+  // Hide canvas when model slug changes (loading starts)
   useEffect(() => {
     if (!currentModelSlug) return;
     setCanvasVisible(false);
+  }, [currentModelSlug])
+
+  // FadeIn + FitView once nodes are built after a model switch
+  useEffect(() => {
+    if (canvasVisible || !currentModelSlug || nodes.length === 0) return;
     const timer = setTimeout(() => {
       fitView({ duration: 0, padding: 0.1 });
       window.dispatchEvent(new Event('resize'));
       setCanvasVisible(true);
-    }, 100);
+    }, 50);
     return () => clearTimeout(timer);
-  }, [currentModelSlug, fitView])
+  }, [nodes, canvasVisible, currentModelSlug, fitView])
 
   // Sync Store Selection
   useEffect(() => {
@@ -702,6 +707,14 @@ return (
             </div>
           </div>
         )}
+
+        {!canvasVisible && (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, zIndex: 10 }}>
+            <div style={{ width: 36, height: 36, border: `3px solid ${theme === 'dark' ? '#334155' : '#e2e8f0'}`, borderTopColor: theme === 'dark' ? '#60a5fa' : '#3b82f6', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+            <span style={{ fontSize: 13, color: theme === 'dark' ? '#94a3b8' : '#64748b', fontWeight: 500 }}>Loading model…</span>
+          </div>
+        )}
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
         <div style={{ position: 'absolute', inset: 0, opacity: canvasVisible ? 1 : 0, transition: 'opacity 0.3s ease' }}>
         <ReactFlow
