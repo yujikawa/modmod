@@ -787,6 +787,11 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   setCurrentModel: async (slug) => {
+    // 旧モデルへの pending save をキャンセル（切り替え後に旧データで上書きされるのを防ぐ）
+    if (saveTimeout) {
+      clearTimeout(saveTimeout);
+      saveTimeout = null;
+    }
     set({ isModelLoading: true });
     try {
       const res = await fetch(`/api/model?model=${slug}`);
