@@ -37,7 +37,7 @@ In modern data analysis platforms, data modeling is no longer just about drawing
   - Optional **Auto-save** ensures your local YAML is always up-to-date.
 - **Dark/Light Mode Support**: Switch between themes seamlessly for better eye comfort or documentation exports.
 - **Specialized Modeling Types**: Native support for entity types like `fact`, `dimension`, `mart`, `hub`, `link`, `satellite`, and generic `table`.
-- **AI-Agent Ready**: Built-in scaffolding for **Gemini, Claude, and Codex** to accelerate your modeling workflow using LLMs.
+- **AI-Agent Ready**: Built-in scaffolding for **Gemini CLI, Claude Code, and Codex** — both for modeling (`/modscape:modeling`) and implementation code generation (`/modscape:codegen`).
 
 ## Installation
 
@@ -54,22 +54,27 @@ npm install -g modscape
 ### Path A: AI-Driven Modeling (Recommended)
 Leverage AI coding assistants (**Gemini CLI, Claude Code, or Codex**) to build your models.
 
-1.  **Initialize**: Scaffold modeling rules and instructions for your preferred agent.
+1.  **Initialize**: Scaffold modeling rules and commands for your preferred agent.
     ```bash
-    # For Gemini CLI
-    modscape init --gemini
-
-    # For Claude Code
-    modscape init --claude
-
-    # For Codex
-    modscape init --codex
+    modscape init --gemini   # Gemini CLI
+    modscape init --claude   # Claude Code
+    modscape init --codex    # Codex
+    modscape init --all      # all three
     ```
+    This creates `.modscape/rules.md` (YAML schema rules) and `.modscape/codegen-rules.md` (code generation rules), plus agent-specific command files.
+
 2.  **Start Dev**: Launch the visualizer.
     ```bash
     modscape dev model.yaml
     ```
-3.  **Prompt Your AI**: Tell your agent: *"Use the rules in .modscape/rules.md to add a new 'Marketing' domain with a 'campaign_performance' fact table to my model.yaml."*
+
+3.  **Model with AI** — use `/modscape:modeling` to design your data model:
+    > *"Use the rules in .modscape/rules.md to add a new 'Marketing' domain with a 'campaign_performance' fact table."*
+
+4.  **Generate implementation code** — use `/modscape:codegen` to turn your YAML into dbt / SQLMesh / Spark SQL:
+    > *"Follow .modscape/codegen-rules.md and generate dbt models from model.yaml."*
+
+    The agent generates models in the correct dependency order and adds `-- TODO:` comments wherever the YAML doesn't fully specify the logic.
 
 ### Path B: Manual Modeling
 Best for direct architectural control.
@@ -132,6 +137,20 @@ tables:
       upstream:
         - fct_sales
         - dim_dates
+
+    implementation:  # optional – hints for AI code generation
+      materialization: incremental  # table | view | incremental | ephemeral
+      incremental_strategy: merge   # merge | append | delete+insert
+      unique_key: order_id
+      partition_by:
+        field: order_date       # use a DATE/TIMESTAMP column, not a surrogate key
+        granularity: day        # day | month | year | hour
+      cluster_by: [customer_id]
+      grain: [month_key]        # GROUP BY columns (mart only)
+      measures:                 # aggregation definitions (mart only)
+        - column: total_revenue
+          agg: sum              # sum | count | count_distinct | avg | min | max
+          source_column: fct_sales.amount
 
     columns:
       - id: order_id

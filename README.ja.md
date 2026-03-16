@@ -40,7 +40,7 @@ https://yujikawa.github.io/modscape/
   - オートセーブにより、ローカルのYAMLを常に最新の状態に維持。
 - **ダーク/ライトモード対応**: 利用環境やドキュメント作成の用途に合わせて、ワンクリックでテーマを切り替え可能。
 - **データ分析特化のモデリング**: `fact`, `dimension`, `mart`, `hub`, `link`, `satellite` に加え、汎用的な `table` タイプを標準サポート。
-- **AIエージェント対応**: **Gemini, Claude, Codex** 用の雛形を内蔵。LLMを活用してモデリング作業を劇的に加速。
+- **AIエージェント対応**: **Gemini CLI, Claude Code, Codex** 用の雛形を内蔵。モデリング（`/modscape:modeling`）と実装コード生成（`/modscape:codegen`）の両方でLLMを活用できます。
 
 ## インストール
 
@@ -53,15 +53,27 @@ npm install -g modscape
 ## はじめに
 
 ### A: AI駆動のモデリング（推奨）
-1.  **初期化**: 使用するAIエージェントに合わせてモデリングルールを生成します。
+1.  **初期化**: 使用するAIエージェントに合わせてルールファイルとコマンドを生成します。
     ```bash
-    modscape init --gemini  # または --claude, --codex
+    modscape init --gemini   # Gemini CLI
+    modscape init --claude   # Claude Code
+    modscape init --codex    # Codex
+    modscape init --all      # 3つすべて
     ```
+    `.modscape/rules.md`（YAMLスキーマのルール）と `.modscape/codegen-rules.md`（実装コード生成のルール）、および各エージェント用のコマンドファイルが生成されます。
+
 2.  **起動**: ビジュアライザーを起動します。
     ```bash
     modscape dev model.yaml
     ```
-3.  **AIに指示**: AIにこう伝えてください： *" .modscape/rules.md のルールに従って、model.yaml に新しい 'Marketing' ドメインを追加して。"*
+
+3.  **データモデルの設計** — `/modscape:modeling` でモデルを作成・編集します。
+    > *".modscape/rules.md のルールに従って、model.yaml に新しい 'Marketing' ドメインを追加して。"*
+
+4.  **実装コードの生成** — `/modscape:codegen` でYAMLをdbt / SQLMesh / Spark SQLに変換します。
+    > *".modscape/codegen-rules.md に従って、model.yaml からdbtモデルを生成して。"*
+
+    エージェントは `lineage.upstream` を元に依存関係の順でモデルを生成し、YAMLで定義しきれない箇所には `-- TODO:` コメントを残します。
 
 ### B: 手動モデリング
 1.  **YAML作成**: `model.yaml` ファイルを作成します。
@@ -122,6 +134,20 @@ tables:
       upstream:
         - fct_sales
         - dim_dates
+
+    implementation:  # 任意 – AIコード生成へのヒント
+      materialization: incremental  # table | view | incremental | ephemeral
+      incremental_strategy: merge   # merge | append | delete+insert
+      unique_key: order_id
+      partition_by:
+        field: order_date       # DATE/TIMESTAMP型カラムを指定（サロゲートキーは不可）
+        granularity: day        # day | month | year | hour
+      cluster_by: [customer_id]
+      grain: [month_key]        # GROUP BY カラム（martのみ）
+      measures:                 # 集計定義（martのみ）
+        - column: total_revenue
+          agg: sum              # sum | count | count_distinct | avg | min | max
+          source_column: fct_sales.amount
 
     columns:
       - id: order_id

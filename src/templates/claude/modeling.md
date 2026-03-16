@@ -1,5 +1,3 @@
-# /modscape:modeling
-
 Start an interactive data modeling session.
 
 ## Instructions
