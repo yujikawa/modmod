@@ -727,7 +727,7 @@ export const useStore = create<AppState>((set, get) => ({
   toggleTableSelection: (id) => {
     const { selectedTableId } = get();
     if (selectedTableId === id) set({ selectedTableId: null, isDetailPanelMinimized: true });
-    else set({ selectedTableId: id, selectedEdgeId: null, selectedAnnotationId: null, isDetailPanelMinimized: false });
+    else set({ selectedTableId: id, selectedEdgeId: null, selectedAnnotationId: null });
   },
 
   toggleEdgeSelection: (id) => {
