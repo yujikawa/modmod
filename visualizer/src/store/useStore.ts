@@ -794,8 +794,15 @@ export const useStore = create<AppState>((set, get) => ({
     }
     set({ isModelLoading: true });
     try {
-      const res = await fetch(`/api/model?model=${slug}`);
-      const data = await res.json();
+      const injectedData = (window as any).__MODSCAPE_DATA__;
+      let data;
+      if (injectedData?.models) {
+        const model = injectedData.models.find((m: any) => m.slug === slug);
+        data = model?.schema;
+      } else {
+        const res = await fetch(`/api/model?model=${slug}`);
+        data = await res.json();
+      }
       set({ schema: normalizeSchema(data), currentModelSlug: slug, selectedTableId: null, selectedEdgeId: null, selectedAnnotationId: null, error: null, isModelLoading: false });
       get().syncToYamlInput();
       const searchParams = new URLSearchParams(window.location.search);

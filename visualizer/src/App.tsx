@@ -611,7 +611,6 @@ function Flow() {
   }, [schema, setNodes]);
 
   const onNodeDragStop = useCallback((_: any, node: Node) => {
-    if (!isCliMode) return;
     if (node.type === 'annotation') {
       const annotation = schema?.annotations?.find(a => a.id === node.id);
       if (annotation) {
@@ -635,7 +634,6 @@ function Flow() {
   }, [isCliMode, updateNodePosition, updateAnnotation, schema, nodes]);
 
   const onSelectionDragStop = useCallback((_: any, nodes: Node[]) => {
-    if (!isCliMode) return;
     const updates = nodes.map(node => ({
       id: node.id,
       x: node.position.x,
