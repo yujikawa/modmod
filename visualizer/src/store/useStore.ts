@@ -248,9 +248,11 @@ export const useStore = create<AppState>((set, get) => ({
   updateNodePosition: (id, x, y, parentId) => {
     const { schema } = get();
     if (!schema) return;
-    const newLayout = { 
-      ...(schema.layout || {}), 
-      [id]: { x, y, ...(parentId ? { parentId } : {}) } 
+    const existing = schema.layout?.[id] || {};
+    const newLayout = {
+      ...(schema.layout || {}),
+      // width/height を保持しながら x/y だけ更新する
+      [id]: { ...existing, x, y, ...(parentId ? { parentId } : {}) }
     };
     set({ schema: { ...schema, layout: newLayout } });
     get().syncToYamlInput();
@@ -262,7 +264,9 @@ export const useStore = create<AppState>((set, get) => ({
     if (!schema) return;
     const newLayout = { ...(schema.layout || {}) };
     updates.forEach(({ id, x, y, parentId }) => {
-      newLayout[id] = { x, y, ...(parentId ? { parentId } : {}) };
+      const existing = newLayout[id] || {};
+      // width/height を保持しながら x/y だけ更新する
+      newLayout[id] = { ...existing, x, y, ...(parentId ? { parentId } : {}) };
     });
     set({ schema: { ...schema, layout: newLayout } });
     get().syncToYamlInput();
@@ -284,18 +288,20 @@ export const useStore = create<AppState>((set, get) => ({
 
   saveSchema: async (force = false) => {
     const { schema, isCliMode, isAutoSaveEnabled, lastUpdateSource } = get();
-    
-    // ユーザー操作（エディタ入力等）の場合はファイル書き込みは行わないが、
-    // 3秒ガード用のタイムスタンプだけ更新する
-    if (lastUpdateSource === 'user') {
-      set({ lastSavedAt: Date.now() });
-      return;
-    }
+
+    // refreshModelData の3秒ガードを確実に効かせるため、
+    // saveSchema 呼び出し時点で即座に lastSavedAt を更新する。
+    // これにより、デバウンス中（~1000ms）にWSリフレッシュが来ても
+    // ローカルの変更が上書きされない。
+    set({ lastSavedAt: Date.now() });
+
+    // ユーザー操作（エディタ入力等）の場合はファイル書き込みは不要
+    if (lastUpdateSource === 'user') return;
 
     if (!isCliMode || (!isAutoSaveEnabled && !force)) return;
 
     if (saveTimeout) clearTimeout(saveTimeout);
-    
+
     saveTimeout = setTimeout(async () => {
       try {
         const yamlStr = yaml.dump(schema, { indent: 2, lineWidth: -1, noRefs: true });

@@ -1,7 +1,4 @@
 tables:
-  # ============================================================
-  # Layer 1: Staging  — ソースシステムからの生データ (view)
-  # ============================================================
   - id: stg_customers
     name: Customers
     logical_name: Raw Customer Records
@@ -38,7 +35,6 @@ tables:
           name: Updated At
           type: Timestamp
     sampleData: []
-
   - id: stg_products
     name: Products
     logical_name: Raw Product Catalog
@@ -75,7 +71,6 @@ tables:
           name: Updated At
           type: Timestamp
     sampleData: []
-
   - id: stg_orders
     name: Orders
     logical_name: Raw Order Events
@@ -109,7 +104,6 @@ tables:
           name: Total Amount
           type: Decimal
     sampleData: []
-
   - id: stg_order_items
     name: Order Items
     logical_name: Raw Order Line Items
@@ -146,10 +140,6 @@ tables:
           type: Decimal
           additivity: semi
     sampleData: []
-
-  # ============================================================
-  # Layer 2: Core DWH  — コンフォームドディメンション＋ファクト
-  # ============================================================
   - id: dim_customers
     name: Customers
     logical_name: Customer Dimension
@@ -201,7 +191,6 @@ tables:
           type: Boolean
           isMetadata: true
     sampleData: []
-
   - id: dim_products
     name: Products
     logical_name: Product Dimension
@@ -241,7 +230,6 @@ tables:
           name: List Price
           type: Decimal
     sampleData: []
-
   - id: dim_dates
     name: Calendar
     logical_name: Date Dimension
@@ -286,7 +274,6 @@ tables:
           name: Is Weekend
           type: Boolean
     sampleData: []
-
   - id: fct_orders
     name: Orders
     logical_name: Order Fact Table
@@ -353,10 +340,6 @@ tables:
           name: Order Status
           type: String
     sampleData: []
-
-  # ============================================================
-  # Layer 3: Analytics Mart  — ビジネス集計
-  # ============================================================
   - id: mart_daily_revenue
     name: Daily Revenue
     logical_name: Daily Revenue Summary
@@ -399,7 +382,6 @@ tables:
           type: Decimal
           additivity: semi
     sampleData: []
-
   - id: mart_customer_ltv
     name: Customer LTV
     logical_name: Customer Lifetime Value
@@ -451,7 +433,6 @@ tables:
           name: Last Order Date
           type: Date
     sampleData: []
-
   - id: mart_product_performance
     name: Product Performance
     logical_name: Product Sales Performance
@@ -503,9 +484,7 @@ tables:
           type: Int
           additivity: fully
     sampleData: []
-
 relationships:
-  # --- Staging layer (in-layer): orders → order_items ---
   - from:
       table: stg_orders
       column: order_id
@@ -513,8 +492,6 @@ relationships:
       table: stg_order_items
       column: order_id
     type: one-to-many
-
-  # --- Core DWH: dim → fct ---
   - from:
       table: dim_customers
       column: customer_key
@@ -522,7 +499,6 @@ relationships:
       table: fct_orders
       column: customer_key
     type: one-to-many
-
   - from:
       table: dim_products
       column: product_key
@@ -530,7 +506,6 @@ relationships:
       table: fct_orders
       column: product_key
     type: one-to-many
-
   - from:
       table: dim_dates
       column: date_key
@@ -538,8 +513,6 @@ relationships:
       table: fct_orders
       column: order_date_key
     type: one-to-many
-
-
 domains:
   - id: staging
     name: Staging
@@ -550,7 +523,6 @@ domains:
       - stg_products
       - stg_orders
       - stg_order_items
-
   - id: core_dwh
     name: Core DWH
     description: Conformed dimensions and incremental fact table
@@ -560,7 +532,6 @@ domains:
       - dim_products
       - dim_dates
       - fct_orders
-
   - id: analytics_mart
     name: Analytics Mart
     description: Business-facing aggregated summaries
@@ -569,15 +540,13 @@ domains:
       - mart_daily_revenue
       - mart_customer_ltv
       - mart_product_performance
-
 annotations: []
-
 layout:
   staging:
-    x: 0
-    'y': 0
-    width: 1460
-    height: 380
+    x: 709.4904315940848
+    'y': -111.3550004744079
+    width: 756
+    height: 1384
   stg_customers:
     x: 40
     'y': 60
@@ -587,50 +556,48 @@ layout:
     'y': 60
     parentId: staging
   stg_orders:
-    x: 760
-    'y': 60
+    x: 187.31714041733085
+    'y': 492.6937161291277
     parentId: staging
   stg_order_items:
-    x: 1120
-    'y': 60
+    x: 295.97299648938156
+    'y': 979
     parentId: staging
-
   core_dwh:
-    x: 0
-    'y': 450
-    width: 1460
-    height: 420
+    x: 1536.6990065468297
+    'y': -122.68285958266921
+    width: 814
+    height: 1396
   dim_customers:
     x: 40
     'y': 60
     parentId: core_dwh
   dim_products:
-    x: 380
-    'y': 60
+    x: 443.93003186753003
+    'y': 90.13734587719486
     parentId: core_dwh
   dim_dates:
-    x: 720
-    'y': 60
+    x: 60.93075503591194
+    'y': 816.6066094029468
     parentId: core_dwh
   fct_orders:
-    x: 1060
-    'y': 60
+    x: 557.3117121441007
+    'y': 845.8481462051072
     parentId: core_dwh
-
   analytics_mart:
-    x: 0
-    'y': 950
-    width: 1460
-    height: 380
+    x: 2407.9416441807534
+    'y': -112.56478411800545
+    width: 403
+    height: 1385
   mart_daily_revenue:
-    x: 40
-    'y': 60
+    x: 49.26090291592823
+    'y': 40.8517737796939
     parentId: analytics_mart
   mart_customer_ltv:
-    x: 520
-    'y': 60
+    x: 68.34151742462859
+    'y': 395.51485882361646
     parentId: analytics_mart
   mart_product_performance:
-    x: 1000
-    'y': 60
+    x: 59.712354895917315
+    'y': 878.4985740039285
     parentId: analytics_mart
