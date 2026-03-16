@@ -19,14 +19,15 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
   const updateNodeInternals = useUpdateNodeInternals()
 
   useEffect(() => {
+    if (!table) return
     // Notify React Flow that handles might have shifted due to dynamic header content
     updateNodeInternals(id)
     const timer = setTimeout(() => setIsNew(false), 1000)
     return () => clearTimeout(timer)
-  }, [id, table.name, table.logical_name, table.physical_name, table.columns, updateNodeInternals])
+  }, [id, table?.name, table?.logical_name, table?.physical_name, table?.columns, updateNodeInternals])
 
-  const { 
-    updateNodeDimensions, 
+  const {
+    updateNodeDimensions,
     hoveredColumnId,
     showER,
     showLineage,
@@ -37,6 +38,8 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
     selectedAnnotationId,
     highlightedNodeIds
   } = useStore()
+
+  if (!table) return null
 
   const isActuallySelected = selected;
   const isHighlighted = highlightedNodeIds.includes(id);

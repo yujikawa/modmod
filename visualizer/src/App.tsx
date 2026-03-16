@@ -82,7 +82,8 @@ function Flow() {
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const { fitView, getViewport, setViewport, screenToFlowPosition, getNodes } = useReactFlow()
   const [edgeSyncTrigger, setEdgeSyncTrigger] = useState(0)
-  const lastLoadedModel = useRef<string | null>(null)
+  const [canvasVisible, setCanvasVisible] = useState(true)
+
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimeoutRef = useRef<number | null>(null)
   const reconnectDelayRef = useRef<number>(1000)
@@ -406,19 +407,20 @@ function Flow() {
     }
 
     setNodes(newNodes)
+    setEdgeSyncTrigger(v => v + 1);
+  }, [schema, setNodes, currentModelSlug, showAnnotations, selectedTableId, selectedAnnotationId, pathFinderResult])
 
-    if (lastLoadedModel.current !== currentModelSlug) {
-      const timer = setTimeout(() => {
-        fitView({ duration: 400, padding: 0.2 });
-        window.dispatchEvent(new Event('resize'));
-        setEdgeSyncTrigger(v => v + 1);
-      }, 400);
-      lastLoadedModel.current = currentModelSlug;
-      return () => clearTimeout(timer);
-    } else {
-      setEdgeSyncTrigger(v => v + 1);
-    }
-  }, [schema, setNodes, fitView, currentModelSlug, showAnnotations, selectedTableId, selectedAnnotationId, pathFinderResult])
+  // FadeIn + FitView when model switches
+  useEffect(() => {
+    if (!currentModelSlug) return;
+    setCanvasVisible(false);
+    const timer = setTimeout(() => {
+      fitView({ duration: 0, padding: 0.1 });
+      window.dispatchEvent(new Event('resize'));
+      setCanvasVisible(true);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [currentModelSlug, fitView])
 
   // Sync Store Selection
   useEffect(() => {
@@ -476,8 +478,8 @@ function Flow() {
     if (showLineage) {
       schema.tables.forEach(table => {
         if (table.lineage?.upstream) {
-          table.lineage.upstream.forEach((upstreamId, index) => {
-            const edgeId = `lin-${upstreamId}-${table.id}-${index}`;
+          table.lineage.upstream.forEach((upstreamId) => {
+            const edgeId = `lin-${upstreamId}-${table.id}`;
             const isPartOfPath = pathFinderResult?.edgeIds.includes(edgeId);
             const isConnectedToSelected = selectedTableId === table.id || selectedTableId === upstreamId;
             const isDirectlySelected = selectedEdgeId === edgeId;
@@ -701,6 +703,7 @@ return (
           </div>
         )}
 
+        <div style={{ position: 'absolute', inset: 0, opacity: canvasVisible ? 1 : 0, transition: 'opacity 0.3s ease' }}>
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -736,6 +739,7 @@ return (
           <Background color={theme === 'dark' ? '#334155' : '#e2e8f0'} gap={20} />
           <Controls />
         </ReactFlow>
+        </div>
       </div>
 
       {/* Bottom: Detail Panel (Hidden in Presentation Mode) */}

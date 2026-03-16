@@ -276,7 +276,8 @@ export const useStore = create<AppState>((set, get) => ({
   updateNodeDimensions: (id, width, height) => {
     const { schema } = get();
     if (!schema) return;
-    const currentLayout = schema.layout?.[id] || { x: 0, y: 0 };
+    // x/y のデフォルトを持ちつつ既存エントリをマージして parentId 等を保持する
+    const currentLayout = { x: 0, y: 0, ...schema.layout?.[id] };
     const newLayout = { 
       ...(schema.layout || {}), 
       [id]: { ...currentLayout, width, height } 
@@ -329,7 +330,7 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       const res = await fetch('/api/model' + window.location.search);
       const data = await res.json();
-      set({ schema: normalizeSchema(data) });
+      set({ schema: normalizeSchema(data), selectedTableId: null, selectedEdgeId: null, selectedAnnotationId: null });
       get().syncToYamlInput();
     } catch (e) {
       console.error('Failed to refresh data:', e);
@@ -509,7 +510,11 @@ export const useStore = create<AppState>((set, get) => ({
       if (domain.id === domainId) return { ...domain, tables: Array.from(new Set([...filteredTables, tableId])) };
       return { ...domain, tables: filteredTables };
     });
-    const newLayout = { ...(schema.layout || {}), [tableId]: { x: 20, y: 20 } };
+    const newLayout = {
+      ...(schema.layout || {}),
+      // 既存の width/height を保持しつつ parentId を設定する
+      [tableId]: { x: 20, y: 20, ...schema.layout?.[tableId], ...(domainId ? { parentId: domainId } : {}) }
+    };
     set({ schema: { ...schema, domains: newDomains, layout: newLayout } });
     get().syncToYamlInput();
     get().saveSchema();
@@ -524,7 +529,11 @@ export const useStore = create<AppState>((set, get) => ({
       return { ...domain, tables: filteredTables };
     });
     const newLayout = { ...(schema.layout || {}) };
-    if (domainId) tableIds.forEach(id => { newLayout[id] = { x: 20, y: 20 }; });
+    // 既存の width/height/x/y を保持しつつ parentId を設定する（未設定なら x/y はデフォルト値）
+    if (domainId) tableIds.forEach(id => {
+      const existing = newLayout[id] || {};
+      newLayout[id] = { ...existing, x: existing.x ?? 20, y: existing.y ?? 20, parentId: domainId };
+    });
     set({ schema: { ...schema, domains: newDomains, layout: newLayout } });
     get().syncToYamlInput();
     get().saveSchema();
@@ -716,7 +725,7 @@ export const useStore = create<AppState>((set, get) => ({
   toggleTableSelection: (id) => {
     const { selectedTableId } = get();
     if (selectedTableId === id) set({ selectedTableId: null, isDetailPanelMinimized: true });
-    else set({ selectedTableId: id, selectedEdgeId: null, selectedAnnotationId: null, isDetailPanelMinimized: true });
+    else set({ selectedTableId: id, selectedEdgeId: null, selectedAnnotationId: null, isDetailPanelMinimized: false });
   },
 
   toggleEdgeSelection: (id) => {

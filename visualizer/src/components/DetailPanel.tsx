@@ -232,7 +232,11 @@ const DetailPanel = () => {
                       onChange={(e) => {
                         const val = e.target.value;
                         if (!val) {
-                          updateAnnotation(annotation.id, { targetId: undefined, targetType: undefined });
+                          const targetLayout = schema?.layout?.[annotation.targetId!];
+                          const parentLayout = targetLayout?.parentId ? schema?.layout?.[targetLayout.parentId] : null;
+                          const absX = (parentLayout?.x ?? 0) + (targetLayout?.x ?? 0) + annotation.offset.x;
+                          const absY = (parentLayout?.y ?? 0) + (targetLayout?.y ?? 0) + annotation.offset.y;
+                          updateAnnotation(annotation.id, { targetId: undefined, targetType: undefined, offset: { x: absX, y: absY } });
                         } else {
                           const isTable = schema?.tables.some(t => t.id === val);
                           updateAnnotation(annotation.id, { 
@@ -256,7 +260,13 @@ const DetailPanel = () => {
                     </select>
                     {annotation.targetId ? (
                       <button 
-                        onClick={() => updateAnnotation(annotation.id, { targetId: undefined, targetType: undefined })}
+                        onClick={() => {
+                          const targetLayout = schema?.layout?.[annotation.targetId!];
+                          const parentLayout = targetLayout?.parentId ? schema?.layout?.[targetLayout.parentId] : null;
+                          const absX = (parentLayout?.x ?? 0) + (targetLayout?.x ?? 0) + annotation.offset.x;
+                          const absY = (parentLayout?.y ?? 0) + (targetLayout?.y ?? 0) + annotation.offset.y;
+                          updateAnnotation(annotation.id, { targetId: undefined, targetType: undefined, offset: { x: absX, y: absY } });
+                        }}
                         className="p-2 text-red-500 hover:bg-red-50 rounded border border-red-100"
                         title="Unbind Target"
                       >
@@ -494,10 +504,22 @@ const DetailPanel = () => {
             <section>
               <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Domain Theme Color</h3>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <input 
-                  type="color" 
-                  value={domain.color?.startsWith('rgba') ? '#3b82f6' : (domain.color || '#3b82f6')} 
-                  onChange={(e) => updateDomain(domain.id, { color: e.target.value })}
+                <input
+                  type="color"
+                  value={(() => {
+                    const c = domain.color;
+                    if (!c) return '#3b82f6';
+                    const m = c.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+                    if (m) return '#' + [m[1], m[2], m[3]].map(n => parseInt(n).toString(16).padStart(2, '0')).join('');
+                    return c.startsWith('#') ? c : '#3b82f6';
+                  })()}
+                  onChange={(e) => {
+                    const hex = e.target.value;
+                    const r = parseInt(hex.slice(1, 3), 16);
+                    const g = parseInt(hex.slice(3, 5), 16);
+                    const b = parseInt(hex.slice(5, 7), 16);
+                    updateDomain(domain.id, { color: `rgba(${r}, ${g}, ${b}, 0.12)` });
+                  }}
                   style={{ width: '40px', height: '40px', padding: 0, border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
                 />
                 <input 
@@ -519,6 +541,8 @@ const DetailPanel = () => {
   }
 
   // --- Table Editor Rendering ---
+  if (!table) return null;
+
   const tabs = [
     { id: 'conceptual', label: 'Conceptual', icon: <TagIcon size={14} /> },
     { id: 'logical', label: 'Logical', icon: <Database size={14} /> },
