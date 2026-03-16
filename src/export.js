@@ -180,11 +180,67 @@ export function generateMarkdown(schema, modelName) {
   md += '## Table Catalog\n\n';
   schema.tables.forEach(table => {
     md += `### ${table.name} ${table.appearance?.icon || ''}\n`;
+    if (table.logical_name) md += `*${table.logical_name}*\n\n`;
     if (table.conceptual?.description) {
       md += `**Description**: ${table.conceptual.description}\n\n`;
     }
+
+    // Type + SCD
     if (table.appearance?.type) {
-      md += `**Type**: ${table.appearance.type.toUpperCase()}\n\n`;
+      const scd = table.appearance.scd ? ` · SCD ${table.appearance.scd}` : '';
+      md += `**Type**: \`${table.appearance.type.toUpperCase()}\`${scd}\n\n`;
+    }
+
+    // Physical name
+    if (table.physical_name) {
+      md += `**Physical Name**: \`${table.physical_name}\`\n\n`;
+    }
+
+    // Lineage
+    if (table.lineage?.upstream?.length > 0) {
+      const upstreamNames = table.lineage.upstream.map(upId => {
+        const t = schema.tables.find(t => t.id === upId);
+        return t ? t.name : upId;
+      });
+      md += `**Upstream**: ${upstreamNames.map(n => `\`${n}\``).join(' → ')}\n\n`;
+    }
+
+    // Implementation
+    if (table.implementation) {
+      const impl = table.implementation;
+      md += '#### Implementation\n\n';
+      md += '| Property | Value |\n| --- | --- |\n';
+      if (impl.materialization) md += `| Materialization | \`${impl.materialization}\` |\n`;
+      if (impl.incremental_strategy) md += `| Incremental Strategy | \`${impl.incremental_strategy}\` |\n`;
+      if (impl.unique_key) {
+        const uk = Array.isArray(impl.unique_key) ? impl.unique_key.join(', ') : impl.unique_key;
+        md += `| Unique Key | \`${uk}\` |\n`;
+      }
+      if (impl.partition_by) {
+        const pb = impl.partition_by;
+        const field = pb.field || pb[0]?.field;
+        const gran = pb.granularity || pb[0]?.granularity;
+        md += `| Partition By | \`${field}\`${gran ? ` (${gran})` : ''} |\n`;
+      }
+      if (impl.cluster_by) {
+        const cb = Array.isArray(impl.cluster_by) ? impl.cluster_by.join(', ') : impl.cluster_by;
+        md += `| Cluster By | \`${cb}\` |\n`;
+      }
+      if (impl.grain) {
+        const grain = Array.isArray(impl.grain) ? impl.grain.join(', ') : impl.grain;
+        md += `| Grain (GROUP BY) | \`${grain}\` |\n`;
+      }
+      md += '\n';
+
+      // Measures
+      if (impl.measures?.length > 0) {
+        md += '#### Measures\n\n';
+        md += '| Column | Aggregation | Source Column |\n| --- | --- | --- |\n';
+        impl.measures.forEach(m => {
+          md += `| \`${m.column}\` | \`${m.agg}\` | ${m.source_column ? `\`${m.source_column}\`` : '-'} |\n`;
+        });
+        md += '\n';
+      }
     }
 
     // Columns Table (Enhanced with Physical info)
