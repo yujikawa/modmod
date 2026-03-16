@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useStore } from '../store/useStore'
-import { X, Plus, Trash2, Tag as TagIcon, Table as TableIcon, Database, Link as LinkIcon, Unlink, ChevronUp, ChevronDown } from 'lucide-react'
+import { X, Plus, Trash2, Tag as TagIcon, Table as TableIcon, Database, Link as LinkIcon, Unlink, ChevronUp, ChevronDown, Cpu } from 'lucide-react'
 import type { Table, Column } from '../types/schema'
 
 const TYPE_CONFIG: Record<string, { color: string; icon: string; label: string }> = {
@@ -523,6 +523,7 @@ const DetailPanel = () => {
     { id: 'conceptual', label: 'Conceptual', icon: <TagIcon size={14} /> },
     { id: 'logical', label: 'Logical', icon: <Database size={14} /> },
     { id: 'physical', label: 'Physical', icon: <Database size={14} /> },
+    { id: 'implementation', label: 'Implementation', icon: <Cpu size={14} /> },
     { id: 'sample', label: 'Sample Data', icon: <TableIcon size={14} /> }
   ]
 
@@ -1113,6 +1114,214 @@ const DetailPanel = () => {
           </div>
         )}
         
+        {activeTab === 'implementation' && (
+          <div className="flex flex-col gap-5">
+            <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Implementation Hints</h3>
+            <p className="text-[10px] text-slate-400 -mt-3">Code generation hints for AI agents (dbt, Spark, SQLMesh, etc.).</p>
+
+            {/* Materialization */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Materialization</label>
+              <select
+                value={table!.implementation?.materialization || ''}
+                onChange={(e) => {
+                  const val = e.target.value as any
+                  const isIncremental = val === 'incremental'
+                  const hasPhysicalTable = val === 'table' || val === 'incremental'
+                  handleUpdateTable({
+                    implementation: {
+                      ...table!.implementation,
+                      materialization: val || undefined,
+                      // incremental固有のフィールドはincremental以外に変更時クリア
+                      incremental_strategy: isIncremental ? table!.implementation?.incremental_strategy : undefined,
+                      unique_key: isIncremental ? table!.implementation?.unique_key : undefined,
+                      // partition_byは物理テーブル(table/incremental)以外に変更時クリア
+                      partition_by: hasPhysicalTable ? table!.implementation?.partition_by : undefined,
+                    }
+                  })
+                }}
+                className={`w-full px-3 py-2 rounded border text-sm transition-colors ${
+                  theme === 'dark'
+                    ? 'bg-slate-800 border-slate-700 text-slate-100'
+                    : 'bg-white border-slate-300 text-slate-800'
+                }`}
+              >
+                <option value=""></option>
+                <option value="table">📋 table</option>
+                <option value="view">👁 view</option>
+                <option value="incremental">⚡ incremental</option>
+                <option value="ephemeral">👻 ephemeral</option>
+              </select>
+            </div>
+
+            {/* Incremental options */}
+            {table!.implementation?.materialization === 'incremental' && (
+              <div className={`flex flex-col gap-3 p-3 rounded-lg border ${
+                theme === 'dark' ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-200'
+              }`}>
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Incremental Settings</div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-semibold text-slate-500">Strategy</label>
+                  <select
+                    value={table!.implementation?.incremental_strategy || ''}
+                    onChange={(e) => {
+                      const val = e.target.value as any
+                      handleUpdateTable({
+                        implementation: {
+                          ...table!.implementation,
+                          incremental_strategy: val || undefined
+                        }
+                      })
+                    }}
+                    className={`w-full px-3 py-2 rounded border text-sm transition-colors ${
+                      theme === 'dark'
+                        ? 'bg-slate-700 border-slate-600 text-slate-100'
+                        : 'bg-white border-slate-300 text-slate-800'
+                    }`}
+                  >
+                    <option value=""></option>
+                    <option value="merge">merge</option>
+                    <option value="append">append</option>
+                    <option value="delete+insert">delete+insert</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-semibold text-slate-500">Unique Key</label>
+                  <div className="flex flex-wrap gap-1.5 mb-1">
+                    {(Array.isArray(table!.implementation?.unique_key) ? table!.implementation!.unique_key! : []).map((key) => (
+                      <span
+                        key={key}
+                        className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono ${
+                          theme === 'dark' ? 'bg-slate-600 text-slate-200' : 'bg-slate-100 text-slate-700'
+                        }`}
+                      >
+                        {key}
+                        <button
+                          onClick={() => {
+                            const updated = (table!.implementation?.unique_key || []).filter(k => k !== key)
+                            handleUpdateTable({
+                              implementation: {
+                                ...table!.implementation,
+                                unique_key: updated.length ? updated : undefined
+                              }
+                            })
+                          }}
+                          className="text-slate-400 hover:text-red-400 ml-0.5"
+                        >×</button>
+                      </span>
+                    ))}
+                  </div>
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      const val = e.target.value
+                      if (!val) return
+                      const current = Array.isArray(table!.implementation?.unique_key) ? table!.implementation!.unique_key! : []
+                      if (!current.includes(val)) {
+                        handleUpdateTable({
+                          implementation: {
+                            ...table!.implementation,
+                            unique_key: [...current, val]
+                          }
+                        })
+                      }
+                    }}
+                    className={`w-full px-3 py-2 rounded border text-sm font-mono transition-colors ${
+                      theme === 'dark'
+                        ? 'bg-slate-700 border-slate-600 text-slate-100'
+                        : 'bg-white border-slate-300 text-slate-800'
+                    }`}
+                  >
+                    <option value="">+ Add column</option>
+                    {(table!.columns || [])
+                      .filter(col => !(table!.implementation?.unique_key || []).includes(col.physical?.name || col.id))
+                      .map(col => {
+                        const physName = col.physical?.name || col.id
+                        return <option key={col.id} value={physName}>{physName}</option>
+                      })}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Partition By — 物理テーブル(table/incremental)のみ表示 */}
+            {!['view', 'ephemeral'].includes(table!.implementation?.materialization || '') && (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Partition By</label>
+                <button
+                  onClick={() => {
+                    const current = Array.isArray(table!.implementation?.partition_by) ? table!.implementation!.partition_by! : []
+                    handleUpdateTable({
+                      implementation: {
+                        ...table!.implementation,
+                        partition_by: [...current, { field: '' }]
+                      }
+                    })
+                  }}
+                  className="text-[11px] text-blue-500 hover:text-blue-400"
+                >+ Add field</button>
+              </div>
+              {(Array.isArray(table!.implementation?.partition_by) ? table!.implementation!.partition_by! : []).map((p, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                  <select
+                    value={p.field}
+                    onChange={(e) => {
+                      const updated = [...(table!.implementation?.partition_by || [])]
+                      updated[i] = { ...updated[i], field: e.target.value }
+                      handleUpdateTable({
+                        implementation: { ...table!.implementation, partition_by: updated }
+                      })
+                    }}
+                    className={`flex-1 px-3 py-2 rounded border text-sm font-mono transition-colors ${
+                      theme === 'dark'
+                        ? 'bg-slate-800 border-slate-700 text-slate-100'
+                        : 'bg-white border-slate-300 text-slate-800'
+                    }`}
+                  >
+                    <option value=""></option>
+                    {(table!.columns || []).map(col => {
+                      const physName = col.physical?.name || col.id
+                      return <option key={col.id} value={physName}>{physName}</option>
+                    })}
+                  </select>
+                  <select
+                    value={p.granularity || ''}
+                    onChange={(e) => {
+                      const updated = [...(table!.implementation?.partition_by || [])]
+                      updated[i] = { ...updated[i], granularity: (e.target.value as any) || undefined }
+                      handleUpdateTable({
+                        implementation: { ...table!.implementation, partition_by: updated }
+                      })
+                    }}
+                    className={`px-2 py-2 rounded border text-sm transition-colors ${
+                      theme === 'dark'
+                        ? 'bg-slate-800 border-slate-700 text-slate-100'
+                        : 'bg-white border-slate-300 text-slate-800'
+                    }`}
+                  >
+                    <option value=""></option>
+                    <option value="day">day</option>
+                    <option value="month">month</option>
+                    <option value="year">year</option>
+                    <option value="hour">hour</option>
+                  </select>
+                  <button
+                    onClick={() => {
+                      const updated = (Array.isArray(table!.implementation?.partition_by) ? table!.implementation!.partition_by! : []).filter((_, idx) => idx !== i)
+                      handleUpdateTable({
+                        implementation: { ...table!.implementation, partition_by: updated.length ? updated : undefined }
+                      })
+                    }}
+                    className="text-slate-400 hover:text-red-400 text-sm px-1"
+                  >×</button>
+                </div>
+              ))}
+            </div>
+            )}
+          </div>
+        )}
+
         {activeTab === 'sample' && (
           <div className="flex flex-col h-full">
             <div className="flex justify-between items-center mb-4">

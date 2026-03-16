@@ -1,0 +1,636 @@
+tables:
+  # ============================================================
+  # Layer 1: Staging  — ソースシステムからの生データ (view)
+  # ============================================================
+  - id: stg_customers
+    name: Customers
+    logical_name: Raw Customer Records
+    physical_name: stg_customers
+    appearance:
+      type: table
+      icon: 📥
+    implementation:
+      materialization: view
+    columns:
+      - id: customer_id
+        logical:
+          name: Customer ID
+          type: String
+          isPrimaryKey: true
+      - id: full_name
+        logical:
+          name: Full Name
+          type: String
+      - id: email
+        logical:
+          name: Email
+          type: String
+      - id: country
+        logical:
+          name: Country
+          type: String
+      - id: created_at
+        logical:
+          name: Created At
+          type: Timestamp
+      - id: updated_at
+        logical:
+          name: Updated At
+          type: Timestamp
+    sampleData: []
+
+  - id: stg_products
+    name: Products
+    logical_name: Raw Product Catalog
+    physical_name: stg_products
+    appearance:
+      type: table
+      icon: 📥
+    implementation:
+      materialization: view
+    columns:
+      - id: product_id
+        logical:
+          name: Product ID
+          type: String
+          isPrimaryKey: true
+      - id: product_name
+        logical:
+          name: Product Name
+          type: String
+      - id: category
+        logical:
+          name: Category
+          type: String
+      - id: brand
+        logical:
+          name: Brand
+          type: String
+      - id: list_price
+        logical:
+          name: List Price
+          type: Decimal
+      - id: updated_at
+        logical:
+          name: Updated At
+          type: Timestamp
+    sampleData: []
+
+  - id: stg_orders
+    name: Orders
+    logical_name: Raw Order Events
+    physical_name: stg_orders
+    appearance:
+      type: table
+      icon: 📥
+    implementation:
+      materialization: view
+    columns:
+      - id: order_id
+        logical:
+          name: Order ID
+          type: String
+          isPrimaryKey: true
+      - id: customer_id
+        logical:
+          name: Customer ID
+          type: String
+          isForeignKey: true
+      - id: order_date
+        logical:
+          name: Order Date
+          type: Date
+      - id: status
+        logical:
+          name: Status
+          type: String
+      - id: total_amount
+        logical:
+          name: Total Amount
+          type: Decimal
+    sampleData: []
+
+  - id: stg_order_items
+    name: Order Items
+    logical_name: Raw Order Line Items
+    physical_name: stg_order_items
+    appearance:
+      type: table
+      icon: 📥
+    implementation:
+      materialization: view
+    columns:
+      - id: order_item_id
+        logical:
+          name: Order Item ID
+          type: String
+          isPrimaryKey: true
+      - id: order_id
+        logical:
+          name: Order ID
+          type: String
+          isForeignKey: true
+      - id: product_id
+        logical:
+          name: Product ID
+          type: String
+          isForeignKey: true
+      - id: quantity
+        logical:
+          name: Quantity
+          type: Int
+          additivity: fully
+      - id: unit_price
+        logical:
+          name: Unit Price
+          type: Decimal
+          additivity: semi
+    sampleData: []
+
+  # ============================================================
+  # Layer 2: Core DWH  — コンフォームドディメンション＋ファクト
+  # ============================================================
+  - id: dim_customers
+    name: Customers
+    logical_name: Customer Dimension
+    physical_name: dim_customers
+    appearance:
+      type: dimension
+      scd: type2
+      icon: 👤
+    lineage:
+      upstream:
+        - stg_customers
+    implementation:
+      materialization: table
+    columns:
+      - id: customer_key
+        logical:
+          name: Customer Key
+          type: Int
+          isPrimaryKey: true
+      - id: customer_id
+        logical:
+          name: Customer ID (BK)
+          type: String
+      - id: full_name
+        logical:
+          name: Full Name
+          type: String
+      - id: email
+        logical:
+          name: Email
+          type: String
+      - id: country
+        logical:
+          name: Country
+          type: String
+      - id: valid_from
+        logical:
+          name: Valid From
+          type: Timestamp
+          isMetadata: true
+      - id: valid_to
+        logical:
+          name: Valid To
+          type: Timestamp
+          isMetadata: true
+      - id: is_current
+        logical:
+          name: Is Current
+          type: Boolean
+          isMetadata: true
+    sampleData: []
+
+  - id: dim_products
+    name: Products
+    logical_name: Product Dimension
+    physical_name: dim_products
+    appearance:
+      type: dimension
+      icon: 📦
+    lineage:
+      upstream:
+        - stg_products
+    implementation:
+      materialization: table
+    columns:
+      - id: product_key
+        logical:
+          name: Product Key
+          type: Int
+          isPrimaryKey: true
+      - id: product_id
+        logical:
+          name: Product ID (BK)
+          type: String
+      - id: product_name
+        logical:
+          name: Product Name
+          type: String
+      - id: category
+        logical:
+          name: Category
+          type: String
+      - id: brand
+        logical:
+          name: Brand
+          type: String
+      - id: list_price
+        logical:
+          name: List Price
+          type: Decimal
+    sampleData: []
+
+  - id: dim_dates
+    name: Calendar
+    logical_name: Date Dimension
+    physical_name: dim_dates
+    appearance:
+      type: dimension
+      icon: 📅
+    implementation:
+      materialization: table
+    columns:
+      - id: date_key
+        logical:
+          name: Date Key
+          type: Int
+          isPrimaryKey: true
+      - id: date_value
+        logical:
+          name: Date
+          type: Date
+      - id: year
+        logical:
+          name: Year
+          type: Int
+      - id: quarter
+        logical:
+          name: Quarter
+          type: Int
+      - id: month
+        logical:
+          name: Month
+          type: Int
+      - id: week
+        logical:
+          name: Week of Year
+          type: Int
+      - id: day_of_week
+        logical:
+          name: Day of Week
+          type: String
+      - id: is_weekend
+        logical:
+          name: Is Weekend
+          type: Boolean
+    sampleData: []
+
+  - id: fct_orders
+    name: Orders
+    logical_name: Order Fact Table
+    physical_name: fct_orders
+    appearance:
+      type: fact
+      sub_type: transaction
+      icon: 🛒
+    lineage:
+      upstream:
+        - stg_orders
+        - stg_order_items
+    implementation:
+      materialization: incremental
+      incremental_strategy: merge
+      unique_key:
+        - order_item_id
+      partition_by:
+        - field: order_date_key
+          granularity: month
+    columns:
+      - id: order_item_id
+        logical:
+          name: Order Item ID
+          type: String
+          isPrimaryKey: true
+      - id: order_id
+        logical:
+          name: Order ID
+          type: String
+      - id: customer_key
+        logical:
+          name: Customer Key
+          type: Int
+          isForeignKey: true
+      - id: product_key
+        logical:
+          name: Product Key
+          type: Int
+          isForeignKey: true
+      - id: order_date_key
+        logical:
+          name: Order Date Key
+          type: Int
+          isForeignKey: true
+          isPartitionKey: true
+      - id: quantity
+        logical:
+          name: Quantity
+          type: Int
+          additivity: fully
+      - id: unit_price
+        logical:
+          name: Unit Price
+          type: Decimal
+          additivity: semi
+      - id: line_total
+        logical:
+          name: Line Total
+          type: Decimal
+          additivity: fully
+      - id: order_status
+        logical:
+          name: Order Status
+          type: String
+    sampleData: []
+
+  # ============================================================
+  # Layer 3: Analytics Mart  — ビジネス集計
+  # ============================================================
+  - id: mart_daily_revenue
+    name: Daily Revenue
+    logical_name: Daily Revenue Summary
+    physical_name: mart_daily_revenue
+    appearance:
+      type: mart
+      icon: 📊
+    lineage:
+      upstream:
+        - fct_orders
+        - dim_dates
+    implementation:
+      materialization: table
+      partition_by:
+        - field: order_date_key
+          granularity: month
+    columns:
+      - id: order_date_key
+        logical:
+          name: Order Date Key
+          type: Int
+          isPrimaryKey: true
+      - id: date_value
+        logical:
+          name: Date
+          type: Date
+      - id: order_count
+        logical:
+          name: Order Count
+          type: Int
+          additivity: fully
+      - id: revenue
+        logical:
+          name: Revenue
+          type: Decimal
+          additivity: fully
+      - id: avg_order_value
+        logical:
+          name: Avg Order Value
+          type: Decimal
+          additivity: semi
+    sampleData: []
+
+  - id: mart_customer_ltv
+    name: Customer LTV
+    logical_name: Customer Lifetime Value
+    physical_name: mart_customer_ltv
+    appearance:
+      type: mart
+      icon: 👤
+    lineage:
+      upstream:
+        - fct_orders
+        - dim_customers
+    implementation:
+      materialization: table
+    columns:
+      - id: customer_key
+        logical:
+          name: Customer Key
+          type: Int
+          isPrimaryKey: true
+      - id: customer_id
+        logical:
+          name: Customer ID
+          type: String
+      - id: country
+        logical:
+          name: Country
+          type: String
+      - id: total_revenue
+        logical:
+          name: Total Revenue
+          type: Decimal
+          additivity: fully
+      - id: order_count
+        logical:
+          name: Order Count
+          type: Int
+          additivity: fully
+      - id: avg_order_value
+        logical:
+          name: Avg Order Value
+          type: Decimal
+          additivity: semi
+      - id: first_order_date
+        logical:
+          name: First Order Date
+          type: Date
+      - id: last_order_date
+        logical:
+          name: Last Order Date
+          type: Date
+    sampleData: []
+
+  - id: mart_product_performance
+    name: Product Performance
+    logical_name: Product Sales Performance
+    physical_name: mart_product_performance
+    appearance:
+      type: mart
+      icon: 📦
+    lineage:
+      upstream:
+        - fct_orders
+        - dim_products
+    implementation:
+      materialization: table
+    columns:
+      - id: product_key
+        logical:
+          name: Product Key
+          type: Int
+          isPrimaryKey: true
+      - id: product_id
+        logical:
+          name: Product ID
+          type: String
+      - id: product_name
+        logical:
+          name: Product Name
+          type: String
+      - id: category
+        logical:
+          name: Category
+          type: String
+      - id: brand
+        logical:
+          name: Brand
+          type: String
+      - id: total_revenue
+        logical:
+          name: Total Revenue
+          type: Decimal
+          additivity: fully
+      - id: units_sold
+        logical:
+          name: Units Sold
+          type: Int
+          additivity: fully
+      - id: order_count
+        logical:
+          name: Order Count
+          type: Int
+          additivity: fully
+    sampleData: []
+
+relationships:
+  # --- Staging layer (in-layer): orders → order_items ---
+  - from:
+      table: stg_orders
+      column: order_id
+    to:
+      table: stg_order_items
+      column: order_id
+    type: one-to-many
+
+  # --- Core DWH: dim → fct ---
+  - from:
+      table: dim_customers
+      column: customer_key
+    to:
+      table: fct_orders
+      column: customer_key
+    type: one-to-many
+
+  - from:
+      table: dim_products
+      column: product_key
+    to:
+      table: fct_orders
+      column: product_key
+    type: one-to-many
+
+  - from:
+      table: dim_dates
+      column: date_key
+    to:
+      table: fct_orders
+      column: order_date_key
+    type: one-to-many
+
+
+domains:
+  - id: staging
+    name: Staging
+    description: Raw data from source systems
+    color: rgba(100, 116, 139, 0.12)
+    tables:
+      - stg_customers
+      - stg_products
+      - stg_orders
+      - stg_order_items
+
+  - id: core_dwh
+    name: Core DWH
+    description: Conformed dimensions and incremental fact table
+    color: rgba(59, 130, 246, 0.1)
+    tables:
+      - dim_customers
+      - dim_products
+      - dim_dates
+      - fct_orders
+
+  - id: analytics_mart
+    name: Analytics Mart
+    description: Business-facing aggregated summaries
+    color: rgba(245, 158, 11, 0.1)
+    tables:
+      - mart_daily_revenue
+      - mart_customer_ltv
+      - mart_product_performance
+
+annotations: []
+
+layout:
+  staging:
+    x: 0
+    'y': 0
+    width: 1460
+    height: 380
+  stg_customers:
+    x: 40
+    'y': 60
+    parentId: staging
+  stg_products:
+    x: 400
+    'y': 60
+    parentId: staging
+  stg_orders:
+    x: 760
+    'y': 60
+    parentId: staging
+  stg_order_items:
+    x: 1120
+    'y': 60
+    parentId: staging
+
+  core_dwh:
+    x: 0
+    'y': 450
+    width: 1460
+    height: 420
+  dim_customers:
+    x: 40
+    'y': 60
+    parentId: core_dwh
+  dim_products:
+    x: 380
+    'y': 60
+    parentId: core_dwh
+  dim_dates:
+    x: 720
+    'y': 60
+    parentId: core_dwh
+  fct_orders:
+    x: 1060
+    'y': 60
+    parentId: core_dwh
+
+  analytics_mart:
+    x: 0
+    'y': 950
+    width: 1460
+    height: 380
+  mart_daily_revenue:
+    x: 40
+    'y': 60
+    parentId: analytics_mart
+  mart_customer_ltv:
+    x: 520
+    'y': 60
+    parentId: analytics_mart
+  mart_product_performance:
+    x: 1000
+    'y': 60
+    parentId: analytics_mart

@@ -109,6 +109,17 @@ tables:
         revenue: "割引後純売上"
     lineage:           # mart/集計テーブルのみ定義
       upstream: [fct_sales, dim_dates]
+    implementation:    # AIコード生成ヒント（任意）省略時は appearance.type から自動推論
+      materialization: incremental          # table|view|incremental|ephemeral
+      incremental_strategy: merge          # merge|append|delete+insert
+      unique_key: order_id
+      partition_by: { field: event_date, granularity: day }  # day|month|year|hour
+      cluster_by: [customer_id]
+      grain: [month_key]                   # GROUP BY (mart のみ)
+      measures:                            # 集計定義 (mart のみ)
+        - column: total_revenue
+          agg: sum                         # sum|count|count_distinct|avg|min|max
+          source_column: fct_sales.amount  # 上流カラム (<table_id>.<col_id> で修飾可)
     columns:
       - id: order_id
         logical:

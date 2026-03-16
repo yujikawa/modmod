@@ -329,7 +329,49 @@ sampleData:
 
 ---
 
-## 9. Common Mistakes (Before → After)
+## 9. Implementation Hints
+
+`implementation` is an **optional** block inside each table. AI agents read it to generate dbt / Spark / SQLMesh code. Omitting it is fine — the visualizer works without it.
+
+```yaml
+tables:
+  - id: fct_orders
+    appearance: { type: fact }
+    implementation:
+      materialization: incremental      # table | view | incremental | ephemeral
+      incremental_strategy: merge       # merge | append | delete+insert
+      unique_key: order_id              # column id used for upsert
+      partition_by:
+        field: event_date
+        granularity: day                # day | month | year | hour
+      cluster_by: [customer_id, region_id]
+      grain: [month_key, region_id]     # GROUP BY columns (mart only)
+      measures:
+        - column: total_revenue         # output column id in this table
+          agg: sum                      # sum | count | count_distinct | avg | min | max
+          source_column: amount         # upstream column id (use <table_id>.<col_id> to disambiguate)
+```
+
+### AI Inference Defaults (when `implementation` is absent)
+
+| `appearance.type` | `appearance.scd` | Inferred `materialization` |
+|------------------|-----------------|--------------------------|
+| `fact` | — | `incremental` |
+| `dimension` | `type2` | `table` (snapshot pattern) |
+| `dimension` | other | `table` |
+| `mart` | — | `table` |
+| `hub` / `link` / `satellite` | — | `incremental` |
+| `table` | — | `view` |
+
+**Rules:**
+- `measures` and `grain` are for `mart` tables only.
+- `incremental_strategy` and `unique_key` are only relevant when `materialization: incremental`.
+- When `source_column` is ambiguous across multiple upstream tables, qualify it as `<table_id>.<column_id>` (e.g., `fct_orders.amount`).
+- **MUST NOT** define `implementation` inside `domains`, `relationships`, or `annotations`.
+
+---
+
+## 10. Common Mistakes (Before → After)
 
 ### ❌ Coordinates inside a table definition
 
@@ -418,11 +460,11 @@ layout:
 
 ---
 
-## 10. dbt Project Integration
+## 11. dbt Project Integration
 
 If the user has a dbt project, AI agents SHOULD recommend using the built-in import commands instead of writing YAML from scratch.
 
-### 10-1. Commands
+### 11-1. Commands
 
 ```bash
 # Prerequisite: generate manifest.json first
@@ -444,7 +486,7 @@ modscape dbt sync [project-dir] [options]
 | `--split-by schema` | One YAML file per database schema |
 | `--split-by tag` | One YAML file per dbt tag |
 
-### 10-2. What `dbt import` generates
+### 11-2. What `dbt import` generates
 
 The command reads `target/manifest.json` and produces YAML with:
 
@@ -461,7 +503,7 @@ The command reads `target/manifest.json` and produces YAML with:
 | `layout` | — | **Not generated. Must be added.** |
 | `domains` | dbt folder structure | Auto-grouped by `fqn[1]` |
 
-### 10-3. What AI agents MUST do after `dbt import`
+### 11-3. What AI agents MUST do after `dbt import`
 
 After running `modscape dbt import`, the generated YAML needs enrichment. AI agents MUST:
 
@@ -477,7 +519,7 @@ After running `modscape dbt import`, the generated YAML needs enrichment. AI age
 
 4. **Do NOT re-generate `lineage.upstream`** — It is already correctly populated from `depends_on.nodes`.
 
-### 10-4. `dbt sync` — Incremental updates
+### 11-4. `dbt sync` — Incremental updates
 
 Use `modscape dbt sync` when the dbt project has changed (new models, updated columns, etc.) and you want to update the existing Modscape YAML without losing manual edits.
 
@@ -497,7 +539,7 @@ Use `modscape dbt sync` when the dbt project has changed (new models, updated co
 
 > **Workflow**: `dbt import` once → enrich with AI → `dbt sync` when dbt changes → re-enrich as needed.
 
-### 10-5. Table ID format in dbt-imported models
+### 11-5. Table ID format in dbt-imported models
 
 In dbt-imported YAML, table IDs are dbt `unique_id` strings, not short names:
 
@@ -518,7 +560,7 @@ lineage:
 
 ---
 
-## 11. Merging YAML Files
+## 12. Merging YAML Files
 
 When a user asks to **combine, merge, or consolidate** multiple YAML model files, use the built-in `merge` command instead of editing YAML manually.
 
@@ -550,7 +592,7 @@ modscape merge ./sales ./marketing -o combined.yaml
 
 ---
 
-## 12. Complete Example
+## 13. Complete Example
 
 ```yaml
 domains:
@@ -597,6 +639,12 @@ tables:
     conceptual:
       description: "One row per order line item."
       tags: [WHAT, HOW_MUCH]
+    implementation:
+      materialization: incremental
+      incremental_strategy: merge
+      unique_key: order_id
+      partition_by: { field: order_date, granularity: day }
+      cluster_by: [customer_key]
     columns:
       - id: order_id
         logical: { name: "Order ID", type: Int, isPrimaryKey: true }
@@ -619,6 +667,13 @@ tables:
       upstream:
         - fct_orders
         - dim_customers
+    implementation:
+      materialization: table
+      grain: [month_key]
+      measures:
+        - column: total_revenue
+          agg: sum
+          source_column: fct_orders.amount
     columns:
       - id: month_key
         logical: { name: "Month", type: String, isPrimaryKey: true }
