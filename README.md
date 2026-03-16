@@ -84,42 +84,131 @@ Best for direct architectural control.
 
 ## Defining Your Model (YAML)
 
-Modscape uses a schema designed for data analysis contexts.
+Modscape uses a schema designed for data analysis contexts. The full YAML structure is:
+
+```
+domains      – visual containers grouping related tables
+tables       – entity definitions with tri-layer metadata
+relationships – ER cardinality between tables
+annotations  – sticky notes / callouts on the canvas
+layout       – ALL coordinate data (never put x/y inside tables or domains)
+```
+
+### Domains
 
 ```yaml
-# 1. Domains: Visual containers for grouping business logic
 domains:
   - id: core_sales
-    name: Core Sales
-    color: "rgba(59, 130, 246, 0.1)"
-    tables: [orders]
+    name: "Core Sales"
+    description: "Transactional data for the sales team."  # optional
+    color: "rgba(59, 130, 246, 0.1)"  # background fill
+    tables: [orders, dim_customers]
+    isLocked: false  # prevent accidental drag when true
+```
 
-# 2. Tables: Entity definitions with tri-layer metadata
+### Tables
+
+```yaml
 tables:
   - id: orders
-    name: Orders           # Conceptual (Big)
-    logical_name: "Customer Purchase Record" # Logical (Medium)
-    physical_name: "fct_retail_sales"        # Physical (Small)
+    name: Orders                          # Conceptual name (large)
+    logical_name: "Customer Purchase Record"  # Logical name (medium)
+    physical_name: "fct_retail_sales"         # Physical table name (small)
+
     appearance:
-      type: fact    # fact | dimension | mart | hub | link | satellite | table
-      sub_type: transaction 
-      icon: 💰
+      type: fact        # fact | dimension | mart | hub | link | satellite | table
+      sub_type: transaction  # transaction | periodic | accumulating | etc.
+      scd: type2        # SCD type for dimensions: type0–type6
+      icon: "💰"
+      color: "#e0f2fe"  # optional custom header color
+
+    conceptual:  # optional – business context for AI agents
+      description: "One row per order line item."
+      tags: [WHO, WHAT, WHEN]  # BEAM* tags
+      businessDefinitions:
+        revenue: "Net revenue after discounts"
+
+    lineage:  # for mart/aggregated tables only
+      upstream:
+        - fct_sales
+        - dim_dates
+
     columns:
       - id: order_id
         logical:
-          name: ORDER_ID
-          type: Int
+          name: "Order ID"
+          type: Int         # Int | String | Decimal | Date | Timestamp | Boolean | ...
+          description: "Surrogate key."
           isPrimaryKey: true
-          additivity: fully
-    sampleData:
+          isForeignKey: false
+          isPartitionKey: false
+          isMetadata: false  # true for audit cols (load_date, record_source)
+          additivity: fully  # fully | semi | non
+        physical:  # optional warehouse overrides
+          name: order_id
+          type: "BIGINT"
+          constraints: [NOT NULL]
+
+    sampleData:  # 2D array; first row = column IDs
       - [order_id, amount, status]
       - [1001, 50.0, "COMPLETED"]
+      - [1002, 120.5, "PENDING"]
+```
 
-# 3. Relationships: Define ER cardinality
+### Relationships
+
+```yaml
 relationships:
-  - from: { table: customers, column: customer_id }
-    to: { table: orders, column: customer_id }
-    type: one-to-many
+  - from:
+      table: dim_customers   # table ID
+      column: customer_id    # column ID (optional)
+    to:
+      table: fct_orders
+      column: customer_id
+    type: one-to-many  # one-to-one | one-to-many | many-to-one | many-to-many
+```
+
+> **Data Lineage** connections are driven by `lineage.upstream` and rendered as animated arrows in Lineage Mode. Do **not** duplicate them as `relationships` entries.
+
+### Annotations
+
+```yaml
+annotations:
+  - id: note_001
+    type: sticky   # sticky | callout
+    text: "Grain: one row per invoice line item."
+    color: "#fef9c3"          # optional background color
+    targetId: fct_orders      # ID of the attached object (optional)
+    targetType: table         # table | domain | relationship | column
+    offset:
+      x: 100    # offset from target's top-left (or absolute if no target)
+      y: -80
+```
+
+### Layout
+
+All coordinate data lives in `layout`, keyed by object ID. **Never** place `x`/`y` inside `tables` or `domains`.
+
+```yaml
+layout:
+  # Domain – requires width and height
+  core_sales:
+    x: 0
+    y: 0
+    width: 880
+    height: 480
+    isLocked: false  # prevent drag in canvas
+
+  # Table inside a domain – coordinates are relative to domain origin
+  orders:
+    x: 280
+    y: 200
+    parentId: core_sales  # declare domain membership
+
+  # Standalone table – absolute canvas coordinates
+  mart_summary:
+    x: 1060
+    y: 200
 ```
 
 ---
