@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { memo, useState, useEffect } from 'react'
 import { useStore } from '../store/useStore'
+import { useShallow } from 'zustand/react/shallow'
 import { X, Plus, Trash2, Tag as TagIcon, Table as TableIcon, Database, Link as LinkIcon, Unlink, ChevronUp, ChevronDown, Cpu } from 'lucide-react'
 import type { Table, Column } from '../types/schema'
 
@@ -13,10 +14,10 @@ const TYPE_CONFIG: Record<string, { color: string; icon: string; label: string }
   table: { color: '#64748b', icon: '📋', label: 'TABLE' }
 };
 
-const DetailPanel = () => {
-  const { 
+const DetailPanel = memo(() => {
+  const {
     schema,
-    getSelectedTable, 
+    getSelectedTable,
     getSelectedDomain,
     getSelectedRelationship,
     getSelectedAnnotation,
@@ -29,7 +30,26 @@ const DetailPanel = () => {
     isDetailPanelSuppressed,
     isDetailPanelMinimized,
     setIsDetailPanelMinimized
-  } = useStore()
+  } = useStore(useShallow((s) => ({
+    schema: s.schema,
+    getSelectedTable: s.getSelectedTable,
+    getSelectedDomain: s.getSelectedDomain,
+    getSelectedRelationship: s.getSelectedRelationship,
+    getSelectedAnnotation: s.getSelectedAnnotation,
+    updateTable: s.updateTable,
+    updateDomain: s.updateDomain,
+    updateRelationship: s.updateRelationship,
+    updateAnnotation: s.updateAnnotation,
+    assignTableToDomain: s.assignTableToDomain,
+    theme: s.theme,
+    isDetailPanelSuppressed: s.isDetailPanelSuppressed,
+    isDetailPanelMinimized: s.isDetailPanelMinimized,
+    setIsDetailPanelMinimized: s.setIsDetailPanelMinimized,
+    // Trigger re-render when selection changes (needed for getSelected* to return fresh values)
+    selectedTableId: s.selectedTableId,
+    selectedEdgeId: s.selectedEdgeId,
+    selectedAnnotationId: s.selectedAnnotationId,
+  })))
   
   const table = getSelectedTable()
   const domain = getSelectedDomain()
@@ -1443,6 +1463,6 @@ const DetailPanel = () => {
       </div>
     </div>
   )
-}
+})
 
 export default DetailPanel

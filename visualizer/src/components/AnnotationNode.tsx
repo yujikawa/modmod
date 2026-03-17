@@ -2,6 +2,7 @@ import { memo, useState, useEffect, useMemo } from 'react'
 import { Handle, Position, type NodeProps } from 'reactflow'
 import type { Annotation } from '../types/schema'
 import { useStore } from '../store/useStore'
+import { useShallow } from 'zustand/react/shallow'
 import { Trash2 } from 'lucide-react'
 
 // Track IDs that have already performed the entrance animation in this session
@@ -45,14 +46,21 @@ const getContrastColor = (hexColor: string, theme: 'dark' | 'light'): string => 
 
 const AnnotationNode = ({ id, data, selected }: NodeProps<{ annotation: Annotation }>) => {
   const { annotation } = data
-  const { 
-    updateAnnotation, 
-    removeAnnotation, 
+  const {
+    updateAnnotation,
+    removeAnnotation,
     theme,
     isPresentationMode,
     selectedTableId,
     selectedAnnotationId
-  } = useStore()
+  } = useStore(useShallow((s) => ({
+    updateAnnotation: s.updateAnnotation,
+    removeAnnotation: s.removeAnnotation,
+    theme: s.theme,
+    isPresentationMode: s.isPresentationMode,
+    selectedTableId: s.selectedTableId,
+    selectedAnnotationId: s.selectedAnnotationId,
+  })))
   const [isEditing, setIsEditing] = useState(false)
   const [text, setText] = useState(annotation.text)
   const [isNew, setIsNew] = useState(!animatedIds.has(id))

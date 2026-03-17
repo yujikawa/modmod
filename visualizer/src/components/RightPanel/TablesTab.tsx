@@ -1,23 +1,31 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { memo, useState, useMemo, useEffect, useRef } from 'react'
 import { useStore } from '../../store/useStore'
-import { 
-  Search, 
-  ChevronRight, 
-  ChevronDown, 
-  ArrowUpRight, 
-  HelpCircle 
+import { useShallow } from 'zustand/react/shallow'
+import {
+  Search,
+  ChevronRight,
+  ChevronDown,
+  ArrowUpRight,
+  HelpCircle
 } from 'lucide-react'
 import type { Table } from '../../types/schema'
 
-const TablesTab = () => {
-  const { 
-    schema, 
+const TablesTab = memo(() => {
+  const {
+    schema,
     theme,
     setSelectedTableId,
     setFocusNodeId,
     isRightPanelOpen,
     activeRightPanelTab
-  } = useStore()
+  } = useStore(useShallow((s) => ({
+    schema: s.schema,
+    theme: s.theme,
+    setSelectedTableId: s.setSelectedTableId,
+    setFocusNodeId: s.setFocusNodeId,
+    isRightPanelOpen: s.isRightPanelOpen,
+    activeRightPanelTab: s.activeRightPanelTab,
+  })))
 
   const [search, setSearch] = useState('')
   const [collapsedDomains, setCollapsedDomains] = useState<Set<string>>(new Set())
@@ -165,6 +173,6 @@ const TablesTab = () => {
       </div>
     </div>
   )
-}
+})
 
 export default TablesTab

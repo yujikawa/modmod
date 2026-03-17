@@ -1,6 +1,7 @@
 import { memo, useEffect, useState } from 'react'
 import { type NodeProps, NodeResizer } from 'reactflow'
 import { useStore } from '../store/useStore'
+import { useShallow } from 'zustand/react/shallow'
 import { Lock, Unlock, GripVertical } from 'lucide-react'
 
 const DomainNode = ({ id, data, selected }: NodeProps) => {
@@ -11,14 +12,21 @@ const DomainNode = ({ id, data, selected }: NodeProps) => {
     return () => clearTimeout(timer)
   }, [])
 
-  const { 
+  const {
     updateNodeDimensions,
     theme,
     toggleDomainLock,
     isPresentationMode,
     selectedTableId,
     selectedAnnotationId
-  } = useStore()
+  } = useStore(useShallow((s) => ({
+    updateNodeDimensions: s.updateNodeDimensions,
+    theme: s.theme,
+    toggleDomainLock: s.toggleDomainLock,
+    isPresentationMode: s.isPresentationMode,
+    selectedTableId: s.selectedTableId,
+    selectedAnnotationId: s.selectedAnnotationId,
+  })))
 
   const isActuallySelected = selected;
   const isAnythingSelected = !!(selectedTableId || selectedAnnotationId);

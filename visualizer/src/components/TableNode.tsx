@@ -2,6 +2,7 @@ import { memo, useEffect, useState } from 'react'
 import { Handle, Position, type NodeProps, NodeResizer, useUpdateNodeInternals } from 'reactflow'
 import type { Table } from '../types/schema'
 import { useStore } from '../store/useStore'
+import { useShallow } from 'zustand/react/shallow'
 
 const TYPE_CONFIG: Record<string, { color: string; icon: string; label: string }> = {
   fact: { color: '#f87171', icon: '📊', label: 'FACT' },
@@ -37,7 +38,18 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
     selectedTableId,
     selectedAnnotationId,
     highlightedNodeIds
-  } = useStore()
+  } = useStore(useShallow((s) => ({
+    updateNodeDimensions: s.updateNodeDimensions,
+    hoveredColumnId: s.hoveredColumnId,
+    showER: s.showER,
+    showLineage: s.showLineage,
+    connectionStartHandle: s.connectionStartHandle,
+    theme: s.theme,
+    isPresentationMode: s.isPresentationMode,
+    selectedTableId: s.selectedTableId,
+    selectedAnnotationId: s.selectedAnnotationId,
+    highlightedNodeIds: s.highlightedNodeIds,
+  })))
 
   if (!table) return null
 

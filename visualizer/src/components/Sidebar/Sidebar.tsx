@@ -1,13 +1,22 @@
+import { memo } from 'react'
 import EditorTab from './EditorTab'
 import FileSelector from './FileSelector'
 import QuickConnectTab from './QuickConnectTab'
 import ActivityBar from './ActivityBar'
 import { useStore } from '../../store/useStore'
+import { useShallow } from 'zustand/react/shallow'
 import { FileText, Zap } from 'lucide-react'
 import logo from '/favicon.svg?url'
 
-const Sidebar = () => {
-  const { isSidebarOpen, isCliMode, theme, savingStatus, activeTab, setActiveTab } = useStore()
+const Sidebar = memo(() => {
+  const { isSidebarOpen, isCliMode, theme, savingStatus, activeTab, setActiveTab } = useStore(useShallow((s) => ({
+    isSidebarOpen: s.isSidebarOpen,
+    isCliMode: s.isCliMode,
+    theme: s.theme,
+    savingStatus: s.savingStatus,
+    activeTab: s.activeTab,
+    setActiveTab: s.setActiveTab,
+  })))
 
   return (
     <div 
@@ -99,6 +108,6 @@ const Sidebar = () => {
       <ActivityBar />
     </div>
   )
-}
+})
 
 export default Sidebar
