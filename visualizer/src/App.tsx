@@ -296,18 +296,19 @@ function Flow() {
         const y = layout?.y ?? currentNode?.position.y ?? (dRow * DOMAIN_Y_GAP);
         const width = layout?.width ?? autoWidth;
         const height = layout?.height ?? autoHeight;
+        const isLocked = layout?.isLocked ?? domain.isLocked ?? false;
 
         newNodes.push({
           id: domain.id,
           type: 'domain',
           position: { x, y },
-          style: { width, height, pointerEvents: domain.isLocked ? 'none' : 'auto' },
+          style: { width, height, pointerEvents: isLocked ? 'none' : 'auto' },
           selected: domain.id === selectedTableId,
-          draggable: !domain.isLocked,
-          selectable: !domain.isLocked,
-          deletable: !domain.isLocked,
-          dragHandle: domain.isLocked ? undefined : '.domain-drag-handle',
-          data: { label: domain.name, color: domain.color, isLocked: domain.isLocked },
+          draggable: !isLocked,
+          selectable: !isLocked,
+          deletable: !isLocked,
+          dragHandle: isLocked ? undefined : '.domain-drag-handle',
+          data: { label: domain.name, color: domain.color, isLocked },
         });
 
         domain.tables.forEach((tableId, tIndex) => {
