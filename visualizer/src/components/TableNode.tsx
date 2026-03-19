@@ -139,7 +139,8 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
         cursor: 'default',
         opacity: shouldDim ? 0.3 : 1,
         zIndex: isActuallySelected ? 50 : 0,
-        transition: 'opacity 0.5s ease-in-out, z-index 0.3s'
+        transition: 'opacity 0.5s ease-in-out, z-index 0.3s',
+        willChange: 'transform'
       }}
     >
       <NodeResizer

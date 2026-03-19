@@ -64,7 +64,8 @@ const DomainNode = ({ id, data, selected }: NodeProps) => {
         cursor: 'default',
         transition: 'border-color 0.3s, opacity 0.5s ease-in-out, z-index 0.3s',
         opacity: shouldDim ? 0.2 : (isLocked ? 0.8 : 1),
-        zIndex: isActuallySelected ? 40 : -1
+        zIndex: isActuallySelected ? 40 : -1,
+        willChange: 'transform'
       }}
     >
       {!isLocked && (
