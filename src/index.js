@@ -8,8 +8,11 @@ import { build } from './build.js';
 import { initProject } from './init.js';
 import { exportModel } from './export.js';
 import { createModel } from './create.js';
+import { importDbt } from './import-dbt.js';
+import { syncDbt } from './sync-dbt.js';
 import { createRequire } from 'module';
-
+  import { mergeModels } from './merge.js';
+  
 const require = createRequire(import.meta.url);
 const pkg = require('../package.json');
 
@@ -65,6 +68,40 @@ program
   .option('-o, --output <path>', 'output file or directory')
   .action((paths, options) => {
     exportModel(paths, options);
+  });
+
+const dbtCommand = program
+  .command('dbt')
+  .description('dbt integration commands');
+
+dbtCommand
+  .command('import')
+  .description('Import dbt project into Modscape YAML models')
+  .argument('[project-dir]', 'path to dbt project directory (default: current directory)')
+  .option('-o, --output <dir>', 'output directory (default: modscape-<project-name>)')
+  .option('--split-by <key>', 'split output by "schema", "tag", or "folder"')
+  .action((projectDir, options) => {
+    importDbt(projectDir, options);
+  });
+
+// dbtCommandに追加
+dbtCommand
+  .command('sync')
+  .description('Sync dbt project changes into existing Modscape YAML models')
+  .argument('[project-dir]', 'path to dbt project directory (default: current directory)')
+  .option('-o, --output <dir>', 'output directory (default: modscape-<project-name>)')
+  .action((projectDir, options) => {
+    syncDbt(projectDir, options);
+  });
+
+
+program
+  .command('merge')
+  .description('Merge multiple YAML models into one')
+  .argument('<paths...>', 'YAML files or directories to merge')
+  .option('-o, --output <path>', 'output file path', 'merged.yaml')
+  .action((paths, options) => {
+    mergeModels(paths, options);
   });
 
 program.parse();

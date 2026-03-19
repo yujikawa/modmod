@@ -40,7 +40,7 @@ https://yujikawa.github.io/modscape/
   - オートセーブにより、ローカルのYAMLを常に最新の状態に維持。
 - **ダーク/ライトモード対応**: 利用環境やドキュメント作成の用途に合わせて、ワンクリックでテーマを切り替え可能。
 - **データ分析特化のモデリング**: `fact`, `dimension`, `mart`, `hub`, `link`, `satellite` に加え、汎用的な `table` タイプを標準サポート。
-- **AIエージェント対応**: **Gemini, Claude, Codex** 用の雛形を内蔵。LLMを活用してモデリング作業を劇的に加速。
+- **AIエージェント対応**: **Gemini CLI, Claude Code, Codex** 用の雛形を内蔵。モデリング（`/modscape:modeling`）と実装コード生成（`/modscape:codegen`）の両方でLLMを活用できます。
 
 ## インストール
 
@@ -53,15 +53,27 @@ npm install -g modscape
 ## はじめに
 
 ### A: AI駆動のモデリング（推奨）
-1.  **初期化**: 使用するAIエージェントに合わせてモデリングルールを生成します。
+1.  **初期化**: 使用するAIエージェントに合わせてルールファイルとコマンドを生成します。
     ```bash
-    modscape init --gemini  # または --claude, --codex
+    modscape init --gemini   # Gemini CLI
+    modscape init --claude   # Claude Code
+    modscape init --codex    # Codex
+    modscape init --all      # 3つすべて
     ```
+    `.modscape/rules.md`（YAMLスキーマのルール）と `.modscape/codegen-rules.md`（実装コード生成のルール）、および各エージェント用のコマンドファイルが生成されます。
+
 2.  **起動**: ビジュアライザーを起動します。
     ```bash
     modscape dev model.yaml
     ```
-3.  **AIに指示**: AIにこう伝えてください： *" .modscape/rules.md のルールに従って、model.yaml に新しい 'Marketing' ドメインを追加して。"*
+
+3.  **データモデルの設計** — `/modscape:modeling` でモデルを作成・編集します。
+    > *".modscape/rules.md のルールに従って、model.yaml に新しい 'Marketing' ドメインを追加して。"*
+
+4.  **実装コードの生成** — `/modscape:codegen` でYAMLをdbt / SQLMesh / Spark SQLに変換します。
+    > *".modscape/codegen-rules.md に従って、model.yaml からdbtモデルを生成して。"*
+
+    エージェントは `lineage.upstream` を元に依存関係の順でモデルを生成し、YAMLで定義しきれない箇所には `-- TODO:` コメントを残します。
 
 ### B: 手動モデリング
 1.  **YAML作成**: `model.yaml` ファイルを作成します。
@@ -74,39 +86,157 @@ npm install -g modscape
 
 ## モデルの定義 (YAML)
 
+YAMLのルートレベル構造は以下の通りです：
+
+```
+domains      – 関連テーブルをまとめるビジュアルコンテナ
+tables       – 3階層メタデータを持つエンティティ定義
+relationships – テーブル間のERカーディナリティ
+annotations  – キャンバス上のスティッキーノート・吹き出し
+layout       – 全座標データ（tables/domains の中に x/y を書いてはいけない）
+```
+
+### Domains（ドメイン）
+
 ```yaml
-# 1. Domains: 関連するテーブルをグループ化するコンテナ
 domains:
   - id: core_sales
-    name: 主要売上
-    color: "rgba(59, 130, 246, 0.1)"
-    tables: [orders]
+    name: "主要売上"
+    description: "営業チームのトランザクションデータ。"  # 任意
+    color: "rgba(59, 130, 246, 0.1)"  # 背景色
+    tables: [orders, dim_customers]
+    isLocked: false  # true にするとキャンバスでの誤ドラッグを防止
+```
 
-# 2. Tables: エンティティ定義
+### Tables（テーブル）
+
+```yaml
 tables:
   - id: orders
-    name: 注文           # 概念名（大）
-    logical_name: "顧客注文履歴" # 論理名（中）
-    physical_name: "fct_retail_sales" # 物理名（小）
+    name: 注文                           # 概念名（大）
+    logical_name: "顧客注文履歴"          # 論理名（中）
+    physical_name: "fct_retail_sales"   # 物理名（小）
+
     appearance:
-      type: fact    # fact | dimension | mart | hub | link | satellite | table
-      sub_type: transaction
-      icon: 💰
+      type: fact        # fact | dimension | mart | hub | link | satellite | table
+      sub_type: transaction  # transaction | periodic | accumulating など
+      scd: type2        # ディメンション用 SCD タイプ: type0〜type6
+      icon: "💰"
+      color: "#e0f2fe"  # 任意のヘッダーカラー
+
+    conceptual:  # 任意 – AIエージェント向けビジネスコンテキスト
+      description: "1行 = 1注文明細。"
+      tags: [WHO, WHAT, WHEN]  # BEAM* タグ
+      businessDefinitions:
+        revenue: "割引・返品後の純売上"
+
+    lineage:  # mart/集計テーブルのみに定義
+      upstream:
+        - fct_sales
+        - dim_dates
+
+    implementation:  # 任意 – AIコード生成へのヒント
+      materialization: incremental  # table | view | incremental | ephemeral
+      incremental_strategy: merge   # merge | append | delete+insert
+      unique_key: order_id
+      partition_by:
+        field: order_date       # DATE/TIMESTAMP型カラムを指定（サロゲートキーは不可）
+        granularity: day        # day | month | year | hour
+      cluster_by: [customer_id]
+      grain: [month_key]        # GROUP BY カラム（martのみ）
+      measures:                 # 集計定義（martのみ）
+        - column: total_revenue
+          agg: sum              # sum | count | count_distinct | avg | min | max
+          source_column: fct_sales.amount
+
     columns:
       - id: order_id
         logical:
-          name: ORDER_ID
+          name: "注文ID"
+          type: Int         # Int | String | Decimal | Date | Timestamp | Boolean など
+          description: "サロゲートキー。"
           isPrimaryKey: true
-          additivity: fully
-    sampleData:
+          isForeignKey: false
+          isPartitionKey: false
+          isMetadata: false  # 監査カラム(load_date, record_source)は true
+          additivity: fully  # fully | semi | non
+        physical:  # 任意 – ウェアハウスの物理定義を上書き
+          name: order_id
+          type: "BIGINT"
+          constraints: [NOT NULL]
+
+    sampleData:  # 2次元配列。先頭行 = カラムID
       - [order_id, amount, status]
       - [1001, 50.0, "COMPLETED"]
+      - [1002, 120.5, "PENDING"]
+```
 
-# 3. Relationships: カーディナリティの定義
+**テーブルタイプと `appearance.type` の使い分け：**
+
+| type | 用途 |
+|------|------|
+| `fact` | 取引・イベント・測定値 |
+| `dimension` | エンティティ・マスタ・参照リスト |
+| `mart` | 集計・消費者向けテーブル（`lineage.upstream` を必ず定義） |
+| `hub` | Data Vault のビジネスキー |
+| `link` | Data Vault のハブ間結合・トランザクション |
+| `satellite` | Data Vault のハブに紐づく履歴属性 |
+| `table` | 汎用 |
+
+### Relationships（リレーションシップ）
+
+```yaml
 relationships:
-  - from: { table: customers, column: customer_id }
-    to: { table: orders, column: customer_id }
-    type: one-to-many
+  - from:
+      table: dim_customers   # テーブル ID
+      column: customer_id    # カラム ID（任意）
+    to:
+      table: fct_orders
+      column: customer_id
+    type: one-to-many  # one-to-one | one-to-many | many-to-one | many-to-many
+```
+
+> **データリネージ**は `lineage.upstream` で定義し、リネージモードでアニメーション矢印として表示されます。`relationships` に重複して記載しないでください。
+
+### Annotations（アノテーション）
+
+```yaml
+annotations:
+  - id: note_001
+    type: sticky   # sticky | callout
+    text: "粒度：1行 = 1注文明細"
+    color: "#fef9c3"          # 任意の背景色
+    targetId: fct_orders      # 貼り付け先のオブジェクト ID（任意）
+    targetType: table         # table | domain | relationship | column
+    offset:
+      x: 100    # 対象の左上からのオフセット（targetId 未指定時は絶対座標）
+      y: -80
+```
+
+### Layout（レイアウト）
+
+全座標データはオブジェクト ID をキーとして `layout` に記述します。**`tables` や `domains` の中に `x`/`y` を書いてはいけません。**
+
+```yaml
+layout:
+  # ドメイン – width と height が必要
+  core_sales:
+    x: 0
+    y: 0
+    width: 880
+    height: 480
+    isLocked: false  # true でキャンバスのドラッグを防止
+
+  # ドメイン内のテーブル – 座標はドメインの原点からの相対値
+  orders:
+    x: 280
+    y: 200
+    parentId: core_sales  # ドメインへの所属を宣言
+
+  # スタンドアロンテーブル – キャンバス絶対座標
+  mart_summary:
+    x: 1060
+    y: 200
 ```
 
 ---

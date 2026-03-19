@@ -1,10 +1,16 @@
-import { useState, useMemo } from 'react'
+import { memo, useState, useMemo } from 'react'
 import { useStore } from '../../store/useStore'
+import { useShallow } from 'zustand/react/shallow'
 import { Search, ArrowUpRight, ChevronDown, ChevronRight, HelpCircle } from 'lucide-react'
 import type { Table } from '../../types/schema'
 
-const EntitiesTab = () => {
-  const { schema, setSelectedTableId, setFocusNodeId, theme } = useStore()
+const EntitiesTab = memo(() => {
+  const { schema, setSelectedTableId, setFocusNodeId, theme } = useStore(useShallow((s) => ({
+    schema: s.schema,
+    setSelectedTableId: s.setSelectedTableId,
+    setFocusNodeId: s.setFocusNodeId,
+    theme: s.theme,
+  })))
   const [search, setSearch] = useState('')
   const [collapsedDomains, setCollapsedDomains] = useState<Set<string>>(new Set())
 
@@ -203,6 +209,6 @@ const EntitiesTab = () => {
       </div>
     </div>
   )
-}
+})
 
 export default EntitiesTab

@@ -32,6 +32,24 @@ export interface Domain {
   isLocked?: boolean;
 }
 
+export interface Measure {
+  column: string;       // Output column id in this table
+  agg: 'sum' | 'count' | 'count_distinct' | 'avg' | 'min' | 'max';
+  source_column?: string; // Source column id (or <table_id>.<column_id> for disambiguation)
+}
+
+export interface Implementation {
+  materialization?: 'table' | 'view' | 'incremental' | 'ephemeral';
+  incremental_strategy?: 'merge' | 'append' | 'delete+insert';
+  unique_key?: string[];
+  partition_by?: Array<{
+    field: string;
+    granularity?: 'day' | 'month' | 'year' | 'hour';
+  }>;
+  grain?: string[];
+  measures?: Measure[];
+}
+
 export interface Table {
   id: string; // Internal name/key
   name: string; // Display name (Conceptual name)
@@ -56,6 +74,7 @@ export interface Table {
     name?: string;
     schema?: string;
   };
+  implementation?: Implementation; // Optional code-generation hints
   columns?: Column[]; // Optional
   sampleData?: any[][]; // New simplified format: 2D array
 }

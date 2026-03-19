@@ -213,15 +213,18 @@ layout:
   hub_customer:
     x: 100
     'y': 100
+    parentId: raw_vault
   hub_product:
     x: 105
     'y': 647
   lnk_sales:
     x: 491
     'y': 279
+    parentId: raw_vault
   sat_customer_details:
     x: 876
     'y': 102
+    parentId: raw_vault
   sat_product_details:
     x: 870
     'y': 647

@@ -19,6 +19,7 @@ interface AppState {
   highlightedNodeIds: string[];
   hoveredColumnId: string | null;
   error: string | null;
+  isModelLoading: boolean;
   isCliMode: boolean;
   isAutoSaveEnabled: boolean;
   lastSavedAt: number;
@@ -136,6 +137,7 @@ export const useStore = create<AppState>((set, get) => ({
   selectedAnnotationId: null,
   highlightedNodeIds: [],
   hoveredColumnId: null,
+  isModelLoading: false,
   error: null,
   isCliMode: (typeof window !== 'undefined' && (window as any).MODSCAPE_CLI_MODE === true),
   isAutoSaveEnabled: true,
@@ -145,7 +147,10 @@ export const useStore = create<AppState>((set, get) => ({
 
   // YAML Input
   yamlInput: '',
-  setYamlInput: (yaml) => set({ yamlInput: yaml, lastUpdateSource: 'user' }),
+  setYamlInput: (yaml) => {
+    set({ yamlInput: yaml, lastUpdateSource: 'user', lastSavedAt: Date.now() });
+    get().saveSchema();
+  },
   syncToYamlInput: () => {
     const { schema } = get();
     if (schema) {
@@ -186,6 +191,7 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       const schema = parseYAML(yamlStr);
       set({ schema, error: null });
+      get().saveSchema(); // 3sガードを効かせるために呼ぶ（内部でlastUpdateSourceをチェック）
     } catch (e: any) {
       set({ error: e.message });
     }
@@ -200,7 +206,6 @@ export const useStore = create<AppState>((set, get) => ({
 
   setSelectedTableIds: (ids) => set({
     selectedTableIds: ids,
-    selectedTableId: ids.length === 1 ? ids[0] : get().selectedTableId,
   }),
 
   setSelectedEdgeId: (id) => set({ 
@@ -245,9 +250,11 @@ export const useStore = create<AppState>((set, get) => ({
   updateNodePosition: (id, x, y, parentId) => {
     const { schema } = get();
     if (!schema) return;
-    const newLayout = { 
-      ...(schema.layout || {}), 
-      [id]: { x, y, ...(parentId ? { parentId } : {}) } 
+    const existing = schema.layout?.[id] || {};
+    const newLayout = {
+      ...(schema.layout || {}),
+      // width/height を保持しながら x/y だけ更新する
+      [id]: { ...existing, x, y, ...(parentId ? { parentId } : {}) }
     };
     set({ schema: { ...schema, layout: newLayout } });
     get().syncToYamlInput();
@@ -259,7 +266,9 @@ export const useStore = create<AppState>((set, get) => ({
     if (!schema) return;
     const newLayout = { ...(schema.layout || {}) };
     updates.forEach(({ id, x, y, parentId }) => {
-      newLayout[id] = { x, y, ...(parentId ? { parentId } : {}) };
+      const existing = newLayout[id] || {};
+      // width/height を保持しながら x/y だけ更新する
+      newLayout[id] = { ...existing, x, y, ...(parentId ? { parentId } : {}) };
     });
     set({ schema: { ...schema, layout: newLayout } });
     get().syncToYamlInput();
@@ -269,7 +278,8 @@ export const useStore = create<AppState>((set, get) => ({
   updateNodeDimensions: (id, width, height) => {
     const { schema } = get();
     if (!schema) return;
-    const currentLayout = schema.layout?.[id] || { x: 0, y: 0 };
+    // x/y のデフォルトを持ちつつ既存エントリをマージして parentId 等を保持する
+    const currentLayout = { x: 0, y: 0, ...schema.layout?.[id] };
     const newLayout = { 
       ...(schema.layout || {}), 
       [id]: { ...currentLayout, width, height } 
@@ -280,15 +290,28 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   saveSchema: async (force = false) => {
-    const { schema, isCliMode, isAutoSaveEnabled, lastUpdateSource } = get();
-    if (!isCliMode || (!isAutoSaveEnabled && !force) || lastUpdateSource === 'user') return;
+    const { schema, isCliMode, isAutoSaveEnabled, lastUpdateSource, currentModelSlug } = get();
+
+    // refreshModelData の3秒ガードを確実に効かせるため、
+    // saveSchema 呼び出し時点で即座に lastSavedAt を更新する。
+    set({ lastSavedAt: Date.now() });
+
+    // ユーザー操作（エディタ入力等）の場合はファイル書き込みは不要
+    if (lastUpdateSource === 'user') return;
+
+    if (!isCliMode || (!isAutoSaveEnabled && !force)) return;
 
     if (saveTimeout) clearTimeout(saveTimeout);
-    
+
     saveTimeout = setTimeout(async () => {
+      // 実際の送信直前に再度、現在のモデルを確認する（切り替え直後の割り込み防止）
+      const activeModel = get().currentModelSlug;
+      if (currentModelSlug !== activeModel) return;
+
       try {
         const yamlStr = yaml.dump(schema, { indent: 2, lineWidth: -1, noRefs: true });
-        await fetch('/api/save', {
+        const query = activeModel ? `?model=${activeModel}` : '';
+        await fetch(`/api/save${query}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ yaml: yamlStr })
@@ -304,12 +327,15 @@ export const useStore = create<AppState>((set, get) => ({
 
   refreshModelData: async () => {
     const { lastSavedAt } = get();
-    if (Date.now() - lastSavedAt < 3000) return;
+    const diff = Date.now() - lastSavedAt;
+    
+    // 自身が変更・保存してから3秒以内は、サーバーからの通知によるリフレッシュを無視する
+    if (diff < 3000) return;
 
     try {
       const res = await fetch('/api/model' + window.location.search);
       const data = await res.json();
-      set({ schema: normalizeSchema(data) });
+      set({ schema: normalizeSchema(data), selectedTableId: null, selectedEdgeId: null, selectedAnnotationId: null });
       get().syncToYamlInput();
     } catch (e) {
       console.error('Failed to refresh data:', e);
@@ -489,7 +515,11 @@ export const useStore = create<AppState>((set, get) => ({
       if (domain.id === domainId) return { ...domain, tables: Array.from(new Set([...filteredTables, tableId])) };
       return { ...domain, tables: filteredTables };
     });
-    const newLayout = { ...(schema.layout || {}), [tableId]: { x: 20, y: 20 } };
+    const newLayout = {
+      ...(schema.layout || {}),
+      // 既存の width/height を保持しつつ parentId を設定する
+      [tableId]: { x: 20, y: 20, ...schema.layout?.[tableId], ...(domainId ? { parentId: domainId } : {}) }
+    };
     set({ schema: { ...schema, domains: newDomains, layout: newLayout } });
     get().syncToYamlInput();
     get().saveSchema();
@@ -504,7 +534,11 @@ export const useStore = create<AppState>((set, get) => ({
       return { ...domain, tables: filteredTables };
     });
     const newLayout = { ...(schema.layout || {}) };
-    if (domainId) tableIds.forEach(id => { newLayout[id] = { x: 20, y: 20 }; });
+    // 既存の width/height/x/y を保持しつつ parentId を設定する（未設定なら x/y はデフォルト値）
+    if (domainId) tableIds.forEach(id => {
+      const existing = newLayout[id] || {};
+      newLayout[id] = { ...existing, x: existing.x ?? 20, y: existing.y ?? 20, parentId: domainId };
+    });
     set({ schema: { ...schema, domains: newDomains, layout: newLayout } });
     get().syncToYamlInput();
     get().saveSchema();
@@ -696,7 +730,7 @@ export const useStore = create<AppState>((set, get) => ({
   toggleTableSelection: (id) => {
     const { selectedTableId } = get();
     if (selectedTableId === id) set({ selectedTableId: null, isDetailPanelMinimized: true });
-    else set({ selectedTableId: id, selectedEdgeId: null, selectedAnnotationId: null, isDetailPanelMinimized: true });
+    else set({ selectedTableId: id, selectedEdgeId: null, selectedAnnotationId: null });
   },
 
   toggleEdgeSelection: (id) => {
@@ -756,15 +790,28 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   setCurrentModel: async (slug) => {
+    // 旧モデルへの pending save をキャンセル（切り替え後に旧データで上書きされるのを防ぐ）
+    if (saveTimeout) {
+      clearTimeout(saveTimeout);
+      saveTimeout = null;
+    }
+    set({ isModelLoading: true });
     try {
-      const res = await fetch(`/api/model?model=${slug}`);
-      const data = await res.json();
-      set({ schema: normalizeSchema(data), currentModelSlug: slug, selectedTableId: null, selectedEdgeId: null, selectedAnnotationId: null, error: null });
+      const injectedData = (window as any).__MODSCAPE_DATA__;
+      let data;
+      if (injectedData?.models) {
+        const model = injectedData.models.find((m: any) => m.slug === slug);
+        data = model?.schema;
+      } else {
+        const res = await fetch(`/api/model?model=${slug}`);
+        data = await res.json();
+      }
+      set({ schema: normalizeSchema(data), currentModelSlug: slug, selectedTableId: null, selectedEdgeId: null, selectedAnnotationId: null, error: null, isModelLoading: false });
       get().syncToYamlInput();
       const searchParams = new URLSearchParams(window.location.search);
       searchParams.set('model', slug);
       window.history.replaceState(null, '', `${window.location.pathname}?${searchParams.toString()}`);
-    } catch (e) { console.error('Failed to set model:', e); }
+    } catch (e) { console.error('Failed to set model:', e); set({ isModelLoading: false }); }
   },
 
   getSelectedTable: () => {

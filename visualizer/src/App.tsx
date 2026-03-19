@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import ReactFlow, { 
   Background, 
   Controls, 
@@ -14,6 +14,7 @@ import ReactFlow, {
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { useStore } from './store/useStore'
+import { useShallow } from 'zustand/react/shallow'
 import TableNode from './components/TableNode'
 import DomainNode from './components/DomainNode'
 import AnnotationNode from './components/AnnotationNode'
@@ -40,7 +41,7 @@ const edgeTypes = {
 }
 
 function Flow() {
-  const { 
+  const {
     schema,
     setSelectedTableId,
     setSelectedTableIds,
@@ -75,14 +76,53 @@ function Flow() {
     setIsPresentationMode,
     pathFinderResult,
     refreshModelData,
-    fetchAvailableFiles
-  } = useStore()
+    fetchAvailableFiles,
+    isModelLoading
+  } = useStore(useShallow((s) => ({
+    schema: s.schema,
+    setSelectedTableId: s.setSelectedTableId,
+    setSelectedTableIds: s.setSelectedTableIds,
+    selectedTableId: s.selectedTableId,
+    selectedEdgeId: s.selectedEdgeId,
+    setSelectedEdgeId: s.setSelectedEdgeId,
+    selectedAnnotationId: s.selectedAnnotationId,
+    setSelectedAnnotationId: s.setSelectedAnnotationId,
+    updateNodePosition: s.updateNodePosition,
+    updateNodesPosition: s.updateNodesPosition,
+    isCliMode: s.isCliMode,
+    focusNodeId: s.focusNodeId,
+    setFocusNodeId: s.setFocusNodeId,
+    addRelationship: s.addRelationship,
+    removeNode: s.removeNode,
+    removeEdge: s.removeEdge,
+    toggleTableSelection: s.toggleTableSelection,
+    toggleEdgeSelection: s.toggleEdgeSelection,
+    toggleAnnotationSelection: s.toggleAnnotationSelection,
+    showER: s.showER,
+    showLineage: s.showLineage,
+    showAnnotations: s.showAnnotations,
+    addLineage: s.addLineage,
+    setConnectionStartHandle: s.setConnectionStartHandle,
+    addTable: s.addTable,
+    addDomain: s.addDomain,
+    addAnnotation: s.addAnnotation,
+    updateAnnotation: s.updateAnnotation,
+    theme: s.theme,
+    currentModelSlug: s.currentModelSlug,
+    isPresentationMode: s.isPresentationMode,
+    setIsPresentationMode: s.setIsPresentationMode,
+    pathFinderResult: s.pathFinderResult,
+    refreshModelData: s.refreshModelData,
+    fetchAvailableFiles: s.fetchAvailableFiles,
+    isModelLoading: s.isModelLoading,
+  })))
   
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const { fitView, getViewport, setViewport, screenToFlowPosition, getNodes } = useReactFlow()
   const [edgeSyncTrigger, setEdgeSyncTrigger] = useState(0)
-  const lastLoadedModel = useRef<string | null>(null)
+  const [canvasVisible, setCanvasVisible] = useState(true)
+
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimeoutRef = useRef<number | null>(null)
   const reconnectDelayRef = useRef<number>(1000)
@@ -148,6 +188,16 @@ function Flow() {
 
   const isConnectionLocked = showER && showLineage
   const isViewingDisabled = !showER && !showLineage
+
+  // Memoized Sets for O(1) path lookups
+  const pathNodeIds = useMemo(
+    () => pathFinderResult ? new Set(pathFinderResult.nodeIds) : null,
+    [pathFinderResult]
+  )
+  const pathEdgeIds = useMemo(
+    () => pathFinderResult ? new Set(pathFinderResult.edgeIds) : null,
+    [pathFinderResult]
+  )
 
   // Handle global keyboard shortcuts
   useEffect(() => {
@@ -264,7 +314,7 @@ function Flow() {
     }
   }, [focusNodeId, fitView, setFocusNodeId]);
 
-  // Sync Nodes
+  // Sync Nodes — depends only on schema structure, NOT on selection/path state
   useEffect(() => {
     if (!schema) return
 
@@ -274,6 +324,10 @@ function Flow() {
     const DOMAIN_PADDING = 60;
     const GRID_COLS = 3;
     const currentFlowNodes = getNodes();
+
+    // Build Maps for O(1) lookups instead of repeated .find() calls
+    const tableMap = new Map(schema.tables.map(t => [t.id, t]));
+    const currentFlowNodeMap = new Map(currentFlowNodes.map(n => [n.id, n]));
 
     if (schema.domains) {
       const DOMAIN_GRID_COLS = 2;
@@ -287,52 +341,70 @@ function Flow() {
         const autoWidth = Math.max(2, cols) * TABLE_WIDTH + DOMAIN_PADDING;
         const autoHeight = Math.max(1.5, rows) * TABLE_HEIGHT + DOMAIN_PADDING;
         const layout = schema.layout?.[domain.id];
-        const currentNode = currentFlowNodes.find(n => n.id === domain.id);
+        const currentNode = currentFlowNodeMap.get(domain.id);
         const dRow = Math.floor(dIndex / DOMAIN_GRID_COLS);
         const dCol = dIndex % DOMAIN_GRID_COLS;
         const x = layout?.x ?? currentNode?.position.x ?? (dCol * DOMAIN_X_GAP);
         const y = layout?.y ?? currentNode?.position.y ?? (dRow * DOMAIN_Y_GAP);
         const width = layout?.width ?? autoWidth;
         const height = layout?.height ?? autoHeight;
+        const isLocked = layout?.isLocked ?? domain.isLocked ?? false;
+
+        // Inline path styling
+        const isPartOfPath = pathNodeIds?.has(domain.id);
+        const style: any = { width, height, pointerEvents: isLocked ? 'none' : 'auto' };
+        if (pathNodeIds) {
+          style.opacity = isPartOfPath ? 1 : 0.1;
+          style.transition = 'opacity 0.5s ease-in-out';
+        }
 
         newNodes.push({
           id: domain.id,
           type: 'domain',
           position: { x, y },
-          style: { width, height, pointerEvents: domain.isLocked ? 'none' : 'auto' },
-          selected: domain.id === selectedTableId,
-          draggable: !domain.isLocked,
-          selectable: !domain.isLocked,
-          deletable: !domain.isLocked,
-          dragHandle: domain.isLocked ? undefined : '.domain-drag-handle',
-          data: { label: domain.name, color: domain.color, isLocked: domain.isLocked },
+          style,
+          draggable: !isLocked,
+          selectable: !isLocked,
+          deletable: !isLocked,
+          dragHandle: isLocked ? undefined : '.domain-drag-handle',
+          data: { label: domain.name, color: domain.color, isLocked },
+          zIndex: isPartOfPath ? 900 : undefined,
         });
 
         domain.tables.forEach((tableId, tIndex) => {
-          const table = schema.tables.find(t => t.id === tableId);
+          const table = tableMap.get(tableId);
           if (!table) return;
           const localRow = Math.floor(tIndex / GRID_COLS);
           const localCol = tIndex % GRID_COLS;
           const tableLayout = schema.layout?.[table.id];
-          const currentTableNode = currentFlowNodes.find(n => n.id === table.id);
+          const currentTableNode = currentFlowNodeMap.get(table.id);
           const tx = tableLayout?.x ?? currentTableNode?.position.x ?? (localCol * TABLE_WIDTH + DOMAIN_PADDING / 2);
           const ty = tableLayout?.y ?? currentTableNode?.position.y ?? (localRow * TABLE_HEIGHT + DOMAIN_PADDING / 2);
           const defaultHeight = (table.columns && table.columns.length > 10) ? 350 : undefined;
           const nodeHeight = tableLayout?.height ?? defaultHeight;
 
+          // Inline path styling
+          const isPartOfPath = pathNodeIds?.has(table.id);
+          const style: any = {
+            ...(tableLayout?.width ? { width: tableLayout.width } : {}),
+            ...(nodeHeight ? { height: nodeHeight } : {})
+          };
+          if (pathNodeIds) {
+            style.opacity = isPartOfPath ? 1 : 0.1;
+            style.pointerEvents = isPartOfPath ? 'all' : 'none';
+            style.transition = 'opacity 0.5s ease-in-out';
+          }
+
           newNodes.push({
             id: table.id,
             type: 'table',
             position: { x: tx, y: ty },
-            style: { 
-              ...(tableLayout?.width ? { width: tableLayout.width } : {}),
-              ...(nodeHeight ? { height: nodeHeight } : {})
-            },
-            selected: table.id === selectedTableId,
+            style,
             dragHandle: '.table-drag-handle',
             data: { table },
             parentNode: domain.id,
             extent: 'parent',
+            zIndex: isPartOfPath ? 1000 : undefined,
           });
         });
       });
@@ -343,34 +415,45 @@ function Flow() {
 
     topLevelTables.forEach((table, index) => {
       const tableLayout = schema.layout?.[table.id];
-      const currentTableNode = currentFlowNodes.find(n => n.id === table.id);
+      const currentTableNode = currentFlowNodeMap.get(table.id);
       const lx = tableLayout?.x ?? currentTableNode?.position.x ?? (index * 300);
       const ly = tableLayout?.y ?? currentTableNode?.position.y ?? 100;
       const defaultHeight = (table.columns && table.columns.length > 10) ? 350 : undefined;
       const nodeHeight = tableLayout?.height ?? defaultHeight;
 
+      // Inline path styling
+      const isPartOfPath = pathNodeIds?.has(table.id);
+      const style: any = {
+        ...(tableLayout?.width ? { width: tableLayout.width } : {}),
+        ...(nodeHeight ? { height: nodeHeight } : {})
+      };
+
+      if (pathNodeIds) {
+        style.opacity = isPartOfPath ? 1 : 0.1;
+        style.pointerEvents = isPartOfPath ? 'all' : 'none';
+        style.transition = 'opacity 0.5s ease-in-out';
+      }
+
       newNodes.push({
         id: table.id,
         type: 'table',
         position: { x: lx, y: ly },
-        style: { 
-          ...(tableLayout?.width ? { width: tableLayout.width } : {}),
-          ...(nodeHeight ? { height: nodeHeight } : {})
-        },
-        selected: table.id === selectedTableId,
+        style,
         dragHandle: '.table-drag-handle',
         data: { table },
+        zIndex: isPartOfPath ? 1000 : undefined,
       });
     });
 
     if (showAnnotations && schema.annotations) {
+      const newNodeMap = new Map(newNodes.map(n => [n.id, n]));
       schema.annotations.forEach(annotation => {
         let x = annotation.offset.x;
         let y = annotation.offset.y;
         let parentNode = undefined;
 
         if (annotation.targetId) {
-          const targetNode = newNodes.find(n => n.id === annotation.targetId);
+          const targetNode = newNodeMap.get(annotation.targetId);
           if (targetNode) {
             x = targetNode.position.x + annotation.offset.x;
             y = targetNode.position.y + annotation.offset.y;
@@ -378,57 +461,63 @@ function Flow() {
           }
         }
 
+        const isPartOfPath = pathNodeIds?.has(annotation.id);
+        const style: any = {};
+        if (pathNodeIds) {
+          style.opacity = isPartOfPath ? 1 : 0.1;
+          style.pointerEvents = isPartOfPath ? 'all' : 'none';
+          style.transition = 'opacity 0.5s ease-in-out';
+        }
+
         newNodes.push({
           id: annotation.id,
           type: 'annotation',
           position: { x, y },
-          selected: annotation.id === selectedAnnotationId,
           data: { annotation },
+          style,
           parentNode,
+          zIndex: isPartOfPath ? 1000 : undefined,
         });
       });
     }
 
-    // Apply Path Highlighting to Nodes
-    if (pathFinderResult) {
-      newNodes.forEach(node => {
-        const isPartOfPath = pathFinderResult.nodeIds.includes(node.id);
-        node.style = {
-          ...node.style,
-          opacity: isPartOfPath ? 1 : 0.1,
-          pointerEvents: isPartOfPath ? 'all' : 'none',
-          transition: 'opacity 0.5s ease-in-out'
-        };
-        if (isPartOfPath) {
-          node.zIndex = 1000;
-        }
-      });
-    }
-
     setNodes(newNodes)
+    setEdgeSyncTrigger(v => v + 1);
+  }, [schema, setNodes, currentModelSlug, showAnnotations, pathNodeIds])
 
-    if (lastLoadedModel.current !== currentModelSlug) {
-      const timer = setTimeout(() => {
-        fitView({ duration: 400, padding: 0.2 });
-        window.dispatchEvent(new Event('resize'));
-        setEdgeSyncTrigger(v => v + 1);
-      }, 400);
-      lastLoadedModel.current = currentModelSlug;
-      return () => clearTimeout(timer);
-    } else {
-      setEdgeSyncTrigger(v => v + 1);
-    }
-  }, [schema, setNodes, fitView, currentModelSlug, showAnnotations, selectedTableId, selectedAnnotationId, pathFinderResult])
-
-  // Sync Store Selection
+  // Hide canvas when model slug changes (loading starts)
   useEffect(() => {
+    if (!currentModelSlug) return;
+    setCanvasVisible(false);
+  }, [currentModelSlug])
+
+  // FadeIn + FitView once nodes are built after a model switch
+  useEffect(() => {
+    if (canvasVisible || !currentModelSlug || nodes.length === 0) return;
+    const timer = setTimeout(() => {
+      fitView({ duration: 0, padding: 0.1 });
+      window.dispatchEvent(new Event('resize'));
+      setCanvasVisible(true);
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [nodes, canvasVisible, currentModelSlug, fitView])
+
+  // Sync Store Selection & UI Flags
+  useEffect(() => {
+    const isAnythingSelected = !!(selectedTableId || selectedAnnotationId);
     setNodes((nds) => 
       nds.map((node) => ({
         ...node,
-        selected: node.id === selectedTableId || node.id === selectedAnnotationId
+        selected: node.id === selectedTableId || node.id === selectedAnnotationId,
+        data: {
+          ...node.data,
+          isPresentationMode,
+          isAnythingSelected,
+          selectedTableId, // Still useful for some internal node logic
+        }
       }))
     )
-  }, [selectedTableId, selectedAnnotationId, setNodes])
+  }, [selectedTableId, selectedAnnotationId, isPresentationMode, setNodes])
 
   // Sync Edges
   useEffect(() => {
@@ -442,7 +531,7 @@ function Flow() {
 
       const erEdges = schema.relationships.map((rel, index) => {
         const edgeId = `e-${index}`;
-        const isPartOfPath = pathFinderResult?.edgeIds.includes(edgeId);
+        const isPartOfPath = pathEdgeIds?.has(edgeId);
         const isConnectedToSelectedTable = selectedTableId === rel.from.table || selectedTableId === rel.to.table;
         const isDirectlySelected = selectedEdgeId === edgeId;
         const isHighlighted = isConnectedToSelectedTable || isDirectlySelected;
@@ -465,7 +554,7 @@ function Flow() {
           animated: isPartOfPath || false,
           style: {
             ...(isPartOfPath ? PATH_STYLE : (isHighlighted ? HIGHLIGHT_STYLE : NORMAL_STYLE)),
-            opacity: pathFinderResult ? (isPartOfPath ? 1 : 0.1) : 1
+            opacity: pathEdgeIds ? (isPartOfPath ? 1 : 0.1) : 1
           },
           zIndex: isPartOfPath ? 100 : (isHighlighted ? 10 : 1),
         }
@@ -476,9 +565,9 @@ function Flow() {
     if (showLineage) {
       schema.tables.forEach(table => {
         if (table.lineage?.upstream) {
-          table.lineage.upstream.forEach((upstreamId, index) => {
-            const edgeId = `lin-${upstreamId}-${table.id}-${index}`;
-            const isPartOfPath = pathFinderResult?.edgeIds.includes(edgeId);
+          table.lineage.upstream.forEach((upstreamId) => {
+            const edgeId = `lin-${upstreamId}-${table.id}`;
+            const isPartOfPath = pathEdgeIds?.has(edgeId);
             const isConnectedToSelected = selectedTableId === table.id || selectedTableId === upstreamId;
             const isDirectlySelected = selectedEdgeId === edgeId;
             const isHighlighted = isConnectedToSelected || isDirectlySelected;
@@ -496,7 +585,7 @@ function Flow() {
               markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6', width: 20, height: 20 },
               style: {
                 ...(isPartOfPath ? { stroke: '#3b82f6', strokeWidth: 8 } : {}),
-                opacity: pathFinderResult ? (isPartOfPath ? 1 : 0.1) : 1
+                opacity: pathEdgeIds ? (isPartOfPath ? 1 : 0.1) : 1
               },
               zIndex: isPartOfPath ? 110 : (isHighlighted ? 15 : 2), 
             });
@@ -508,11 +597,15 @@ function Flow() {
     if (showAnnotations && schema.annotations) {
       schema.annotations.forEach(annotation => {
         if (annotation.type === 'callout' && annotation.targetId) {
+          const isPartOfPath = pathEdgeIds?.has(`e-ann-${annotation.id}`);
           newEdges.push({
             id: `e-ann-${annotation.id}`,
             source: annotation.id,
             target: annotation.targetId,
             type: 'annotation',
+            style: {
+              opacity: pathEdgeIds ? (isPartOfPath ? 1 : 0.1) : 1
+            },
             zIndex: 0,
           });
         }
@@ -520,7 +613,7 @@ function Flow() {
     }
 
     setEdges(newEdges);
-  }, [schema, selectedTableId, selectedEdgeId, setEdges, showER, showLineage, showAnnotations, theme, edgeSyncTrigger, pathFinderResult])
+  }, [schema, selectedTableId, selectedEdgeId, setEdges, showER, showLineage, showAnnotations, theme, edgeSyncTrigger, pathEdgeIds])
 
   const onConnect = useCallback(
     (params: Connection) => {
@@ -603,7 +696,6 @@ function Flow() {
   }, [schema, setNodes]);
 
   const onNodeDragStop = useCallback((_: any, node: Node) => {
-    if (!isCliMode) return;
     if (node.type === 'annotation') {
       const annotation = schema?.annotations?.find(a => a.id === node.id);
       if (annotation) {
@@ -627,7 +719,6 @@ function Flow() {
   }, [isCliMode, updateNodePosition, updateAnnotation, schema, nodes]);
 
   const onSelectionDragStop = useCallback((_: any, nodes: Node[]) => {
-    if (!isCliMode) return;
     const updates = nodes.map(node => ({
       id: node.id,
       x: node.position.x,
@@ -637,12 +728,17 @@ function Flow() {
     updateNodesPosition(updates);
   }, [isCliMode, updateNodesPosition]);
 
-  const onSelectionChange = useCallback(({ nodes }: { nodes: Node[] }) => {
+  const onSelectionChange = useCallback(({ nodes, edges }: { nodes: Node[], edges: Edge[] }) => {
     const tableIds = nodes.filter(n => n.type === 'table').map(n => n.id);
     setSelectedTableIds(tableIds);
     
-    if (nodes.length > 1) {
+    // Clear singular node selection if multiple nodes are selected or if selection is empty
+    if (nodes.length !== 1 && edges.length === 0) {
       setSelectedTableId(null);
+    }
+
+    // Clear singular selections if multiple total objects are selected
+    if (nodes.length + edges.length > 1) {
       setSelectedEdgeId(null);
       setSelectedAnnotationId(null);
     }
@@ -696,6 +792,15 @@ return (
           </div>
         )}
 
+        {(!canvasVisible || isModelLoading) && (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, zIndex: 10 }}>
+            <div style={{ width: 36, height: 36, border: `3px solid ${theme === 'dark' ? '#334155' : '#e2e8f0'}`, borderTopColor: theme === 'dark' ? '#60a5fa' : '#3b82f6', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+            <span style={{ fontSize: 13, color: theme === 'dark' ? '#94a3b8' : '#64748b', fontWeight: 500 }}>Loading model…</span>
+          </div>
+        )}
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
+        <div style={{ position: 'absolute', inset: 0, opacity: canvasVisible ? 1 : 0, transition: 'opacity 0.3s ease' }}>
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -727,10 +832,12 @@ return (
           minZoom={0.05}
           maxZoom={2}
           fitView
+          onlyRenderVisibleElements={true}
         >
           <Background color={theme === 'dark' ? '#334155' : '#e2e8f0'} gap={20} />
           <Controls />
         </ReactFlow>
+        </div>
       </div>
 
       {/* Bottom: Detail Panel (Hidden in Presentation Mode) */}

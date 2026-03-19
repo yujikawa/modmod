@@ -4,15 +4,36 @@ on:
   pull_request:
     branches:
       - main
-    paths:
-      - 'src/**'
-      - 'visualizer/**'
-      - 'samples/**'
-      - 'package.json'
-      - '.github/workflows/**'
+    # Removed top-level paths filter so it always runs on any PR
 
 jobs:
+  check-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      ui: ${{ steps.filter.outputs.ui }}
+      cli: ${{ steps.filter.outputs.cli }}
+      docs: ${{ steps.filter.outputs.docs }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            ui:
+              - 'visualizer/**'
+              - 'package.json'
+              - 'package-lock.json'
+            cli:
+              - 'src/**'
+              - 'package.json'
+              - 'package-lock.json'
+            docs:
+              - 'README.md'
+              - 'docs/**'
+              - '.gitignore'
+
   build-check:
+    needs: check-changes
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -25,32 +46,40 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: |
-          npm install
-          cd visualizer && npm install
+        run: npm install
+
+      # UI Build and Tests - Only if UI changes detected
+      - name: UI Dependencies
+        if: needs.check-changes.outputs.ui == 'true'
+        run: cd visualizer && npm install
 
       - name: UI Type Check
-        run: |
-          cd visualizer && npm run build
+        if: needs.check-changes.outputs.ui == 'true'
+        run: cd visualizer && npm run build
 
       - name: CLI Build UI
+        if: needs.check-changes.outputs.ui == 'true'
         run: npm run build-ui
 
       - name: Install Playwright Browsers
+        if: needs.check-changes.outputs.ui == 'true'
         run: npx playwright install --with-deps chromium
 
       - name: Run E2E Tests
+        if: needs.check-changes.outputs.ui == 'true'
         run: npm run test:e2e
 
       - name: Upload Test Results
-        if: failure()
+        if: failure() && needs.check-changes.outputs.ui == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: playwright-report/
           retention-days: 30
 
+      # CLI / Static Site Build Test - Always run if CLI or UI changes (since UI build affects it)
       - name: Test Static Site Build
+        if: needs.check-changes.outputs.cli == 'true' || needs.check-changes.outputs.ui == 'true'
         run: |
           # Verify that the build command works with actual samples
           node src/index.js build samples/ -o test-dist
@@ -60,3 +89,7 @@ jobs:
             exit 1
           fi
           echo "Success: Static site build verified"
+
+      - name: Skip Message
+        if: needs.check-changes.outputs.ui != 'true' && needs.check-changes.outputs.cli != 'true'
+        run: echo "Skipping heavy build/test tasks as no relevant code changes were detected."

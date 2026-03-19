@@ -2,6 +2,7 @@ import { memo, useEffect, useState } from 'react'
 import { Handle, Position, type NodeProps, NodeResizer, useUpdateNodeInternals } from 'reactflow'
 import type { Table } from '../types/schema'
 import { useStore } from '../store/useStore'
+import { useShallow } from 'zustand/react/shallow'
 
 const TYPE_CONFIG: Record<string, { color: string; icon: string; label: string }> = {
   fact: { color: '#f87171', icon: '📊', label: 'FACT' },
@@ -19,14 +20,15 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
   const updateNodeInternals = useUpdateNodeInternals()
 
   useEffect(() => {
+    if (!table) return
     // Notify React Flow that handles might have shifted due to dynamic header content
     updateNodeInternals(id)
     const timer = setTimeout(() => setIsNew(false), 1000)
     return () => clearTimeout(timer)
-  }, [id, table.name, table.logical_name, table.physical_name, table.columns, updateNodeInternals])
+  }, [id, table?.name, table?.logical_name, table?.physical_name, table?.columns, updateNodeInternals])
 
-  const { 
-    updateNodeDimensions, 
+  const {
+    updateNodeDimensions,
     hoveredColumnId,
     showER,
     showLineage,
@@ -35,9 +37,21 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
     isPresentationMode,
     selectedTableId,
     selectedAnnotationId,
-    highlightedNodeIds,
-    toggleTableSelection
-  } = useStore()
+    highlightedNodeIds
+  } = useStore(useShallow((s) => ({
+    updateNodeDimensions: s.updateNodeDimensions,
+    hoveredColumnId: s.hoveredColumnId,
+    showER: s.showER,
+    showLineage: s.showLineage,
+    connectionStartHandle: s.connectionStartHandle,
+    theme: s.theme,
+    isPresentationMode: s.isPresentationMode,
+    selectedTableId: s.selectedTableId,
+    selectedAnnotationId: s.selectedAnnotationId,
+    highlightedNodeIds: s.highlightedNodeIds,
+  })))
+
+  if (!table) return null
 
   const isActuallySelected = selected;
   const isHighlighted = highlightedNodeIds.includes(id);
@@ -125,7 +139,8 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
         cursor: 'default',
         opacity: shouldDim ? 0.3 : 1,
         zIndex: isActuallySelected ? 50 : 0,
-        transition: 'opacity 0.5s ease-in-out, z-index 0.3s'
+        transition: 'opacity 0.5s ease-in-out, z-index 0.3s',
+        willChange: 'transform'
       }}
     >
       <NodeResizer
@@ -239,14 +254,6 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
         {/* Header - Drag Handle */}
         <div 
           className="table-drag-handle"
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleTableSelection(id);
-          }}
-          onDoubleClick={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-          }}
           style={{ 
             padding: '12px', 
             backgroundColor: theme === 'dark' ? 'rgba(15, 23, 42, 0.8)' : 'rgba(241, 245, 249, 0.9)', 
@@ -355,7 +362,7 @@ const TableNode = ({ id, data, selected }: NodeProps<{ table: Table }>) => {
                               {col.logical?.additivity === 'fully' && <span style={{ color: '#4ade80' }} title="Fully Additive">Σ</span>}
                               {col.logical?.additivity === 'semi' && <span style={{ color: '#fbbf24' }} title="Semi-Additive">Σ~</span>}
                               {col.logical?.additivity === 'non' && <span style={{ color: '#f87171' }} title="Non-Additive">⊘</span>}
-                              <span className="truncate" title={logicalName}>
+                              <span className="truncate" title={col.logical?.description || logicalName}>
                                 {logicalName}
                               </span>
                             </div>

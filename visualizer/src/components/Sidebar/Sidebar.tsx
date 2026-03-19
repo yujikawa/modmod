@@ -1,13 +1,22 @@
+import { memo } from 'react'
 import EditorTab from './EditorTab'
 import FileSelector from './FileSelector'
 import QuickConnectTab from './QuickConnectTab'
 import ActivityBar from './ActivityBar'
 import { useStore } from '../../store/useStore'
+import { useShallow } from 'zustand/react/shallow'
 import { FileText, Zap } from 'lucide-react'
 import logo from '/favicon.svg?url'
 
-const Sidebar = () => {
-  const { isSidebarOpen, isCliMode, theme, savingStatus, activeTab, setActiveTab } = useStore()
+const Sidebar = memo(() => {
+  const { isSidebarOpen, isCliMode, theme, savingStatus, activeTab, setActiveTab } = useStore(useShallow((s) => ({
+    isSidebarOpen: s.isSidebarOpen,
+    isCliMode: s.isCliMode,
+    theme: s.theme,
+    savingStatus: s.savingStatus,
+    activeTab: s.activeTab,
+    setActiveTab: s.setActiveTab,
+  })))
 
   return (
     <div 
@@ -90,7 +99,7 @@ const Sidebar = () => {
           theme === 'dark' ? 'border-slate-800 bg-slate-950/20' : 'border-slate-100 bg-slate-50/50'
         }`}>
           <p className="text-[10px] text-slate-500 font-medium px-1">
-            Modscape v1.2.0
+            Modscape v1.3.0
           </p>
         </div>
       </div>
@@ -99,6 +108,6 @@ const Sidebar = () => {
       <ActivityBar />
     </div>
   )
-}
+})
 
 export default Sidebar

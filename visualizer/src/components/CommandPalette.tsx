@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { memo, useState, useEffect, useRef, useMemo } from 'react'
 import { useStore } from '../store/useStore'
+import { useShallow } from 'zustand/react/shallow'
 import { useReactFlow } from 'reactflow'
 import {
   Command,
@@ -16,7 +17,7 @@ import {
   Move
 } from 'lucide-react'
 
-const CommandPalette = () => {
+const CommandPalette = memo(() => {
   const {
     schema,
     isCommandPaletteOpen,
@@ -25,7 +26,15 @@ const CommandPalette = () => {
     setHighlightedNodeIds,
     setFocusNodeId,
     theme
-  } = useStore()
+  } = useStore(useShallow((s) => ({
+    schema: s.schema,
+    isCommandPaletteOpen: s.isCommandPaletteOpen,
+    setIsCommandPaletteOpen: s.setIsCommandPaletteOpen,
+    executePipeline: s.executePipeline,
+    setHighlightedNodeIds: s.setHighlightedNodeIds,
+    setFocusNodeId: s.setFocusNodeId,
+    theme: s.theme,
+  })))
 
   const { fitView } = useReactFlow()
   const [input, setInput] = useState('')
@@ -361,6 +370,6 @@ const CommandPalette = () => {
       </div>
     </div>
   )
-}
+})
 
 export default CommandPalette

@@ -58,6 +58,21 @@ export function normalizeSchema(data: any): Schema {
       physical_name: table.physical_name,
       appearance,
       lineage: table.lineage ? { ...table.lineage } : undefined,
+      implementation: table.implementation ? {
+        ...table.implementation,
+        // Normalize unique_key: YAML may have a single string or an array
+        unique_key: table.implementation.unique_key
+          ? (Array.isArray(table.implementation.unique_key)
+              ? table.implementation.unique_key
+              : [table.implementation.unique_key])
+          : undefined,
+        // Normalize partition_by: YAML may have a single object or an array
+        partition_by: table.implementation.partition_by
+          ? (Array.isArray(table.implementation.partition_by)
+              ? table.implementation.partition_by
+              : [table.implementation.partition_by])
+          : undefined,
+      } : undefined,
       columns: Array.isArray(table.columns) ? table.columns.map((col: any) => ({
         ...col,
         logical: col.logical ? { ...col.logical } : undefined,

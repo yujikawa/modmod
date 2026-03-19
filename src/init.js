@@ -64,25 +64,35 @@ export async function initProject(options = {}) {
 
     console.log('\n  Scaffolding modeling rules and commands...');
 
-    // 1. Create .modscape/rules.md
+    // 1. Create .modscape/rules.md and .modscape/codegen-rules.md
     const rulesTemplatePath = path.join(__dirname, 'templates/rules.md');
     const rulesTemplate = fs.readFileSync(rulesTemplatePath, 'utf8');
     await safeWriteFile('.modscape/rules.md', rulesTemplate);
 
+    const codegenRulesTemplatePath = path.join(__dirname, 'templates/codegen-rules.md');
+    const codegenRulesTemplate = fs.readFileSync(codegenRulesTemplatePath, 'utf8');
+    await safeWriteFile('.modscape/codegen-rules.md', codegenRulesTemplate);
+
     // 2. Create agent-specific files
     if (agents.includes('gemini')) {
-      const skillTemplate = fs.readFileSync(path.join(__dirname, 'templates/gemini/SKILL.md'), 'utf8');
-      await safeWriteFile('.gemini/skills/modscape/SKILL.md', skillTemplate);
+      const modelingTemplate = fs.readFileSync(path.join(__dirname, 'templates/gemini/modscape-modeling/SKILL.md'), 'utf8');
+      await safeWriteFile('.gemini/skills/modscape-modeling/SKILL.md', modelingTemplate);
+      const codegenTemplate = fs.readFileSync(path.join(__dirname, 'templates/gemini/modscape-codegen/SKILL.md'), 'utf8');
+      await safeWriteFile('.gemini/skills/modscape-codegen/SKILL.md', codegenTemplate);
     }
 
     if (agents.includes('codex')) {
-      const skillTemplate = fs.readFileSync(path.join(__dirname, 'templates/codex/SKILL.md'), 'utf8');
-      await safeWriteFile('.codex/skills/modscape-modeling/SKILL.md', skillTemplate);
+      const modelingTemplate = fs.readFileSync(path.join(__dirname, 'templates/codex/modscape-modeling/SKILL.md'), 'utf8');
+      await safeWriteFile('.codex/skills/modscape-modeling/SKILL.md', modelingTemplate);
+      const codegenTemplate = fs.readFileSync(path.join(__dirname, 'templates/codex/modscape-codegen/SKILL.md'), 'utf8');
+      await safeWriteFile('.codex/skills/modscape-codegen/SKILL.md', codegenTemplate);
     }
 
     if (agents.includes('claude')) {
-      const commandTemplate = fs.readFileSync(path.join(__dirname, 'templates/claude/command.md'), 'utf8');
-      await safeWriteFile('.claude/commands/modscape/modeling.md', commandTemplate);
+      const modelingTemplate = fs.readFileSync(path.join(__dirname, 'templates/claude/modeling.md'), 'utf8');
+      await safeWriteFile('.claude/commands/modscape/modeling.md', modelingTemplate);
+      const codegenTemplate = fs.readFileSync(path.join(__dirname, 'templates/claude/codegen.md'), 'utf8');
+      await safeWriteFile('.claude/commands/modscape/codegen.md', codegenTemplate);
     }
 
     console.log('\n  ✅ Initialization complete! Customize ".modscape/rules.md" to match your project standards.\n');

@@ -1,5 +1,7 @@
+import { memo } from 'react'
 import { useStore } from '../../store/useStore'
-import { 
+import { useShallow } from 'zustand/react/shallow'
+import {
   ListTree,
   ChevronRight,
   ChevronLeft,
@@ -10,14 +12,20 @@ import TablesTab from './TablesTab'
 import PathFinderTab from './PathFinderTab'
 import NoteSearchTab from './NoteSearchTab'
 
-const RightPanel = () => {
-  const { 
-    isRightPanelOpen, 
-    setIsRightPanelOpen, 
+const RightPanel = memo(() => {
+  const {
+    isRightPanelOpen,
+    setIsRightPanelOpen,
     activeRightPanelTab,
     setActiveRightPanelTab,
     theme
-  } = useStore()
+  } = useStore(useShallow((s) => ({
+    isRightPanelOpen: s.isRightPanelOpen,
+    setIsRightPanelOpen: s.setIsRightPanelOpen,
+    activeRightPanelTab: s.activeRightPanelTab,
+    setActiveRightPanelTab: s.setActiveRightPanelTab,
+    theme: s.theme,
+  })))
 
   const iconClass = (isActive: boolean) => `
     flex items-center justify-center w-10 h-10 rounded-xl transition-all relative group
@@ -107,6 +115,6 @@ const RightPanel = () => {
       </div>
     </div>
   )
-}
+})
 
 export default RightPanel
