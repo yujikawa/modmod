@@ -350,16 +350,25 @@ function Flow() {
         const height = layout?.height ?? autoHeight;
         const isLocked = layout?.isLocked ?? domain.isLocked ?? false;
 
+        // Inline path styling
+        const isPartOfPath = pathNodeIds?.has(domain.id);
+        const style: any = { width, height, pointerEvents: isLocked ? 'none' : 'auto' };
+        if (pathNodeIds) {
+          style.opacity = isPartOfPath ? 1 : 0.1;
+          style.transition = 'opacity 0.5s ease-in-out';
+        }
+
         newNodes.push({
           id: domain.id,
           type: 'domain',
           position: { x, y },
-          style: { width, height, pointerEvents: isLocked ? 'none' : 'auto' },
+          style,
           draggable: !isLocked,
           selectable: !isLocked,
           deletable: !isLocked,
           dragHandle: isLocked ? undefined : '.domain-drag-handle',
           data: { label: domain.name, color: domain.color, isLocked },
+          zIndex: isPartOfPath ? 900 : undefined,
         });
 
         domain.tables.forEach((tableId, tIndex) => {
@@ -374,18 +383,28 @@ function Flow() {
           const defaultHeight = (table.columns && table.columns.length > 10) ? 350 : undefined;
           const nodeHeight = tableLayout?.height ?? defaultHeight;
 
+          // Inline path styling
+          const isPartOfPath = pathNodeIds?.has(table.id);
+          const style: any = {
+            ...(tableLayout?.width ? { width: tableLayout.width } : {}),
+            ...(nodeHeight ? { height: nodeHeight } : {})
+          };
+          if (pathNodeIds) {
+            style.opacity = isPartOfPath ? 1 : 0.1;
+            style.pointerEvents = isPartOfPath ? 'all' : 'none';
+            style.transition = 'opacity 0.5s ease-in-out';
+          }
+
           newNodes.push({
             id: table.id,
             type: 'table',
             position: { x: tx, y: ty },
-            style: {
-              ...(tableLayout?.width ? { width: tableLayout.width } : {}),
-              ...(nodeHeight ? { height: nodeHeight } : {})
-            },
+            style,
             dragHandle: '.table-drag-handle',
             data: { table },
             parentNode: domain.id,
             extent: 'parent',
+            zIndex: isPartOfPath ? 1000 : undefined,
           });
         });
       });
@@ -402,16 +421,27 @@ function Flow() {
       const defaultHeight = (table.columns && table.columns.length > 10) ? 350 : undefined;
       const nodeHeight = tableLayout?.height ?? defaultHeight;
 
+      // Inline path styling
+      const isPartOfPath = pathNodeIds?.has(table.id);
+      const style: any = {
+        ...(tableLayout?.width ? { width: tableLayout.width } : {}),
+        ...(nodeHeight ? { height: nodeHeight } : {})
+      };
+
+      if (pathNodeIds) {
+        style.opacity = isPartOfPath ? 1 : 0.1;
+        style.pointerEvents = isPartOfPath ? 'all' : 'none';
+        style.transition = 'opacity 0.5s ease-in-out';
+      }
+
       newNodes.push({
         id: table.id,
         type: 'table',
         position: { x: lx, y: ly },
-        style: {
-          ...(tableLayout?.width ? { width: tableLayout.width } : {}),
-          ...(nodeHeight ? { height: nodeHeight } : {})
-        },
+        style,
         dragHandle: '.table-drag-handle',
         data: { table },
+        zIndex: isPartOfPath ? 1000 : undefined,
       });
     });
 
@@ -431,42 +461,29 @@ function Flow() {
           }
         }
 
+        const isPartOfPath = pathNodeIds?.has(annotation.id);
+        const style: any = {};
+        if (pathNodeIds) {
+          style.opacity = isPartOfPath ? 1 : 0.1;
+          style.pointerEvents = isPartOfPath ? 'all' : 'none';
+          style.transition = 'opacity 0.5s ease-in-out';
+        }
+
         newNodes.push({
           id: annotation.id,
           type: 'annotation',
           position: { x, y },
           data: { annotation },
+          style,
           parentNode,
+          zIndex: isPartOfPath ? 1000 : undefined,
         });
       });
     }
 
     setNodes(newNodes)
     setEdgeSyncTrigger(v => v + 1);
-  }, [schema, setNodes, currentModelSlug, showAnnotations])
-
-  // Apply path highlighting to nodes as a separate effect (doesn't rebuild all nodes)
-  useEffect(() => {
-    setNodes(nds => nds.map(node => {
-      if (!pathNodeIds) {
-        const { opacity: _o, pointerEvents: _p, transition: _t, ...restStyle } = (node.style || {}) as any;
-        const hasPathStyle = _o !== undefined || _p !== undefined;
-        if (!hasPathStyle) return node;
-        return { ...node, style: restStyle, zIndex: undefined };
-      }
-      const isPartOfPath = pathNodeIds.has(node.id);
-      return {
-        ...node,
-        style: {
-          ...node.style,
-          opacity: isPartOfPath ? 1 : 0.1,
-          pointerEvents: isPartOfPath ? 'all' : 'none',
-          transition: 'opacity 0.5s ease-in-out',
-        },
-        zIndex: isPartOfPath ? 1000 : node.zIndex,
-      };
-    }));
-  }, [pathNodeIds, setNodes])
+  }, [schema, setNodes, currentModelSlug, showAnnotations, pathNodeIds])
 
   // Hide canvas when model slug changes (loading starts)
   useEffect(() => {
@@ -485,15 +502,22 @@ function Flow() {
     return () => clearTimeout(timer);
   }, [nodes, canvasVisible, currentModelSlug, fitView])
 
-  // Sync Store Selection
+  // Sync Store Selection & UI Flags
   useEffect(() => {
+    const isAnythingSelected = !!(selectedTableId || selectedAnnotationId);
     setNodes((nds) => 
       nds.map((node) => ({
         ...node,
-        selected: node.id === selectedTableId || node.id === selectedAnnotationId
+        selected: node.id === selectedTableId || node.id === selectedAnnotationId,
+        data: {
+          ...node.data,
+          isPresentationMode,
+          isAnythingSelected,
+          selectedTableId, // Still useful for some internal node logic
+        }
       }))
     )
-  }, [selectedTableId, selectedAnnotationId, setNodes])
+  }, [selectedTableId, selectedAnnotationId, isPresentationMode, setNodes])
 
   // Sync Edges
   useEffect(() => {
@@ -573,11 +597,15 @@ function Flow() {
     if (showAnnotations && schema.annotations) {
       schema.annotations.forEach(annotation => {
         if (annotation.type === 'callout' && annotation.targetId) {
+          const isPartOfPath = pathEdgeIds?.has(`e-ann-${annotation.id}`);
           newEdges.push({
             id: `e-ann-${annotation.id}`,
             source: annotation.id,
             target: annotation.targetId,
             type: 'annotation',
+            style: {
+              opacity: pathEdgeIds ? (isPartOfPath ? 1 : 0.1) : 1
+            },
             zIndex: 0,
           });
         }
@@ -804,6 +832,7 @@ return (
           minZoom={0.05}
           maxZoom={2}
           fitView
+          onlyRenderVisibleElements={true}
         >
           <Background color={theme === 'dark' ? '#334155' : '#e2e8f0'} gap={20} />
           <Controls />

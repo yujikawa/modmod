@@ -290,12 +290,10 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   saveSchema: async (force = false) => {
-    const { schema, isCliMode, isAutoSaveEnabled, lastUpdateSource } = get();
+    const { schema, isCliMode, isAutoSaveEnabled, lastUpdateSource, currentModelSlug } = get();
 
     // refreshModelData の3秒ガードを確実に効かせるため、
     // saveSchema 呼び出し時点で即座に lastSavedAt を更新する。
-    // これにより、デバウンス中（~1000ms）にWSリフレッシュが来ても
-    // ローカルの変更が上書きされない。
     set({ lastSavedAt: Date.now() });
 
     // ユーザー操作（エディタ入力等）の場合はファイル書き込みは不要
@@ -306,9 +304,14 @@ export const useStore = create<AppState>((set, get) => ({
     if (saveTimeout) clearTimeout(saveTimeout);
 
     saveTimeout = setTimeout(async () => {
+      // 実際の送信直前に再度、現在のモデルを確認する（切り替え直後の割り込み防止）
+      const activeModel = get().currentModelSlug;
+      if (currentModelSlug !== activeModel) return;
+
       try {
         const yamlStr = yaml.dump(schema, { indent: 2, lineWidth: -1, noRefs: true });
-        await fetch('/api/save', {
+        const query = activeModel ? `?model=${activeModel}` : '';
+        await fetch(`/api/save${query}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ yaml: yamlStr })
