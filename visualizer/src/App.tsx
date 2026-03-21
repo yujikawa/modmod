@@ -244,6 +244,18 @@ function Flow() {
     setSelectedAnnotationId(null)
   }, [setSelectedTableId, setSelectedEdgeId, setSelectedAnnotationId])
 
+  const handleAnnotationClick = useCallback((id: string) => {
+    setSelectedTableId(null)
+    setSelectedEdgeId(null)
+    setSelectedAnnotationId(id)
+  }, [setSelectedTableId, setSelectedEdgeId, setSelectedAnnotationId])
+
+  const handleDomainClick = useCallback((id: string) => {
+    setSelectedAnnotationId(null)
+    setSelectedEdgeId(null)
+    toggleTableSelection(id)
+  }, [setSelectedAnnotationId, setSelectedEdgeId, toggleTableSelection])
+
   const handleAddTable = useCallback((x: number, y: number) => {
     addTable(x, y)
   }, [addTable])
@@ -303,6 +315,8 @@ function Flow() {
             onNodeClick={handleNodeClick}
             onEdgeClick={handleEdgeClick}
             onPaneClick={handlePaneClick}
+            onAnnotationClick={handleAnnotationClick}
+            onDomainClick={handleDomainClick}
             onAddTableAt={handleAddTable}
             onAddDomainAt={handleAddDomain}
             onAddAnnotationAt={handleAddAnnotation}

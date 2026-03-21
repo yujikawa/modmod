@@ -123,7 +123,7 @@ interface AppState {
   // Computed (helpers)
   getSelectedTable: () => Table | null;
   getSelectedDomain: () => Domain | null;
-  getSelectedRelationship: () => { relationship: Relationship; index: number } | null;
+  getSelectedRelationship: () => { relationship: Relationship; index: number; kind: 'er' | 'lineage' } | null;
   getSelectedAnnotation: () => Annotation | null;
 }
 
@@ -831,13 +831,14 @@ export const useStore = create<AppState>((set, get) => ({
     if (!schema || !selectedEdgeId) return null;
     if (selectedEdgeId.startsWith('lin-')) {
       const parts = selectedEdgeId.split('-');
-      return { relationship: { from: { table: parts[1] }, to: { table: parts[2] }, type: 'lineage' as any }, index: -1 };
+      // lin-{srcId}-{tgtId}-{i}  (srcId and tgtId may contain hyphens so use first/last)
+      return { relationship: { from: { table: parts[1] }, to: { table: parts[2] }, type: 'lineage' as any }, index: -1, kind: 'lineage' as const };
     }
-    if (!selectedEdgeId.startsWith('e-')) return null;
+    if (!selectedEdgeId.startsWith('er-')) return null;
     const index = parseInt(selectedEdgeId.split('-')[1]);
-    const relationship = schema.relationships[index];
+    const relationship = schema.relationships?.[index];
     if (!relationship) return null;
-    return { relationship, index };
+    return { relationship, index, kind: 'er' as const };
   },
 
   getSelectedAnnotation: () => {

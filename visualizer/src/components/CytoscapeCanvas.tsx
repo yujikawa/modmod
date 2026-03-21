@@ -124,13 +124,26 @@ function renderDomainBackgrounds(
 
   schema.domains.forEach((domain) => {
     const memberNodes = cy.nodes().filter((n: CyInstance) => domain.tables.includes(n.id()))
-    if (memberNodes.length === 0) return
 
-    const bb = memberNodes.boundingBox({})
-    const sx = (bb.x1 - PAD) * zoom + pan.x
-    const sy = (bb.y1 - PAD) * zoom + pan.y
-    const sw = (bb.w + PAD * 2) * zoom
-    const sh = (bb.h + PAD * 2) * zoom
+    let sx: number, sy: number, sw: number, sh: number
+    if (memberNodes.length === 0) {
+      // Empty domain: use layout entry if available, otherwise show a placeholder
+      const layoutEntry = schema.layout?.[domain.id]
+      const cx = layoutEntry?.x ?? 0
+      const cy2 = layoutEntry?.y ?? 0
+      const w = 300
+      const h = 120
+      sx = (cx - PAD) * zoom + pan.x
+      sy = (cy2 - PAD) * zoom + pan.y
+      sw = (w + PAD * 2) * zoom
+      sh = (h + PAD * 2) * zoom
+    } else {
+      const bb = memberNodes.boundingBox({})
+      sx = (bb.x1 - PAD) * zoom + pan.x
+      sy = (bb.y1 - PAD) * zoom + pan.y
+      sw = (bb.w + PAD * 2) * zoom
+      sh = (bb.h + PAD * 2) * zoom
+    }
 
     const div = document.createElement('div')
     div.style.cssText = `
@@ -145,7 +158,7 @@ function renderDomainBackgrounds(
       pointer-events: none;
     `
     const label = document.createElement('div')
-    label.textContent = domain.name
+    label.textContent = memberNodes.length === 0 ? `${domain.name} (empty)` : domain.name
     label.style.cssText = `
       position: absolute;
       top: 6px;
@@ -174,7 +187,8 @@ function renderDomainHandles(
   container: HTMLDivElement,
   bgContainer: HTMLDivElement,
   _theme: 'dark' | 'light',
-  onDomainDragEnd: (domainId: string, dx: number, dy: number) => void
+  onDomainDragEnd: (domainId: string, dx: number, dy: number) => void,
+  onDomainClick: (id: string) => void,
 ) {
   container.innerHTML = ''
   if (!schema.domains?.length) return
@@ -186,12 +200,21 @@ function renderDomainHandles(
 
   schema.domains.forEach((domain) => {
     const memberNodes = cy.nodes().filter((n: CyInstance) => domain.tables.includes(n.id()))
-    if (memberNodes.length === 0) return
 
-    const bb = memberNodes.boundingBox({})
-    const sx = (bb.x1 - PAD) * zoom + pan.x
-    const sy = (bb.y1 - PAD) * zoom + pan.y
-    const sw = (bb.w + PAD * 2) * zoom
+    let sx: number, sy: number, sw: number
+    if (memberNodes.length === 0) {
+      const layoutEntry = schema.layout?.[domain.id]
+      const cx = layoutEntry?.x ?? 0
+      const cy2 = layoutEntry?.y ?? 0
+      sx = (cx - PAD) * zoom + pan.x
+      sy = (cy2 - PAD) * zoom + pan.y
+      sw = (300 + PAD * 2) * zoom
+    } else {
+      const bb = memberNodes.boundingBox({})
+      sx = (bb.x1 - PAD) * zoom + pan.x
+      sy = (bb.y1 - PAD) * zoom + pan.y
+      sw = (bb.w + PAD * 2) * zoom
+    }
 
     // Transparent header strip — same position as the domain label in the background
     const handle = document.createElement('div')
@@ -210,7 +233,6 @@ function renderDomainHandles(
     handle.addEventListener('mousedown', (startEvt) => {
       startEvt.preventDefault()
       startEvt.stopPropagation()
-      handle.style.cursor = 'grabbing'
 
       const startX = startEvt.clientX
       const startY = startEvt.clientY
@@ -223,10 +245,16 @@ function renderDomainHandles(
       })
       let lastDx = 0
       let lastDy = 0
+      let moved = false
 
       const onMouseMove = (moveEvt: MouseEvent) => {
         const screenDx = moveEvt.clientX - startX
         const screenDy = moveEvt.clientY - startY
+        if (Math.abs(screenDx) > 3 || Math.abs(screenDy) > 3) {
+          moved = true
+          handle.style.cursor = 'grabbing'
+        }
+        if (!moved) return
         const currentZoom: number = cy.zoom()
         lastDx = screenDx / currentZoom
         lastDy = screenDy / currentZoom
@@ -243,7 +271,11 @@ function renderDomainHandles(
         handle.style.cursor = 'grab'
         window.removeEventListener('mousemove', onMouseMove)
         window.removeEventListener('mouseup', onMouseUp)
-        onDomainDragEnd(domain.id, lastDx, lastDy)
+        if (!moved) {
+          onDomainClick(domain.id)
+        } else {
+          onDomainDragEnd(domain.id, lastDx, lastDy)
+        }
       }
 
       window.addEventListener('mousemove', onMouseMove)
@@ -261,7 +293,9 @@ function renderAnnotations(
   schema: Schema,
   container: HTMLDivElement,
   theme: 'dark' | 'light',
-  onAnnotationDragEnd: (id: string, newOffset: { x: number; y: number }) => void
+  onAnnotationDragEnd: (id: string, newOffset: { x: number; y: number }) => void,
+  onAnnotationClick: (id: string) => void,
+  selectedAnnotationId: string | null,
 ) {
   container.innerHTML = ''
   if (!schema.annotations?.length) return
@@ -284,6 +318,7 @@ function renderAnnotations(
       absY = ann.offset.y * zoom + pan.y
     }
 
+    const isSelected = selectedAnnotationId === ann.id
     const bgColor = ann.color ?? (theme === 'dark' ? '#1e293b' : '#fef9c3')
     const div = document.createElement('div')
     div.style.cssText = `
@@ -294,44 +329,53 @@ function renderAnnotations(
       max-width: ${240 * zoom}px;
       padding: ${8 * zoom}px ${12 * zoom}px;
       background: ${bgColor};
-      border: 1px solid rgba(0,0,0,0.1);
+      border: ${isSelected ? '2px solid #3b82f6' : '1px solid rgba(0,0,0,0.1)'};
       border-radius: ${8 * zoom}px;
       font-size: ${12 * zoom}px;
       line-height: 1.4;
       cursor: grab;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+      box-shadow: ${isSelected ? '0 0 0 3px rgba(59,130,246,0.3)' : '0 2px 8px rgba(0,0,0,0.12)'};
       white-space: pre-wrap;
       user-select: none;
+      pointer-events: auto;
     `
     div.textContent = ann.text
 
-    // ── Annotation drag ────────────────────────────────────────────────
+    // ── Annotation drag + click (tap vs drag detection) ─────────────────
     div.addEventListener('mousedown', (startEvt) => {
       startEvt.preventDefault()
       startEvt.stopPropagation()
-      div.style.cursor = 'grabbing'
       const startScreenX = startEvt.clientX
       const startScreenY = startEvt.clientY
       const startOffsetX = ann.offset.x
       const startOffsetY = ann.offset.y
+      let moved = false
 
       const onMouseMove = (moveEvt: MouseEvent) => {
-        const currentZoom: number = cy.zoom()
-        const dx = (moveEvt.clientX - startScreenX) / currentZoom
-        const dy = (moveEvt.clientY - startScreenY) / currentZoom
-        div.style.left = (absX + (moveEvt.clientX - startScreenX)) + 'px'
-        div.style.top = (absY + (moveEvt.clientY - startScreenY)) + 'px'
-        void dx; void dy // used in mouseup
+        const dx = moveEvt.clientX - startScreenX
+        const dy = moveEvt.clientY - startScreenY
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+          moved = true
+          div.style.cursor = 'grabbing'
+        }
+        if (moved) {
+          div.style.left = (absX + dx) + 'px'
+          div.style.top = (absY + dy) + 'px'
+        }
       }
 
       const onMouseUp = (upEvt: MouseEvent) => {
         div.style.cursor = 'grab'
         window.removeEventListener('mousemove', onMouseMove)
         window.removeEventListener('mouseup', onMouseUp)
-        const currentZoom: number = cy.zoom()
-        const dx = (upEvt.clientX - startScreenX) / currentZoom
-        const dy = (upEvt.clientY - startScreenY) / currentZoom
-        onAnnotationDragEnd(ann.id, { x: startOffsetX + dx, y: startOffsetY + dy })
+        if (!moved) {
+          onAnnotationClick(ann.id)
+        } else {
+          const currentZoom: number = cy.zoom()
+          const dx = (upEvt.clientX - startScreenX) / currentZoom
+          const dy = (upEvt.clientY - startScreenY) / currentZoom
+          onAnnotationDragEnd(ann.id, { x: startOffsetX + dx, y: startOffsetY + dy })
+        }
       }
 
       window.addEventListener('mousemove', onMouseMove)
@@ -355,6 +399,8 @@ interface CytoscapeCanvasProps {
     relType?: string
   }) => void
   onPaneClick: () => void
+  onAnnotationClick: (id: string) => void
+  onDomainClick: (id: string) => void
   onAddTableAt: (x: number, y: number) => void
   onAddDomainAt: (x: number, y: number) => void
   onAddAnnotationAt: (x: number, y: number) => void
@@ -367,6 +413,8 @@ export default function CytoscapeCanvas({
   onNodeClick,
   onEdgeClick,
   onPaneClick,
+  onAnnotationClick,
+  onDomainClick,
   onAddTableAt,
   onAddDomainAt,
   onAddAnnotationAt,
@@ -378,6 +426,7 @@ export default function CytoscapeCanvas({
     schema,
     selectedTableId,
     selectedTableIds,
+    selectedAnnotationId,
     highlightedNodeIds,
     pathFinderResult,
     isPresentationMode,
@@ -394,6 +443,7 @@ export default function CytoscapeCanvas({
       schema: s.schema,
       selectedTableId: s.selectedTableId,
       selectedTableIds: s.selectedTableIds,
+      selectedAnnotationId: s.selectedAnnotationId,
       highlightedNodeIds: s.highlightedNodeIds,
       pathFinderResult: s.pathFinderResult,
       isPresentationMode: s.isPresentationMode,
@@ -524,6 +574,9 @@ export default function CytoscapeCanvas({
   const onDomainDragEndRef = useRef(onDomainDragEnd)
   useEffect(() => { onDomainDragEndRef.current = onDomainDragEnd }, [onDomainDragEnd])
 
+  const onDomainClickRef = useRef(onDomainClick)
+  useEffect(() => { onDomainClickRef.current = onDomainClick }, [onDomainClick])
+
   // ── Annotation drag end callback ─────────────────────────────────────
   const onAnnotationDragEnd = useCallback(
     (id: string, newOffset: { x: number; y: number }) => {
@@ -533,6 +586,12 @@ export default function CytoscapeCanvas({
   )
   const onAnnotationDragEndRef = useRef(onAnnotationDragEnd)
   useEffect(() => { onAnnotationDragEndRef.current = onAnnotationDragEnd }, [onAnnotationDragEnd])
+
+  const onAnnotationClickRef = useRef(onAnnotationClick)
+  useEffect(() => { onAnnotationClickRef.current = onAnnotationClick }, [onAnnotationClick])
+
+  const selectedAnnotationIdRef = useRef(selectedAnnotationId)
+  useEffect(() => { selectedAnnotationIdRef.current = selectedAnnotationId }, [selectedAnnotationId])
 
   // ── Initialize Cytoscape (mount only) ───────────────────────────────
   useEffect(() => {
@@ -636,10 +695,10 @@ export default function CytoscapeCanvas({
         renderDomainBackgrounds(cy, schemaRef.current, domBgRef.current)
       }
       if (domHandleRef.current && domBgRef.current && schemaRef.current) {
-        renderDomainHandles(cy, schemaRef.current, domHandleRef.current, domBgRef.current, themeRef.current, onDomainDragEndRef.current)
+        renderDomainHandles(cy, schemaRef.current, domHandleRef.current, domBgRef.current, themeRef.current, onDomainDragEndRef.current, onDomainClickRef.current)
       }
       if (domAnnRef.current && schemaRef.current && showAnnotationsRef.current) {
-        renderAnnotations(cy, schemaRef.current, domAnnRef.current, themeRef.current, onAnnotationDragEndRef.current)
+        renderAnnotations(cy, schemaRef.current, domAnnRef.current, themeRef.current, onAnnotationDragEndRef.current, onAnnotationClickRef.current, selectedAnnotationIdRef.current)
       }
     }
     cy.on('pan zoom', updateOverlays)
@@ -773,9 +832,9 @@ export default function CytoscapeCanvas({
 
     // Update overlays
     if (domBgRef.current) renderDomainBackgrounds(cy, schema, domBgRef.current)
-    if (domHandleRef.current && domBgRef.current) renderDomainHandles(cy, schema, domHandleRef.current, domBgRef.current, theme, onDomainDragEndRef.current)
+    if (domHandleRef.current && domBgRef.current) renderDomainHandles(cy, schema, domHandleRef.current, domBgRef.current, theme, onDomainDragEndRef.current, onDomainClickRef.current)
     if (domAnnRef.current) {
-      if (showAnnotations) renderAnnotations(cy, schema, domAnnRef.current, theme, onAnnotationDragEndRef.current)
+      if (showAnnotations) renderAnnotations(cy, schema, domAnnRef.current, theme, onAnnotationDragEndRef.current, onAnnotationClickRef.current, selectedAnnotationIdRef.current)
       else domAnnRef.current.innerHTML = ''
     }
 
