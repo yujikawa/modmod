@@ -147,6 +147,24 @@ function buildCytoscapeStyle(theme: 'dark' | 'light', lowZoom = false) {
   ]
 }
 
+// ── Domain bounding box helper ──────────────────────────────────────────
+// Cytoscape's boundingBox() uses the stylesheet node size (width:280, height:160),
+// but DOM containers can be much taller when tables have many columns.
+// This helper expands y2 to cover the actual rendered DOM height.
+const NODE_HALF_H = 80 // half of stylesheet height 160
+function getDomainBB(memberNodes: any, zoom: number) {
+  const bb = memberNodes.boundingBox({})
+  let y2: number = bb.y2
+  memberNodes.forEach((n: CyInstance) => {
+    const domEl: HTMLElement | undefined = n.data('dom')
+    if (domEl && domEl.offsetHeight > 0) {
+      const actualY2 = (n.position('y') as number) - NODE_HALF_H + domEl.offsetHeight / zoom
+      if (actualY2 > y2) y2 = actualY2
+    }
+  })
+  return { x1: bb.x1 as number, y1: bb.y1 as number, y2, w: bb.w as number, h: y2 - (bb.y1 as number) }
+}
+
 // ── Domain background renderer (visual only, no interaction) ───────────
 function renderDomainBackgrounds(
   cy: CyInstance,
@@ -176,7 +194,7 @@ function renderDomainBackgrounds(
       sw = (w + PAD * 2) * zoom
       sh = (h + PAD * 2) * zoom
     } else {
-      const bb = memberNodes.boundingBox({})
+      const bb = getDomainBB(memberNodes, zoom)
       sx = (bb.x1 - PAD) * zoom + pan.x
       sy = (bb.y1 - PAD) * zoom + pan.y
       sw = (bb.w + PAD * 2) * zoom
@@ -248,7 +266,7 @@ function renderDomainHandles(
       sy = (cy2 - PAD) * zoom + pan.y
       sw = (300 + PAD * 2) * zoom
     } else {
-      const bb = memberNodes.boundingBox({})
+      const bb = getDomainBB(memberNodes, zoom)
       sx = (bb.x1 - PAD) * zoom + pan.x
       sy = (bb.y1 - PAD) * zoom + pan.y
       sw = (bb.w + PAD * 2) * zoom
@@ -445,6 +463,7 @@ interface CytoscapeCanvasProps {
   onFitView: (fitFn: () => void) => void
   onFocusNode: (focusFn: (id: string) => void) => void
   onEdgeCreated: (kind: 'lineage' | 'er', sourceId: string, targetId: string) => void
+  onAutoLayout: (fn: () => void) => void
 }
 
 export default function CytoscapeCanvas({
@@ -459,6 +478,7 @@ export default function CytoscapeCanvas({
   onFitView,
   onFocusNode,
   onEdgeCreated,
+  onAutoLayout,
 }: CytoscapeCanvasProps) {
   const {
     schema,
@@ -1062,6 +1082,123 @@ export default function CytoscapeCanvas({
     onFitView(fitFn)
     ;(window as any).__modscapeFitView = fitFn
   }, [onFitView])
+
+  // ── Auto Layout (dagre LR + domain grid packing) ─────────────────────
+  useEffect(() => {
+    onAutoLayout(() => {
+      const cy = cyRef.current
+      if (!cy) return
+      const schema = schemaRef.current
+      if (!schema) return
+
+      // Set actual DOM heights so dagre spaces rows correctly
+      cy.nodes().forEach((n: CyInstance) => {
+        const domEl: HTMLElement | undefined = n.data('dom')
+        if (domEl && domEl.offsetHeight > 0) n.style('height', domEl.offsetHeight)
+      })
+
+      const cyLayout = cy.layout({
+        name: 'dagre',
+        rankDir: 'LR',
+        nodeSep: 80,
+        rankSep: 200,
+        padding: 80,
+        fit: false,
+      })
+
+      cyLayout.on('layoutstop', () => {
+        cy.nodes().forEach((n: CyInstance) => n.removeStyle('height'))
+
+        // Read dagre-computed positions
+        const dagrePos = new Map<string, { x: number; y: number }>()
+        cy.nodes().forEach((n: CyInstance) => {
+          const id = n.id() as string
+          if (schema.tables.some(t => t.id === id)) dagrePos.set(id, { ...n.position() })
+        })
+
+        const newLayout: Record<string, any> = {}
+        const PAD = 48
+        const TABLE_W = 280
+        const GAP = 40
+
+        const getH = (tid: string) => {
+          const domEl: HTMLElement | undefined = cy.getElementById(tid).data('dom')
+          return domEl?.offsetHeight ?? 220
+        }
+
+        // Domain members: rearrange into grid preserving dagre rank order
+        schema.domains?.forEach(domain => {
+          const members = domain.tables.filter(tid => dagrePos.has(tid))
+          if (members.length === 0) return
+
+          // Sort by dagre x (rank = left→right order)
+          members.sort((a, b) => dagrePos.get(a)!.x - dagrePos.get(b)!.x)
+
+          const cols = Math.min(3, Math.ceil(Math.sqrt(members.length)))
+          const rowCount = Math.ceil(members.length / cols)
+
+          // Row heights: max DOM height per row
+          const rowH: number[] = Array.from({ length: rowCount }, (_, row) => {
+            let max = 0
+            for (let c = 0; c < cols; c++) {
+              const m = members[row * cols + c]
+              if (m) max = Math.max(max, getH(m))
+            }
+            return max
+          })
+
+          const gridW = cols * (TABLE_W + GAP) - GAP
+          const gridH = rowH.reduce((s, h) => s + h + GAP, 0) - GAP
+
+          // Anchor grid to dagre centroid
+          const cx = members.reduce((s, tid) => s + dagrePos.get(tid)!.x, 0) / members.length
+          const cy2 = members.reduce((s, tid) => s + dagrePos.get(tid)!.y, 0) / members.length
+          const originX = cx - gridW / 2
+          const originY = cy2 - gridH / 2
+
+          members.forEach((tid, idx) => {
+            const col = idx % cols
+            const row = Math.floor(idx / cols)
+            const xOff = col * (TABLE_W + GAP) + TABLE_W / 2
+            const yOff = rowH.slice(0, row).reduce((s, h) => s + h + GAP, 0) + rowH[row] / 2
+            newLayout[tid] = { x: Math.round(originX + xOff), y: Math.round(originY + yOff), parentId: domain.id }
+          })
+
+          // Domain bounding box
+          const HEADER = 28
+          newLayout[domain.id] = {
+            x: Math.round(originX - PAD),
+            y: Math.round(originY - PAD - HEADER),
+            width: Math.round(gridW + PAD * 2),
+            height: Math.round(gridH + PAD * 2 + HEADER),
+            isLocked: schema.layout?.[domain.id]?.isLocked,
+          }
+        })
+
+        // Standalone tables (not in any domain)
+        const domainTableIds = new Set(schema.domains?.flatMap(d => d.tables) ?? [])
+        schema.tables.forEach(t => {
+          if (!domainTableIds.has(t.id) && dagrePos.has(t.id)) {
+            const pos = dagrePos.get(t.id)!
+            newLayout[t.id] = { x: Math.round(pos.x), y: Math.round(pos.y) }
+          }
+        })
+
+        useStore.getState().applyLayout(newLayout)
+
+        // Fit view after layout settles
+        setTimeout(() => {
+          const cyi = cyRef.current
+          if (!cyi) return
+          cyi.fit(undefined, 40)
+          const MIN_ZOOM = 0.3
+          if (cyi.zoom() < MIN_ZOOM) { cyi.zoom(MIN_ZOOM); cyi.center(cyi.elements()) }
+        }, 300)
+      })
+
+      cyLayout.run()
+    })
+  }, [onAutoLayout])
 
   useEffect(() => {
     onFocusNode((id: string) => {

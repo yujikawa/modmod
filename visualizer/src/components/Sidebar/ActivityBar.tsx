@@ -15,6 +15,7 @@ import {
   Command,
   Spline,
   AlignJustify,
+  Workflow,
 } from 'lucide-react'
 import logo from '/favicon.svg?url'
 
@@ -197,6 +198,10 @@ const ActivityBar = () => {
         <div className={`w-8 border-t mb-6 ${theme === 'dark' ? 'border-slate-800' : 'border-slate-200'}`} />
 
         <div className="mt-auto flex flex-col gap-2">
+          <button onClick={() => (window as any).__modscapeAutoLayout?.()} className={iconClass(false, 'text-orange-400')}>
+            <Workflow size={20} />
+            <Tooltip text="Auto Layout (left → right)" />
+          </button>
           <button onClick={() => setIsPresentationMode(true)} className={iconClass(isPresentationMode, 'text-purple-500')}>
             <Play size={20} />
             <Tooltip text="Presentation Mode" />

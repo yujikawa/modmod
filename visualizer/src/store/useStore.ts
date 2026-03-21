@@ -94,6 +94,7 @@ interface AppState {
   assignTableToDomain: (tableId: string, domainId?: string | null) => void;
   bulkAssignTablesToDomain: (tableIds: string[], domainId: string | null) => void;
   distributeSelectedTables: (direction: 'horizontal' | 'vertical') => void;
+  applyLayout: (newLayout: Record<string, any>) => void;
   executePipeline: (input: string, previewOnly?: boolean) => { stages: any[], outputIds: string[] };
   toggleTableSelection: (id: string) => void;
   toggleEdgeSelection: (id: string) => void;
@@ -563,6 +564,14 @@ export const useStore = create<AppState>((set, get) => ({
         y: direction === 'vertical' ? basePos.y + (index * 320) : basePos.y
       };
     });
+    set({ schema: { ...schema, layout: newLayout } });
+    get().syncToYamlInput();
+    get().saveSchema();
+  },
+
+  applyLayout: (newLayout) => {
+    const { schema } = get();
+    if (!schema) return;
     set({ schema: { ...schema, layout: newLayout } });
     get().syncToYamlInput();
     get().saveSchema();

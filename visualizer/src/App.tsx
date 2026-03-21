@@ -79,12 +79,16 @@ function Flow() {
   // Callbacks exposed by CytoscapeCanvas
   const fitViewFnRef = useRef<(() => void) | null>(null)
   const focusNodeFnRef = useRef<((id: string) => void) | null>(null)
+  const autoLayoutFnRef = useRef<(() => void) | null>(null)
 
   const handleFitView = useCallback((fn: () => void) => {
     fitViewFnRef.current = fn
   }, [])
   const handleFocusNode = useCallback((fn: (id: string) => void) => {
     focusNodeFnRef.current = fn
+  }, [])
+  const handleAutoLayout = useCallback((fn: () => void) => {
+    autoLayoutFnRef.current = fn
   }, [])
 
   // Fit view whenever the active model changes
@@ -146,9 +150,10 @@ function Flow() {
     }
   }, [focusNodeId, setFocusNodeId])
 
-  // Expose fit-view trigger (e.g. from toolbar)
+  // Expose fit-view and auto-layout triggers (e.g. from ActivityBar)
   useEffect(() => {
     ;(window as any).__modscapeFitView = () => fitViewFnRef.current?.()
+    ;(window as any).__modscapeAutoLayout = () => autoLayoutFnRef.current?.()
   }, [])
 
   // Keyboard shortcuts (canvas-agnostic: Escape, K, /, L, V, H, Delete)
@@ -345,6 +350,7 @@ function Flow() {
             onFitView={handleFitView}
             onFocusNode={handleFocusNode}
             onEdgeCreated={handleEdgeCreated}
+            onAutoLayout={handleAutoLayout}
           />
         )}
       </div>
