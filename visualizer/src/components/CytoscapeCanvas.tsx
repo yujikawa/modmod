@@ -521,6 +521,7 @@ export default function CytoscapeCanvas({
   )
 
   const cyContainerRef = useRef<HTMLDivElement>(null)
+  const minimapCanvasRef = useRef<HTMLCanvasElement>(null)
   const cyRef = useRef<CyInstance>(null)
   const domBgRef = useRef<HTMLDivElement | null>(null)
   const domAnnRef = useRef<HTMLDivElement | null>(null)
@@ -711,6 +712,7 @@ export default function CytoscapeCanvas({
 
     cyRef.current = cy
     zoomRef.current = cy.zoom()
+
     // Expose cy instance for external access (ActivityBar, etc.)
     ;(window as any).__modscapeCy = cy
 
@@ -1210,6 +1212,70 @@ export default function CytoscapeCanvas({
     })
   }, [onFocusNode])
 
+  // ── Minimap ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    const canvas = minimapCanvasRef.current
+    const cy = cyRef.current
+    if (!canvas || !cy) return
+
+    const W = canvas.width
+    const H = canvas.height
+    const PAD = 6
+
+    const draw = () => {
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+      ctx.clearRect(0, 0, W, H)
+
+      const nodes = cy.nodes()
+      if (nodes.length === 0) return
+
+      const bb = nodes.boundingBox({})
+      if (bb.w === 0 || bb.h === 0) return
+
+      const scale = Math.min((W - PAD * 2) / bb.w, (H - PAD * 2) / bb.h)
+      const ox = PAD + ((W - PAD * 2) - bb.w * scale) / 2
+      const oy = PAD + ((H - PAD * 2) - bb.h * scale) / 2
+      const toX = (x: number) => (x - bb.x1) * scale + ox
+      const toY = (y: number) => (y - bb.y1) * scale + oy
+
+      // Nodes
+      nodes.forEach((n: CyInstance) => {
+        const pos = n.position()
+        const color: string = n.data('typeColor') || '#64748b'
+        const nw = 280 * scale
+        const nh = 160 * scale
+        ctx.fillStyle = color
+        ctx.globalAlpha = 0.85
+        ctx.beginPath()
+        ctx.roundRect(toX(pos.x) - nw / 2, toY(pos.y) - nh / 2, nw, nh, 2)
+        ctx.fill()
+      })
+      ctx.globalAlpha = 1
+
+      // Viewport rect
+      const zoom: number = cy.zoom()
+      const pan: { x: number; y: number } = cy.pan()
+      const container = cy.container() as HTMLElement
+      const vx1 = toX(-pan.x / zoom)
+      const vy1 = toY(-pan.y / zoom)
+      const vx2 = toX((container.offsetWidth - pan.x) / zoom)
+      const vy2 = toY((container.offsetHeight - pan.y) / zoom)
+      ctx.strokeStyle = '#3b82f6'
+      ctx.lineWidth = 1.5
+      ctx.globalAlpha = 0.9
+      ctx.strokeRect(vx1, vy1, vx2 - vx1, vy2 - vy1)
+      ctx.fillStyle = '#3b82f6'
+      ctx.globalAlpha = 0.1
+      ctx.fillRect(vx1, vy1, vx2 - vx1, vy2 - vy1)
+      ctx.globalAlpha = 1
+    }
+
+    cy.on('pan zoom add remove move data', draw)
+    draw()
+    return () => { cy.removeListener('pan zoom add remove move data', draw) }
+  }, [schema]) // redraw when schema changes too
+
   // ── Keyboard shortcuts (canvas-level: T, D, S, arrows) ──────────────
   const screenToCanvas = useCallback((screenX: number, screenY: number) => {
     const cy = cyRef.current
@@ -1262,5 +1328,27 @@ export default function CytoscapeCanvas({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [screenToCanvas, onAddTableAt, onAddDomainAt, onAddAnnotationAt])
 
-  return <div ref={cyContainerRef} style={{ width: '100%', height: '100%' }} />
+  return (
+    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+      <div ref={cyContainerRef} style={{ width: '100%', height: '100%' }} />
+      <canvas
+        ref={minimapCanvasRef}
+        width={140}
+        height={90}
+        style={{
+          position: 'absolute',
+          bottom: 48,
+          right: 16,
+          width: 140,
+          height: 90,
+          borderRadius: 6,
+          border: `1px solid ${theme === 'dark' ? '#334155' : '#e2e8f0'}`,
+          background: theme === 'dark' ? '#0f172a' : '#f8fafc',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+          zIndex: 20,
+          pointerEvents: 'none',
+        }}
+      />
+    </div>
+  )
 }
