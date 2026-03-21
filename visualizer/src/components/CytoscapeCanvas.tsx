@@ -116,10 +116,10 @@ function buildCytoscapeStyle(theme: 'dark' | 'light', lowZoom = false) {
     {
       selector: 'edge.lineage-edge.highlighted',
       style: {
-        'line-color': '#60a5fa',
-        'target-arrow-color': '#60a5fa',
+        'line-color': '#f97316',
+        'target-arrow-color': '#f97316',
         width: 3,
-        'overlay-color': '#3b82f6',
+        'overlay-color': '#f97316',
         'overlay-opacity': 0.15,
         'overlay-padding': 4,
       },
@@ -128,17 +128,17 @@ function buildCytoscapeStyle(theme: 'dark' | 'light', lowZoom = false) {
     {
       selector: 'edge.lineage-edge:selected',
       style: {
-        'line-color': '#60a5fa',
-        'target-arrow-color': '#60a5fa',
+        'line-color': '#f97316',
+        'target-arrow-color': '#f97316',
         width: 4,
-        'overlay-color': '#3b82f6',
-        'overlay-opacity': 0.3,
+        'overlay-color': '#f97316',
+        'overlay-opacity': 0.2,
         'overlay-padding': 6,
       },
     },
     {
       selector: 'edge.lineage-edge.path-highlighted',
-      style: { width: 6 },
+      style: { width: 6, 'line-color': '#f97316', 'target-arrow-color': '#f97316' },
     },
     {
       selector: 'edge.dimmed',
