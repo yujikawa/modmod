@@ -219,8 +219,8 @@ layout:
     'y': -38
     parentId: raw_vault
   hub_product:
-    x: 197
-    'y': 649
+    x: 298.7057639690433
+    'y': 566.066935003502
     parentId: raw_vault
   sat_product_details:
     x: 1040

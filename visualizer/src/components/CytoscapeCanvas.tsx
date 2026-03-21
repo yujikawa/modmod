@@ -165,13 +165,15 @@ function renderDomainBackgrounds(
 
 // ── Domain drag handle renderer (z-index: 25, above canvas) ─────────────
 // Background divs (bgDiv, z-index:0) are behind the Cytoscape canvas and
-// cannot receive pointer events. Handles are rendered in a separate high-z
-// layer so they remain interactive regardless of canvas stacking.
+// cannot receive pointer events. A transparent header strip matching the
+// domain frame's top edge is placed in this high-z layer to act as the
+// drag target, so the visible domain label doubles as the handle.
 function renderDomainHandles(
   cy: CyInstance,
   schema: Schema,
   container: HTMLDivElement,
-  theme: 'dark' | 'light',
+  bgContainer: HTMLDivElement,
+  _theme: 'dark' | 'light',
   onDomainDragEnd: (domainId: string, dx: number, dy: number) => void
 ) {
   container.innerHTML = ''
@@ -180,48 +182,40 @@ function renderDomainHandles(
   const zoom: number = cy.zoom()
   const pan: { x: number; y: number } = cy.pan()
   const PAD = 24
+  const HEADER_H = Math.max(24, 32 * zoom)
 
   schema.domains.forEach((domain) => {
     const memberNodes = cy.nodes().filter((n: CyInstance) => domain.tables.includes(n.id()))
     if (memberNodes.length === 0) return
 
     const bb = memberNodes.boundingBox({})
-    const handleX = (bb.x1 - PAD) * zoom + pan.x
-    const handleY = (bb.y1 - PAD) * zoom + pan.y
+    const sx = (bb.x1 - PAD) * zoom + pan.x
+    const sy = (bb.y1 - PAD) * zoom + pan.y
+    const sw = (bb.w + PAD * 2) * zoom
 
-    const badge = document.createElement('div')
-    const badgeBg = theme === 'dark' ? 'rgba(30,41,59,0.85)' : 'rgba(255,255,255,0.9)'
-    const borderColor = domain.color ?? 'rgba(99,102,241,0.4)'
-    badge.style.cssText = `
+    // Transparent header strip — same position as the domain label in the background
+    const handle = document.createElement('div')
+    handle.style.cssText = `
       position: absolute;
-      left: ${handleX}px;
-      top: ${handleY}px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      padding: ${Math.max(3, 4 * zoom)}px ${Math.max(6, 8 * zoom)}px;
-      background: ${badgeBg};
-      border: 1.5px solid ${borderColor};
-      border-radius: 6px;
-      font-size: ${Math.max(10, 12 * zoom)}px;
-      font-weight: 700;
-      color: ${theme === 'dark' ? '#e2e8f0' : '#1e293b'};
+      left: ${sx}px;
+      top: ${sy}px;
+      width: ${sw}px;
+      height: ${HEADER_H}px;
       cursor: grab;
       user-select: none;
       pointer-events: auto;
-      white-space: nowrap;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.15);
-      z-index: 1;
+      border-radius: 12px 12px 0 0;
     `
-    badge.textContent = `⠿ ${domain.name}`
 
-    badge.addEventListener('mousedown', (startEvt) => {
+    handle.addEventListener('mousedown', (startEvt) => {
       startEvt.preventDefault()
       startEvt.stopPropagation()
-      badge.style.cursor = 'grabbing'
+      handle.style.cursor = 'grabbing'
 
       const startX = startEvt.clientX
       const startY = startEvt.clientY
+      const handleInitLeft = parseFloat(handle.style.left)
+      const handleInitTop = parseFloat(handle.style.top)
       const initialPositions = new Map<string, { x: number; y: number }>()
       memberNodes.forEach((n: CyInstance) => {
         const pos: { x: number; y: number } = n.position()
@@ -231,17 +225,22 @@ function renderDomainHandles(
       let lastDy = 0
 
       const onMouseMove = (moveEvt: MouseEvent) => {
+        const screenDx = moveEvt.clientX - startX
+        const screenDy = moveEvt.clientY - startY
         const currentZoom: number = cy.zoom()
-        lastDx = (moveEvt.clientX - startX) / currentZoom
-        lastDy = (moveEvt.clientY - startY) / currentZoom
+        lastDx = screenDx / currentZoom
+        lastDy = screenDy / currentZoom
         memberNodes.forEach((n: CyInstance) => {
           const init = initialPositions.get(n.id() as string)!
           n.position({ x: init.x + lastDx, y: init.y + lastDy })
         })
+        handle.style.left = (handleInitLeft + screenDx) + 'px'
+        handle.style.top = (handleInitTop + screenDy) + 'px'
+        renderDomainBackgrounds(cy, schema, bgContainer)
       }
 
       const onMouseUp = () => {
-        badge.style.cursor = 'grab'
+        handle.style.cursor = 'grab'
         window.removeEventListener('mousemove', onMouseMove)
         window.removeEventListener('mouseup', onMouseUp)
         onDomainDragEnd(domain.id, lastDx, lastDy)
@@ -251,9 +250,10 @@ function renderDomainHandles(
       window.addEventListener('mouseup', onMouseUp)
     })
 
-    container.appendChild(badge)
+    container.appendChild(handle)
   })
 }
+
 
 // ── Annotation overlay renderer ─────────────────────────────────────────
 function renderAnnotations(
@@ -469,7 +469,7 @@ export default function CytoscapeCanvas({
         const isHighlighted = highlightedIdsRef.current.includes(id)
         const isAnythingHighlighted =
           highlightedIdsRef.current.length > 0 || presentationModeRef.current
-        const isDimmed = isAnythingHighlighted && !isSelected && !isHighlighted
+        const isDimmed = isAnythingHighlighted && !isSelected && !isHighlighted && !isHovered
 
         root.render(
           <TableCard
@@ -635,8 +635,8 @@ export default function CytoscapeCanvas({
       if (domBgRef.current && schemaRef.current) {
         renderDomainBackgrounds(cy, schemaRef.current, domBgRef.current)
       }
-      if (domHandleRef.current && schemaRef.current) {
-        renderDomainHandles(cy, schemaRef.current, domHandleRef.current, themeRef.current, onDomainDragEndRef.current)
+      if (domHandleRef.current && domBgRef.current && schemaRef.current) {
+        renderDomainHandles(cy, schemaRef.current, domHandleRef.current, domBgRef.current, themeRef.current, onDomainDragEndRef.current)
       }
       if (domAnnRef.current && schemaRef.current && showAnnotationsRef.current) {
         renderAnnotations(cy, schemaRef.current, domAnnRef.current, themeRef.current, onAnnotationDragEndRef.current)
@@ -773,7 +773,7 @@ export default function CytoscapeCanvas({
 
     // Update overlays
     if (domBgRef.current) renderDomainBackgrounds(cy, schema, domBgRef.current)
-    if (domHandleRef.current) renderDomainHandles(cy, schema, domHandleRef.current, theme, onDomainDragEndRef.current)
+    if (domHandleRef.current && domBgRef.current) renderDomainHandles(cy, schema, domHandleRef.current, domBgRef.current, theme, onDomainDragEndRef.current)
     if (domAnnRef.current) {
       if (showAnnotations) renderAnnotations(cy, schema, domAnnRef.current, theme, onAnnotationDragEndRef.current)
       else domAnnRef.current.innerHTML = ''

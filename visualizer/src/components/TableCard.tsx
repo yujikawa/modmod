@@ -51,7 +51,7 @@ const TableCard = ({
         minWidth: '220px',
         position: 'relative',
         cursor: 'default',
-        opacity: 1,
+        opacity: _isDimmed ? 0.15 : 1,
         transition: 'opacity 0.2s ease-in-out',
         userSelect: 'none',
       }}
