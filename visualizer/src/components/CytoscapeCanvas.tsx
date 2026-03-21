@@ -471,6 +471,7 @@ export default function CytoscapeCanvas({
     showER,
     showLineage,
     showAnnotations,
+    isCompactMode,
     theme,
     hoveredColumnId,
     updateNodePosition,
@@ -489,6 +490,7 @@ export default function CytoscapeCanvas({
       showER: s.showER,
       showLineage: s.showLineage,
       showAnnotations: s.showAnnotations,
+      isCompactMode: s.isCompactMode,
       theme: s.theme,
       hoveredColumnId: s.hoveredColumnId,
       updateNodePosition: s.updateNodePosition,
@@ -518,6 +520,7 @@ export default function CytoscapeCanvas({
   const presentationModeRef = useRef<boolean>(false)
   const themeRef = useRef<'dark' | 'light'>(theme)
   const hoveredColumnIdRef = useRef<string | null>(null)
+  const isCompactModeRef = useRef<boolean>(isCompactMode)
   const schemaRef = useRef<Schema | null>(null)
   const showAnnotationsRef = useRef<boolean>(showAnnotations)
   const onNodeClickRef = useRef(onNodeClick)
@@ -578,6 +581,7 @@ export default function CytoscapeCanvas({
             zoom={zoom}
             theme={themeRef.current}
             hoveredColumnId={hoveredColumnIdRef.current}
+            isCompact={isCompactModeRef.current}
           />
         )
       })
@@ -755,12 +759,18 @@ export default function CytoscapeCanvas({
       useStore.getState().setHighlightedNodeIds([])
     })
 
-    // Box selection → store multi-select
+    // Box / lasso selection → sync to store
+    // Debounced: lasso over 1000 nodes fires boxselect 1000 times; batch into one update.
+    let boxSelectTimer: ReturnType<typeof setTimeout> | null = null
     cy.on('boxselect', 'node', () => {
-      const selectedIds: string[] = cy
-        .nodes(':selected')
-        .map((n: CyInstance) => n.id() as string)
-      useStore.getState().setSelectedTableIds(selectedIds)
+      if (boxSelectTimer) clearTimeout(boxSelectTimer)
+      boxSelectTimer = setTimeout(() => {
+        boxSelectTimer = null
+        const selectedIds: string[] = cy
+          .nodes(':selected')
+          .map((n: CyInstance) => n.id() as string)
+        useStore.getState().setSelectedTableIds(selectedIds)
+      }, 50)
     })
 
     // Update overlays on viewport change
@@ -825,6 +835,13 @@ export default function CytoscapeCanvas({
             root.unmount()
             rootMapRef.current.delete(el.id())
           }
+          // Explicitly remove DOM container to prevent orphaned elements
+          // intercepting mouse events after YAML switch
+          const domContainer = domContainerMapRef.current.get(el.id())
+          if (domContainer && domContainer.parentNode) {
+            domContainer.parentNode.removeChild(domContainer)
+          }
+          domContainerMapRef.current.delete(el.id())
         }
         el.remove()
       }
@@ -855,7 +872,7 @@ export default function CytoscapeCanvas({
           // We implement drag manually on the DOM container instead.
           domContainer.addEventListener('mousedown', (startEvt: MouseEvent) => {
             if (startEvt.button !== 0) return
-            startEvt.stopPropagation() // prevent canvas pan
+            startEvt.stopPropagation() // prevent canvas pan / box-select start
             startEvt.preventDefault()
 
             // Shift+click: toggle this node in/out of multi-selection
@@ -952,6 +969,11 @@ export default function CytoscapeCanvas({
   }, [schema, showER, showLineage, showAnnotations, theme, updateAllCards])
 
   // ── Sync selection / highlight → cards + edge styles ────────────────
+  useEffect(() => {
+    isCompactModeRef.current = isCompactMode
+    updateAllCards()
+  }, [isCompactMode, updateAllCards])
+
   useEffect(() => {
     selectedIdRef.current = selectedTableId
     selectedIdsRef.current = selectedTableIds

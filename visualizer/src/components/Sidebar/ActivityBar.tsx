@@ -14,6 +14,7 @@ import {
   X,
   Command,
   Spline,
+  AlignJustify,
 } from 'lucide-react'
 import logo from '/favicon.svg?url'
 
@@ -31,6 +32,8 @@ const ActivityBar = () => {
     setShowLineage,
     connectMode,
     setConnectMode,
+    isCompactMode,
+    setIsCompactMode,
     addTable,
     addDomain,
     addAnnotation,
@@ -143,6 +146,10 @@ const ActivityBar = () => {
             <button onClick={() => setShowAnnotations(!showAnnotations)} className={iconClass(showAnnotations, 'text-amber-500')}>
               <Tag size={20} />
               <Tooltip text={showAnnotations ? "Hide Annotations" : "Show Annotations"} />
+            </button>
+            <button onClick={() => setIsCompactMode(!isCompactMode)} className={iconClass(isCompactMode, 'text-slate-400')}>
+              <AlignJustify size={20} />
+              <Tooltip text={isCompactMode ? "Show Columns" : "Hide Columns"} />
             </button>
           </div>
         </div>

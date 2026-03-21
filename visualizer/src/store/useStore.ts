@@ -47,6 +47,7 @@ interface AppState {
   showER: boolean;
   showLineage: boolean;
   showAnnotations: boolean;
+  isCompactMode: boolean;
   connectMode: 'lineage' | 'er' | null;
   theme: 'dark' | 'light';
   isDetailPanelSuppressed: boolean;
@@ -66,6 +67,7 @@ interface AppState {
   setShowER: (show: boolean) => void;
   setShowLineage: (show: boolean) => void;
   setShowAnnotations: (show: boolean) => void;
+  setIsCompactMode: (v: boolean) => void;
   setConnectMode: (mode: 'lineage' | 'er' | null) => void;
   setIsPresentationMode: (enabled: boolean) => void;
   setIsAutoSaveEnabled: (enabled: boolean) => void;
@@ -173,6 +175,7 @@ export const useStore = create<AppState>((set, get) => ({
   showER: true,
   showLineage: true,
   showAnnotations: true,
+  isCompactMode: false,
   connectMode: null,
   theme: 'dark',
   isDetailPanelSuppressed: false,
@@ -242,6 +245,7 @@ export const useStore = create<AppState>((set, get) => ({
   setShowER: (show) => set({ showER: show }),
   setShowLineage: (show) => set({ showLineage: show }),
   setShowAnnotations: (show) => set({ showAnnotations: show }),
+  setIsCompactMode: (v: boolean) => set({ isCompactMode: v }),
   setConnectMode: (mode) => set({ connectMode: mode }),
 
   updateNodePosition: (id, x, y, parentId) => {

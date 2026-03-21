@@ -13,6 +13,7 @@ interface TableCardProps {
   zoom: number
   theme: 'dark' | 'light'
   hoveredColumnId: string | null
+  isCompact: boolean
 }
 
 const MAX_COLUMNS = 6
@@ -28,13 +29,15 @@ const TableCard = ({
   zoom,
   theme,
   hoveredColumnId,
+  isCompact,
 }: TableCardProps) => {
   const typeConfig = table.appearance?.type ? TYPE_CONFIG[table.appearance.type] : null
   const themeColor = table.appearance?.color || typeConfig?.color || '#334155'
   const icon = table.appearance?.icon || typeConfig?.icon || ''
   const typeLabel = buildTypeLabel(table)
   const hasColumns = table.columns && table.columns.length > 0
-  const isMinimal = zoom < 0.35
+  const isMinimal = zoom < 0.35   // reduces header size at low zoom
+  const hideColumns = isMinimal || isCompact  // hides column list
 
   const borderColor = isPendingSource ? '#22c55e' : isSelected ? '#3b82f6' : isHovered ? themeColor : isConnectMode ? '#22c55e' : 'var(--border-main)'
   const boxShadow = isPendingSource
@@ -148,7 +151,7 @@ const TableCard = ({
                 ? 'rgba(15, 23, 42, 0.8)'
                 : 'rgba(241, 245, 249, 0.9)',
             borderBottom:
-              hasColumns && !isMinimal ? '1px solid var(--border-main)' : 'none',
+              hasColumns && !hideColumns ? '1px solid var(--border-main)' : 'none',
             flexShrink: 0,
             cursor: 'grab',
             display: 'flex',
@@ -210,7 +213,7 @@ const TableCard = ({
         </div>
 
         {/* Columns — only when not minimal */}
-        {!isMinimal && hasColumns && (
+        {!hideColumns && hasColumns && (
           <div style={{ padding: 0, overflowY: 'auto', flex: 1, cursor: 'default' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
               <tbody>
