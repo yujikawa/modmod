@@ -5,7 +5,6 @@ import {
   Grid,
   Layout,
   Network,
-  LayoutTemplate,
   Sun,
   Moon,
   Plus,
@@ -35,7 +34,6 @@ const ActivityBar = () => {
     addTable,
     addDomain,
     addAnnotation,
-    calculateAutoLayout,
     theme,
     toggleTheme,
     getSelectedTable,
@@ -134,17 +132,17 @@ const ActivityBar = () => {
             View
           </div>
           <div className="flex flex-col gap-2">
-            <button onClick={() => setShowAnnotations(!showAnnotations)} className={iconClass(showAnnotations, 'text-amber-500')}>
-              <Tag size={20} />
-              <Tooltip text={showAnnotations ? "Hide Annotations" : "Show Annotations"} />
+            <button onClick={() => setShowLineage(!showLineage)} className={iconClass(showLineage, 'text-blue-400')}>
+              <Spline size={20} />
+              <Tooltip text={showLineage ? "Hide Lineage Edges" : "Show Lineage Edges"} />
             </button>
             <button onClick={() => setShowER(!showER)} className={iconClass(showER, 'text-slate-400')}>
               <Network size={20} />
               <Tooltip text={showER ? "Hide ER Edges" : "Show ER Edges"} />
             </button>
-            <button onClick={() => setShowLineage(!showLineage)} className={iconClass(showLineage, 'text-blue-400')}>
-              <Spline size={20} />
-              <Tooltip text={showLineage ? "Hide Lineage Edges" : "Show Lineage Edges"} />
+            <button onClick={() => setShowAnnotations(!showAnnotations)} className={iconClass(showAnnotations, 'text-amber-500')}>
+              <Tag size={20} />
+              <Tooltip text={showAnnotations ? "Hide Annotations" : "Show Annotations"} />
             </button>
           </div>
         </div>
@@ -195,10 +193,6 @@ const ActivityBar = () => {
           <button onClick={() => setIsPresentationMode(true)} className={iconClass(isPresentationMode, 'text-purple-500')}>
             <Play size={20} />
             <Tooltip text="Presentation Mode" />
-          </button>
-          <button onClick={() => calculateAutoLayout()} className={iconClass(false)}>
-            <LayoutTemplate size={20} />
-            <Tooltip text="Auto Layout" />
           </button>
           <button onClick={() => setShowHelp(true)} className={iconClass(showHelp)}>
             <CircleHelp size={20} />

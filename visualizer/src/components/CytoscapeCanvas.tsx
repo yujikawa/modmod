@@ -405,7 +405,6 @@ interface CytoscapeCanvasProps {
   onAddAnnotationAt: (x: number, y: number) => void
   onFitView: (fitFn: () => void) => void
   onFocusNode: (focusFn: (id: string) => void) => void
-  onAutoLayout: (layoutFn: () => void) => void
   onEdgeCreated: (kind: 'lineage' | 'er', sourceId: string, targetId: string) => void
 }
 
@@ -420,7 +419,6 @@ export default function CytoscapeCanvas({
   onAddAnnotationAt,
   onFitView,
   onFocusNode,
-  onAutoLayout,
   onEdgeCreated,
 }: CytoscapeCanvasProps) {
   const {
@@ -815,28 +813,53 @@ export default function CytoscapeCanvas({
             startEvt.stopPropagation() // prevent canvas pan
             startEvt.preventDefault()
 
-            const cyEl = cyRef.current?.getElementById(id)
+            const cy = cyRef.current
+            const cyEl = cy?.getElementById(id)
             if (!cyEl || cyEl.length === 0) return
 
             const startX = startEvt.clientX
             const startY = startEvt.clientY
-            const initPos: { x: number; y: number } = { ...cyEl.position() }
             let moved = false
+
+            // Multi-select drag: if this node is part of a multi-selection, move all together
+            const selectedIds = useStore.getState().selectedTableIds
+            const isMultiDrag = selectedIds.length > 1 && selectedIds.includes(id)
+            const initPositions = new Map<string, { x: number; y: number }>()
+            if (isMultiDrag) {
+              selectedIds.forEach(selId => {
+                const node = cy?.getElementById(selId)
+                if (node && node.length > 0) initPositions.set(selId, { ...node.position() })
+              })
+            } else {
+              initPositions.set(id, { ...cyEl.position() })
+            }
 
             const onMouseMove = (moveEvt: MouseEvent) => {
               const zoom: number = cyRef.current?.zoom() ?? 1
               const dx = (moveEvt.clientX - startX) / zoom
               const dy = (moveEvt.clientY - startY) / zoom
               if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true
-              cyEl.position({ x: initPos.x + dx, y: initPos.y + dy })
+              initPositions.forEach((initPos, nodeId) => {
+                const node = cyRef.current?.getElementById(nodeId)
+                if (node && node.length > 0) node.position({ x: initPos.x + dx, y: initPos.y + dy })
+              })
             }
 
             const onMouseUp = () => {
               window.removeEventListener('mousemove', onMouseMove)
               window.removeEventListener('mouseup', onMouseUp)
               if (moved) {
-                const pos: { x: number; y: number } = cyEl.position()
-                useStore.getState().updateNodePosition(id, pos.x, pos.y)
+                if (isMultiDrag) {
+                  const updates = Array.from(initPositions.keys()).map(nodeId => {
+                    const node = cyRef.current?.getElementById(nodeId)
+                    const pos: { x: number; y: number } = node.position()
+                    return { id: nodeId, x: pos.x, y: pos.y }
+                  })
+                  useStore.getState().updateNodesPosition(updates)
+                } else {
+                  const pos: { x: number; y: number } = cyEl.position()
+                  useStore.getState().updateNodePosition(id, pos.x, pos.y)
+                }
               } else {
                 // Tap: delegate to node click handler
                 onNodeClickRef.current(id)
@@ -955,28 +978,6 @@ export default function CytoscapeCanvas({
       cy.animate({ fit: { eles: node, padding: 120 }, duration: 800, easing: 'ease-in-out' })
     })
   }, [onFocusNode])
-
-  useEffect(() => {
-    onAutoLayout(() => {
-      const cy = cyRef.current
-      if (!cy) return
-      const layout = cy.layout({
-        name: 'dagre',
-        rankDir: 'LR',
-        nodeSep: 40,
-        rankSep: 120,
-        animate: true,
-        animationDuration: 500,
-      })
-      layout.on('layoutstop', () => {
-        cy.nodes().forEach((node: CyInstance) => {
-          const pos: { x: number; y: number } = node.position()
-          updateNodePosition(node.id(), pos.x, pos.y)
-        })
-      })
-      layout.run()
-    })
-  }, [onAutoLayout, updateNodePosition])
 
   // ── Keyboard shortcuts (canvas-level: T, D, S, arrows) ──────────────
   const screenToCanvas = useCallback((screenX: number, screenY: number) => {

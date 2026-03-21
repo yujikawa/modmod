@@ -75,16 +75,12 @@ function Flow() {
   // Callbacks exposed by CytoscapeCanvas
   const fitViewFnRef = useRef<(() => void) | null>(null)
   const focusNodeFnRef = useRef<((id: string) => void) | null>(null)
-  const autoLayoutFnRef = useRef<(() => void) | null>(null)
 
   const handleFitView = useCallback((fn: () => void) => {
     fitViewFnRef.current = fn
   }, [])
   const handleFocusNode = useCallback((fn: (id: string) => void) => {
     focusNodeFnRef.current = fn
-  }, [])
-  const handleAutoLayout = useCallback((fn: () => void) => {
-    autoLayoutFnRef.current = fn
   }, [])
 
   // WebSocket live sync
@@ -327,7 +323,6 @@ function Flow() {
             onAddAnnotationAt={handleAddAnnotation}
             onFitView={handleFitView}
             onFocusNode={handleFocusNode}
-            onAutoLayout={handleAutoLayout}
             onEdgeCreated={handleEdgeCreated}
           />
         )}

@@ -1,6 +1,5 @@
 import { create } from 'zustand'
 import yaml from 'js-yaml'
-import dagre from 'dagre'
 import type { Schema, Table, Relationship, Domain, Annotation } from '../types/schema'
 import { parseYAML, normalizeSchema } from '../lib/parser'
 
@@ -49,7 +48,6 @@ interface AppState {
   showLineage: boolean;
   showAnnotations: boolean;
   connectMode: 'lineage' | 'er' | null;
-  connectionStartHandle: { nodeId: string; handleId: string | null; handleType: string | null } | null;
   theme: 'dark' | 'light';
   isDetailPanelSuppressed: boolean;
   isDetailPanelMinimized: boolean;
@@ -91,7 +89,6 @@ interface AppState {
   bulkRemoveTables: (ids: string[]) => void;
   updateTable: (id: string, updates: Partial<Table>) => void;
   updateDomain: (id: string, updates: Partial<Domain>) => void;
-  toggleDomainLock: (id: string) => void;
   assignTableToDomain: (tableId: string, domainId?: string | null) => void;
   bulkAssignTablesToDomain: (tableIds: string[], domainId: string | null) => void;
   distributeSelectedTables: (direction: 'horizontal' | 'vertical') => void;
@@ -118,9 +115,7 @@ interface AppState {
   setActiveRightPanelTab: (tab: 'tables' | 'path' | 'notes') => void;
   setPathFinderResult: (result: { nodeIds: string[], edgeIds: string[] } | null) => void;
   setFocusNodeId: (id: string | null) => void;
-  setConnectionStartHandle: (handle: { nodeId: string; handleId: string | null; handleType: string | null } | null) => void;
   toggleTheme: () => void;
-  calculateAutoLayout: () => void;
   
   // Computed (helpers)
   getSelectedTable: () => Table | null;
@@ -179,7 +174,6 @@ export const useStore = create<AppState>((set, get) => ({
   showLineage: true,
   showAnnotations: true,
   connectMode: null,
-  connectionStartHandle: null,
   theme: 'dark',
   isDetailPanelSuppressed: false,
   isDetailPanelMinimized: true,
@@ -242,8 +236,7 @@ export const useStore = create<AppState>((set, get) => ({
   setLastUpdateSource: (source) => set({ lastUpdateSource: source }),
   setPathFinderResult: (result) => set({ pathFinderResult: result }),
   setFocusNodeId: (id) => set({ focusNodeId: id }),
-  setConnectionStartHandle: (handle) => set({ connectionStartHandle: handle }),
-  
+
   toggleTheme: () => set((state) => ({ theme: state.theme === 'dark' ? 'light' : 'dark' })),
 
   setShowER: (show) => set({ showER: show }),
@@ -511,18 +504,6 @@ export const useStore = create<AppState>((set, get) => ({
     const newDomains = (schema.domains || []).map(d => d.id === id ? { ...d, ...updates } : d);
     set({ schema: { ...schema, domains: newDomains } });
     get().syncToYamlInput();
-    get().saveSchema();
-  },
-
-  toggleDomainLock: (id) => {
-    const { schema } = get();
-    if (!schema || !schema.layout) return;
-    const current = schema.layout[id] || { x: 0, y: 0 };
-    const newLayout = { 
-      ...schema.layout, 
-      [id]: { ...current, isLocked: !current.isLocked } 
-    };
-    set({ schema: { ...schema, layout: newLayout } });
     get().saveSchema();
   },
 
@@ -866,89 +847,4 @@ export const useStore = create<AppState>((set, get) => ({
     return schema.annotations.find(a => a.id === selectedAnnotationId) || null;
   },
 
-  calculateAutoLayout: () => {
-    const { schema } = get();
-    if (!schema) return;
-
-    const NODE_W = 280, NODE_H = 160;
-    const NODE_SEP = 60, RANK_SEP = 120;
-    const DOMAIN_PAD = 60, DOMAIN_GAP = 120;
-
-    // Collect all edges (relationships + lineage)
-    const allEdges: { from: string; to: string }[] = [];
-    (schema.relationships || []).forEach(r => allEdges.push({ from: r.from.table, to: r.to.table }));
-    schema.tables.forEach(t => {
-      (t.lineage?.upstream || []).forEach(upId => allEdges.push({ from: upId, to: t.id }));
-    });
-
-    // Run dagre on a subset of tables, return center positions
-    function layoutGroup(tableIds: string[]): Record<string, { x: number; y: number }> {
-      const g = new dagre.graphlib.Graph();
-      g.setGraph({ rankdir: 'LR', nodesep: NODE_SEP, ranksep: RANK_SEP });
-      g.setDefaultEdgeLabel(() => ({}));
-      tableIds.forEach(id => g.setNode(id, { width: NODE_W, height: NODE_H }));
-      allEdges.forEach(e => {
-        if (tableIds.includes(e.from) && tableIds.includes(e.to)) g.setEdge(e.from, e.to);
-      });
-      dagre.layout(g);
-      const result: Record<string, { x: number; y: number }> = {};
-      tableIds.forEach(id => { const n = g.node(id); result[id] = { x: n.x, y: n.y }; });
-      return result;
-    }
-
-    // Bounding box (top-left origin) from center positions
-    function bbox(pos: Record<string, { x: number; y: number }>) {
-      const xs = Object.values(pos).map(p => p.x);
-      const ys = Object.values(pos).map(p => p.y);
-      return {
-        x1: Math.min(...xs) - NODE_W / 2,
-        y1: Math.min(...ys) - NODE_H / 2,
-        w: Math.max(...xs) - Math.min(...xs) + NODE_W,
-        h: Math.max(...ys) - Math.min(...ys) + NODE_H,
-      };
-    }
-
-    const newLayout: Record<string, any> = {};
-    let cursorX = 0;
-
-    // Layout each domain group independently, place side by side
-    for (const domain of (schema.domains || [])) {
-      const tableIds = domain.tables.filter(id => schema.tables.some(t => t.id === id));
-      if (tableIds.length === 0) continue;
-
-      const positions = layoutGroup(tableIds);
-      const bb = bbox(positions);
-      const domW = bb.w + DOMAIN_PAD * 2;
-      const domH = bb.h + DOMAIN_PAD * 2;
-
-      // Domain absolute position (top-left)
-      newLayout[domain.id] = { x: cursorX, y: 0, width: domW, height: domH };
-
-      // Tables: absolute canvas coordinates (cursorX offset applied)
-      for (const [id, pos] of Object.entries(positions)) {
-        newLayout[id] = {
-          x: cursorX + pos.x - bb.x1 + DOMAIN_PAD,
-          y: pos.y - bb.y1 + DOMAIN_PAD,
-          parentId: domain.id,  // semantic metadata for domain membership
-        };
-      }
-
-      cursorX += domW + DOMAIN_GAP;
-    }
-
-    // Standalone tables (not in any domain)
-    const domainTableIds = new Set((schema.domains || []).flatMap(d => d.tables));
-    const standaloneIds = schema.tables.map(t => t.id).filter(id => !domainTableIds.has(id));
-    if (standaloneIds.length > 0) {
-      const positions = layoutGroup(standaloneIds);
-      const bb = bbox(positions);
-      for (const [id, pos] of Object.entries(positions)) {
-        newLayout[id] = { x: cursorX + pos.x - bb.x1, y: pos.y - bb.y1 };
-      }
-    }
-
-    set({ schema: { ...schema, layout: newLayout } });
-    get().syncToYamlInput();
-    get().saveSchema();
-  }
 }));
