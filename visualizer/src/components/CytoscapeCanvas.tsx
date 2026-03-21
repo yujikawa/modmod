@@ -858,6 +858,16 @@ export default function CytoscapeCanvas({
             startEvt.stopPropagation() // prevent canvas pan
             startEvt.preventDefault()
 
+            // Shift+click: toggle this node in/out of multi-selection
+            if (startEvt.shiftKey) {
+              const { selectedTableIds, setSelectedTableIds } = useStore.getState()
+              const next = selectedTableIds.includes(id)
+                ? selectedTableIds.filter(sid => sid !== id)
+                : [...selectedTableIds, id]
+              setSelectedTableIds(next)
+              return
+            }
+
             const cy = cyRef.current
             const cyEl = cy?.getElementById(id)
             if (!cyEl || cyEl.length === 0) return
