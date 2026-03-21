@@ -56,7 +56,7 @@ function buildCytoscapeStyle(theme: 'dark' | 'light', lowZoom = false) {
     {
       selector: 'edge.er-edge',
       style: {
-        'curve-style': 'bezier',
+        'curve-style': 'round-taxi',
         'line-color': erStroke,
         // ER edges: no arrow (relationship lines, not directional flow)
         'target-arrow-shape': 'none',
