@@ -5,11 +5,8 @@ import {
   Grid,
   Layout,
   Network,
-  Sun,
-  Moon,
   Plus,
   ChevronLeft,
-  Play,
   CircleHelp,
   X,
   Command,
@@ -23,8 +20,6 @@ const ActivityBar = () => {
   const {
     isSidebarOpen,
     setIsSidebarOpen,
-    isPresentationMode,
-    setIsPresentationMode,
     showAnnotations,
     setShowAnnotations,
     showER,
@@ -39,7 +34,6 @@ const ActivityBar = () => {
     addDomain,
     addAnnotation,
     theme,
-    toggleTheme,
     getSelectedTable,
     getSelectedDomain
   } = useStore()
@@ -202,17 +196,9 @@ const ActivityBar = () => {
             <Workflow size={20} />
             <Tooltip text="Auto Layout (left → right)" />
           </button>
-          <button onClick={() => setIsPresentationMode(true)} className={iconClass(isPresentationMode, 'text-purple-500')}>
-            <Play size={20} />
-            <Tooltip text="Presentation Mode" />
-          </button>
           <button onClick={() => setShowHelp(true)} className={iconClass(showHelp)}>
             <CircleHelp size={20} />
             <Tooltip text="Shortcut Guide" />
-          </button>
-          <button onClick={toggleTheme} className={iconClass(false)}>
-            {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-            <Tooltip text={theme === 'dark' ? "Light Mode" : "Dark Mode"} />
           </button>
         </div>
       </div>
