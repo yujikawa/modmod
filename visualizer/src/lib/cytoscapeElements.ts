@@ -103,9 +103,13 @@ export function yamlToElements(schema: Schema): CyElementDefinition[] {
     })
   })
 
+  // Build set of existing table IDs for edge validation
+  const tableIdSet = new Set(schema.tables.map(t => t.id))
+
   // Lineage edges (from lineage.upstream[])
   schema.tables.forEach(table => {
     table.lineage?.upstream?.forEach((upId, i) => {
+      if (!tableIdSet.has(upId)) return // skip if source table no longer exists
       elements.push({
         data: {
           id: `lin-${upId}-${table.id}-${i}`,
@@ -120,6 +124,7 @@ export function yamlToElements(schema: Schema): CyElementDefinition[] {
 
   // ER edges (from relationships[])
   schema.relationships?.forEach((rel, i) => {
+    if (!tableIdSet.has(rel.from.table) || !tableIdSet.has(rel.to.table)) return // skip dangling edges
     elements.push({
       data: {
         id: `er-${i}`,

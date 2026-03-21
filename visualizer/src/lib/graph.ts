@@ -31,7 +31,7 @@ export const buildAdjacencyList = (schema: Schema) => {
 
   // 1. Add ER Relationships
   schema.relationships?.forEach((rel, index) => {
-    addEdge(rel.from.table, rel.to.table, 'er', `e-${index}`, rel)
+    addEdge(rel.from.table, rel.to.table, 'er', `er-${index}`, rel)
   })
 
   // 2. Add Lineage Relationships

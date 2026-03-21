@@ -71,11 +71,26 @@ function buildCytoscapeStyle(theme: 'dark' | 'light', lowZoom = false) {
         'text-background-padding': '2px',
       },
     },
+    // ER edge: connected to selected node
     {
       selector: 'edge.er-edge.highlighted',
       style: {
-        'line-color': theme === 'dark' ? '#f1f5f9' : '#0f172a',
+        'line-color': '#84cc16',
+        width: 3,
+        'overlay-color': '#84cc16',
+        'overlay-opacity': 0.15,
+        'overlay-padding': 4,
+      },
+    },
+    // ER edge: edge itself selected
+    {
+      selector: 'edge.er-edge:selected',
+      style: {
+        'line-color': '#84cc16',
         width: 4,
+        'overlay-color': '#84cc16',
+        'overlay-opacity': 0.25,
+        'overlay-padding': 6,
       },
     },
     {
@@ -95,6 +110,30 @@ function buildCytoscapeStyle(theme: 'dark' | 'light', lowZoom = false) {
         'target-arrow-shape': 'triangle',
         'arrow-scale': 1.2,
         width: 2,
+      },
+    },
+    // Lineage edge: connected to selected node
+    {
+      selector: 'edge.lineage-edge.highlighted',
+      style: {
+        'line-color': '#60a5fa',
+        'target-arrow-color': '#60a5fa',
+        width: 3,
+        'overlay-color': '#3b82f6',
+        'overlay-opacity': 0.15,
+        'overlay-padding': 4,
+      },
+    },
+    // Lineage edge: edge itself selected
+    {
+      selector: 'edge.lineage-edge:selected',
+      style: {
+        'line-color': '#60a5fa',
+        'target-arrow-color': '#60a5fa',
+        width: 4,
+        'overlay-color': '#3b82f6',
+        'overlay-opacity': 0.3,
+        'overlay-padding': 6,
       },
     },
     {
@@ -599,7 +638,12 @@ export default function CytoscapeCanvas({
   useEffect(() => { onAnnotationClickRef.current = onAnnotationClick }, [onAnnotationClick])
 
   const selectedAnnotationIdRef = useRef(selectedAnnotationId)
-  useEffect(() => { selectedAnnotationIdRef.current = selectedAnnotationId }, [selectedAnnotationId])
+  useEffect(() => {
+    selectedAnnotationIdRef.current = selectedAnnotationId
+    const cy = cyRef.current
+    if (!cy || !domAnnRef.current || !schemaRef.current || !showAnnotations) return
+    renderAnnotations(cy, schemaRef.current, domAnnRef.current, themeRef.current, onAnnotationDragEndRef.current, onAnnotationClickRef.current, selectedAnnotationId)
+  }, [selectedAnnotationId, showAnnotations])
 
   // ── Initialize Cytoscape (mount only) ───────────────────────────────
   useEffect(() => {
@@ -945,6 +989,13 @@ export default function CytoscapeCanvas({
     hoveredColumnId,
     updateAllCards,
   ])
+
+  // ── Rebuild Cytoscape style when theme changes ────────────────────────
+  useEffect(() => {
+    const cy = cyRef.current
+    if (!cy) return
+    cy.style(buildCytoscapeStyle(theme, zoomRef.current < LOW_ZOOM_THRESHOLD))
+  }, [theme])
 
   // ── Connect mode: reset pending source + clear hover highlight ──────
   // DOM containers intercept mousedown (stopPropagation) to handle drag.

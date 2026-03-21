@@ -132,8 +132,11 @@ const TablesTab = memo(() => {
                 <div className={`ml-4 mt-1 space-y-0.5 border-l pl-2 ${theme === 'dark' ? 'border-slate-800' : 'border-slate-100'}`}>
                   {d.tables.map(t => (
                     <button key={t.id} onClick={() => handleFocus(t.id)} className={`w-full flex items-center justify-between group p-1.5 text-xs rounded border border-transparent transition-all text-left ${theme === 'dark' ? 'hover:bg-slate-800/50 text-slate-400 hover:text-slate-200' : 'hover:bg-blue-50 text-slate-500 hover:text-blue-600'}`}>
-                      <span className="truncate">{t.name}</span>
-                      <ArrowUpRight size={10} className="opacity-0 group-hover:opacity-100" />
+                      <span className="flex flex-col min-w-0">
+                        <span className="truncate">{t.name}</span>
+                        {t.name !== t.id && <span className={`truncate font-mono text-[9px] opacity-50`}>{t.id}</span>}
+                      </span>
+                      <ArrowUpRight size={10} className="opacity-0 group-hover:opacity-100 shrink-0" />
                     </button>
                   ))}
                   {d.tables.length === 0 && <div className="p-2 text-[10px] text-slate-500 italic">No tables</div>}
@@ -162,8 +165,11 @@ const TablesTab = memo(() => {
               <div className={`ml-4 mt-1 space-y-0.5 border-l pl-2 ${theme === 'dark' ? 'border-slate-800' : 'border-slate-100'}`}>
                 {groupedData.unassigned.map(t => (
                   <button key={t.id} onClick={() => handleFocus(t.id)} className={`w-full flex items-center justify-between group p-1.5 text-xs rounded border border-transparent transition-all text-left ${theme === 'dark' ? 'hover:bg-slate-800/50 text-slate-400 hover:text-slate-200' : 'hover:bg-blue-50 text-slate-500 hover:text-blue-600'}`}>
-                    <span className="truncate">{t.name}</span>
-                    <ArrowUpRight size={10} className="opacity-0 group-hover:opacity-100" />
+                    <span className="flex flex-col min-w-0">
+                      <span className="truncate">{t.name}</span>
+                      {t.name !== t.id && <span className="truncate font-mono text-[9px] opacity-50">{t.id}</span>}
+                    </span>
+                    <ArrowUpRight size={10} className="opacity-0 group-hover:opacity-100 shrink-0" />
                   </button>
                 ))}
               </div>

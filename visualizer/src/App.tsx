@@ -23,6 +23,7 @@ function Flow() {
     setFocusNodeId,
     removeNode,
     removeEdge,
+    removeAnnotation,
     showAnnotations,
     addTable,
     addDomain,
@@ -52,6 +53,7 @@ function Flow() {
     setFocusNodeId: s.setFocusNodeId,
     removeNode: s.removeNode,
     removeEdge: s.removeEdge,
+    removeAnnotation: s.removeAnnotation,
     showAnnotations: s.showAnnotations,
     addTable: s.addTable,
     addDomain: s.addDomain,
@@ -149,6 +151,7 @@ function Flow() {
         setSelectedTableId(null)
         setSelectedEdgeId(null)
         setSelectedAnnotationId(null)
+        useStore.getState().setSelectedTableIds([])
         return
       }
 
@@ -200,11 +203,12 @@ function Flow() {
       }
 
       if ((e.key === 'Backspace' || e.key === 'Delete') && (selectedTableId || selectedAnnotationId)) {
-        const id = selectedTableId || selectedAnnotationId
-        if (id) {
-          removeNode(id)
-          setSelectedTableId(null)
+        if (selectedAnnotationId) {
+          removeAnnotation(selectedAnnotationId)
           setSelectedAnnotationId(null)
+        } else if (selectedTableId) {
+          removeNode(selectedTableId)
+          setSelectedTableId(null)
         }
         return
       }
@@ -217,7 +221,7 @@ function Flow() {
     setSelectedTableId, setSelectedEdgeId, setSelectedAnnotationId,
     selectedTableId, selectedEdgeId, selectedAnnotationId,
     selectedTableIds, distributeSelectedTables,
-    schema, removeNode, removeEdge,
+    schema, removeNode, removeEdge, removeAnnotation,
   ])
 
   // ── CytoscapeCanvas callbacks ─────────────────────────────────────
@@ -236,6 +240,7 @@ function Flow() {
     setSelectedTableId(null)
     setSelectedEdgeId(null)
     setSelectedAnnotationId(null)
+    useStore.getState().setSelectedTableIds([])
   }, [setSelectedTableId, setSelectedEdgeId, setSelectedAnnotationId])
 
   const handleAnnotationClick = useCallback((id: string) => {
