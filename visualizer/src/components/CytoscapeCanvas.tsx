@@ -683,7 +683,7 @@ export default function CytoscapeCanvas({
       style: buildCytoscapeStyle(themeRef.current),
       minZoom: 0.05,
       maxZoom: 3,
-      wheelSensitivity: 1.5,
+      wheelSensitivity: 1.0,
       boxSelectionEnabled: true,
       userZoomingEnabled: true,
       userPanningEnabled: true,
