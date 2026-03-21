@@ -47,7 +47,7 @@ describe('yamlToElements', () => {
     expect(elements[0].position).toEqual({ x: 100, y: 200 })
   })
 
-  it('converts domain-relative coordinates to absolute canvas coordinates', () => {
+  it('treats layout coordinates as absolute even when parentId is present', () => {
     const schema = makeSchema({
       tables: [{ id: 'tbl_a', name: 'A', appearance: { type: 'fact' }, columns: [] }],
       domains: [{ id: 'dom1', name: 'Domain 1', color: '#fff', tables: ['tbl_a'] }],
@@ -57,8 +57,8 @@ describe('yamlToElements', () => {
       },
     })
     const elements = yamlToElements(schema)
-    // Absolute = domain(500,300) + relative(60,60) = (560,360)
-    expect(elements[0].position).toEqual({ x: 560, y: 360 })
+    // parentId is semantic metadata only — x/y are always absolute
+    expect(elements[0].position).toEqual({ x: 60, y: 60 })
   })
 
   it('falls back to grid positions when layout is absent', () => {

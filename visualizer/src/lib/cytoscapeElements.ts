@@ -82,16 +82,10 @@ export function yamlToElements(schema: Schema): CyElementDefinition[] {
     const col = index % GRID_COLS
     const row = Math.floor(index / GRID_COLS)
 
-    // When parentId exists, layout x/y are domain-relative → convert to absolute canvas coords
-    let x: number, y: number
-    if (layout?.parentId) {
-      const parentLayout = schema.layout?.[layout.parentId as string]
-      x = (parentLayout?.x ?? 0) + (layout.x ?? 0)
-      y = (parentLayout?.y ?? 0) + (layout.y ?? 0)
-    } else {
-      x = layout?.x ?? col * (TABLE_WIDTH + 40)
-      y = layout?.y ?? row * (TABLE_HEIGHT + 40)
-    }
+    // Always treat layout x/y as absolute canvas coordinates.
+    // parentId in layout is semantic metadata only (domain membership), not used for coordinate math.
+    const x = layout?.x ?? col * (TABLE_WIDTH + 40)
+    const y = layout?.y ?? row * (TABLE_HEIGHT + 40)
 
     const typeConfig = table.appearance?.type ? TYPE_CONFIG[table.appearance.type] : null
     const typeColor = table.appearance?.color || typeConfig?.color || '#334155'

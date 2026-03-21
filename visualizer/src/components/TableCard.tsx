@@ -7,6 +7,7 @@ interface TableCardProps {
   isSelected: boolean
   isDimmed: boolean
   isHighlighted: boolean
+  isHovered: boolean
   zoom: number
   theme: 'dark' | 'light'
   hoveredColumnId: string | null
@@ -17,8 +18,9 @@ const MAX_COLUMNS = 6
 const TableCard = ({
   table,
   isSelected,
-  isDimmed,
+  isDimmed: _isDimmed,
   isHighlighted,
+  isHovered,
   zoom,
   theme,
   hoveredColumnId,
@@ -30,11 +32,13 @@ const TableCard = ({
   const hasColumns = table.columns && table.columns.length > 0
   const isMinimal = zoom < 0.35
 
-  const borderColor = isSelected ? '#3b82f6' : 'var(--border-main)'
+  const borderColor = isSelected ? '#3b82f6' : isHovered ? themeColor : 'var(--border-main)'
   const boxShadow = isSelected
-    ? '0 0 0 4px rgba(59, 130, 246, 0.2)'
+    ? '0 0 0 3px #3b82f6, 0 0 16px 4px rgba(59, 130, 246, 0.45)'
+    : isHovered
+    ? `0 0 0 2px ${themeColor}, 0 0 20px 6px ${themeColor}80`
     : isHighlighted
-    ? '0 0 20px 4px rgba(59, 130, 246, 0.5)'
+    ? '0 0 12px 3px rgba(59, 130, 246, 0.35)'
     : theme === 'dark'
     ? '0 4px 6px -1px rgba(0, 0, 0, 0.3)'
     : '0 4px 12px -2px rgba(0, 0, 0, 0.1)'
@@ -47,8 +51,8 @@ const TableCard = ({
         minWidth: '220px',
         position: 'relative',
         cursor: 'default',
-        opacity: isDimmed ? 0.15 : 1,
-        transition: 'opacity 0.3s ease-in-out',
+        opacity: 1,
+        transition: 'opacity 0.2s ease-in-out',
         userSelect: 'none',
       }}
     >

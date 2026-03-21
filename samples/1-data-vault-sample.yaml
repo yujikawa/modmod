@@ -206,25 +206,27 @@ domains:
 annotations: []
 layout:
   raw_vault:
-    x: -197
-    'y': -50
-    width: 1305
-    height: 1093
+    x: 0
+    'y': 0
+    width: 800
+    height: 730
   hub_customer:
-    x: 100
-    'y': 100
+    x: 233.7613544275891
+    'y': 124.22102815016987
+    parentId: raw_vault
+  lnk_sales:
+    x: 722
+    'y': -38
     parentId: raw_vault
   hub_product:
-    x: 105
-    'y': 647
-  lnk_sales:
-    x: 491
-    'y': 279
-    parentId: raw_vault
-  sat_customer_details:
-    x: 876
-    'y': 102
+    x: 197
+    'y': 649
     parentId: raw_vault
   sat_product_details:
-    x: 870
-    'y': 647
+    x: 1040
+    'y': 696
+    parentId: raw_vault
+  sat_customer_details:
+    x: 755
+    'y': 344
+    parentId: raw_vault

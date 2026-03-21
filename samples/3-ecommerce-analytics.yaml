@@ -542,62 +542,45 @@ domains:
       - mart_product_performance
 annotations: []
 layout:
-  staging:
-    x: 709.4904315940848
-    'y': -111.3550004744079
-    width: 756
-    height: 1384
-  stg_customers:
-    x: 1177.1346418173716
-    'y': -22.743638278439903
-    parentId: staging
   stg_products:
-    x: 1537.1346418173716
-    'y': -22.743638278439903
-    parentId: staging
-  stg_orders:
-    x: 1324.4517822347025
-    'y': 409.9500778506878
-    parentId: staging
-  stg_order_items:
-    x: 1433.1076383067534
-    'y': 896.2563617215601
-    parentId: staging
-  core_dwh:
-    x: 1536.6990065468297
-    'y': -122.68285958266921
-    width: 814
-    height: 1396
-  dim_customers:
-    x: 3925.8046293001435
-    'y': 928.4375329660008
-    parentId: core_dwh
-  dim_products:
-    x: 4215.2986009094575
-    'y': -123.36605907883958
-    parentId: core_dwh
-  dim_dates:
-    x: 4361.994304215626
-    'y': 75.7416823714066
-    parentId: core_dwh
-  fct_orders:
-    x: 2812.9823971997275
-    'y': 724.6926460220891
-    parentId: core_dwh
+    x: 6418.819135228145
+    'y': -99.19757885559181
   analytics_mart:
-    x: 2407.9416441807534
-    'y': -112.56478411800545
-    width: 403
-    height: 1385
+    x: 2121.738183109387
+    'y': -403.6196115151448
   mart_daily_revenue:
-    x: 2650.6924901727634
-    'y': -209.94583314140803
-    parentId: analytics_mart
+    x: 2761.738183109387
+    'y': 76.3803884848552
   mart_customer_ltv:
-    x: 2669.7731046814642
-    'y': 144.7172519025146
-    parentId: analytics_mart
+    x: 2121.738183109387
+    'y': 316.3803884848552
   mart_product_performance:
-    x: 2661.143942152752
-    'y': 627.7009670828265
-    parentId: analytics_mart
+    x: 2441.7381831093867
+    'y': 316.3803884848552
+  core_dwh:
+    x: 1126.5396099086713
+    'y': -137.9341410144846
+  dim_customers:
+    x: 1446.5396099086715
+    'y': 102.06585898551539
+  dim_products:
+    x: 1766.5396099086715
+    'y': 102.06585898551539
+  dim_dates:
+    x: 1126.5396099086713
+    'y': 342.0658589855154
+  fct_orders:
+    x: 1438.615143946366
+    'y': 525.9134693110045
+  staging:
+    x: 185.43250351795024
+    'y': 91.92380516274457
+  stg_customers:
+    x: 185.43250351795024
+    'y': 91.92380516274457
+  stg_orders:
+    x: 825.4325035179502
+    'y': 91.92380516274457
+  stg_order_items:
+    x: 447.35843951036657
+    'y': 421.81078953939505

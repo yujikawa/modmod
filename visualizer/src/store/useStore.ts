@@ -904,12 +904,12 @@ export const useStore = create<AppState>((set, get) => ({
       // Domain absolute position (top-left)
       newLayout[domain.id] = { x: cursorX, y: 0, width: domW, height: domH };
 
-      // Tables: domain-relative coordinates (spec convention)
+      // Tables: absolute canvas coordinates (cursorX offset applied)
       for (const [id, pos] of Object.entries(positions)) {
         newLayout[id] = {
-          x: pos.x - bb.x1 + DOMAIN_PAD,
+          x: cursorX + pos.x - bb.x1 + DOMAIN_PAD,
           y: pos.y - bb.y1 + DOMAIN_PAD,
-          parentId: domain.id,
+          parentId: domain.id,  // semantic metadata for domain membership
         };
       }
 

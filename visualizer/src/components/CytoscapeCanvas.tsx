@@ -172,7 +172,7 @@ function renderDomainHandles(
   schema: Schema,
   container: HTMLDivElement,
   theme: 'dark' | 'light',
-  onDomainDragEnd: (domainId: string, updates: { id: string; x: number; y: number }[]) => void
+  onDomainDragEnd: (domainId: string, dx: number, dy: number) => void
 ) {
   container.innerHTML = ''
   if (!schema.domains?.length) return
@@ -227,14 +227,16 @@ function renderDomainHandles(
         const pos: { x: number; y: number } = n.position()
         initialPositions.set(n.id() as string, { x: pos.x, y: pos.y })
       })
+      let lastDx = 0
+      let lastDy = 0
 
       const onMouseMove = (moveEvt: MouseEvent) => {
         const currentZoom: number = cy.zoom()
-        const dx = (moveEvt.clientX - startX) / currentZoom
-        const dy = (moveEvt.clientY - startY) / currentZoom
+        lastDx = (moveEvt.clientX - startX) / currentZoom
+        lastDy = (moveEvt.clientY - startY) / currentZoom
         memberNodes.forEach((n: CyInstance) => {
           const init = initialPositions.get(n.id() as string)!
-          n.position({ x: init.x + dx, y: init.y + dy })
+          n.position({ x: init.x + lastDx, y: init.y + lastDy })
         })
       }
 
@@ -242,12 +244,7 @@ function renderDomainHandles(
         badge.style.cursor = 'grab'
         window.removeEventListener('mousemove', onMouseMove)
         window.removeEventListener('mouseup', onMouseUp)
-        const updates: { id: string; x: number; y: number }[] = []
-        memberNodes.forEach((n: CyInstance) => {
-          const pos: { x: number; y: number } = n.position()
-          updates.push({ id: n.id() as string, x: pos.x, y: pos.y })
-        })
-        onDomainDragEnd(domain.id, updates)
+        onDomainDragEnd(domain.id, lastDx, lastDy)
       }
 
       window.addEventListener('mousemove', onMouseMove)
@@ -425,14 +422,17 @@ export default function CytoscapeCanvas({
   const selectedIdRef = useRef<string | null>(null)
   const selectedIdsRef = useRef<string[]>([])
   const highlightedIdsRef = useRef<string[]>([])
+  const hoveredNodeIdRef = useRef<string | null>(null)
   const presentationModeRef = useRef<boolean>(false)
   const themeRef = useRef<'dark' | 'light'>(theme)
   const hoveredColumnIdRef = useRef<string | null>(null)
   const schemaRef = useRef<Schema | null>(null)
   const showAnnotationsRef = useRef<boolean>(showAnnotations)
+  const onNodeClickRef = useRef(onNodeClick)
 
   // Keep refs in sync
   useEffect(() => { showAnnotationsRef.current = showAnnotations }, [showAnnotations])
+  useEffect(() => { onNodeClickRef.current = onNodeClick }, [onNodeClick])
 
   // ── updateAllCards: re-render visible TableCard portals (RAF-debounced) ──
   const updateAllCards = useCallback(() => {
@@ -465,6 +465,7 @@ export default function CytoscapeCanvas({
 
         const isSelected =
           selectedIdRef.current === id || selectedIdsRef.current.includes(id)
+        const isHovered = hoveredNodeIdRef.current === id
         const isHighlighted = highlightedIdsRef.current.includes(id)
         const isAnythingHighlighted =
           highlightedIdsRef.current.length > 0 || presentationModeRef.current
@@ -476,6 +477,7 @@ export default function CytoscapeCanvas({
             isSelected={isSelected}
             isDimmed={isDimmed}
             isHighlighted={isHighlighted}
+            isHovered={isHovered}
             zoom={zoom}
             theme={themeRef.current}
             hoveredColumnId={hoveredColumnIdRef.current}
@@ -486,8 +488,33 @@ export default function CytoscapeCanvas({
   }, [])
 
   // ── Domain drag end callback ─────────────────────────────────────────
+  // All layout coords are absolute. Save the domain entry and all member node
+  // positions using their actual Cytoscape positions after the drag.
+  // Works even when layout: {} (no prior entries).
   const onDomainDragEnd = useCallback(
-    (_domainId: string, updates: { id: string; x: number; y: number }[]) => {
+    (domainId: string, dx: number, dy: number) => {
+      const schema = useStore.getState().schema
+      if (!schema) return
+      const domain = schema.domains?.find((d) => d.id === domainId)
+      if (!domain) return
+      const cy = cyRef.current
+      if (!cy) return
+
+      const updates: { id: string; x: number; y: number }[] = []
+
+      // Domain entry: shift existing or create from dx/dy
+      const domLayout = schema.layout?.[domainId]
+      updates.push({ id: domainId, x: (domLayout?.x ?? 0) + dx, y: (domLayout?.y ?? 0) + dy })
+
+      // Member nodes: read actual Cytoscape positions after the drag
+      domain.tables.forEach((tableId) => {
+        const cyNode = cy.getElementById(tableId)
+        if (cyNode && cyNode.length > 0) {
+          const pos: { x: number; y: number } = cyNode.position()
+          updates.push({ id: tableId, x: pos.x, y: pos.y })
+        }
+      })
+
       updateNodesPosition(updates)
     },
     [updateNodesPosition]
@@ -581,15 +608,17 @@ export default function CytoscapeCanvas({
       updateNodePosition(evt.target.id(), pos.x, pos.y)
     })
 
-    // Hover: highlight connected nodes/edges
+    // Hover: highlight hovered node and connected nodes/edges
     cy.on('mouseover', 'node', (evt: CyInstance) => {
       const node = evt.target
+      hoveredNodeIdRef.current = node.id()
       const connectedEdges = node.connectedEdges()
       const connectedNodes = connectedEdges.connectedNodes().not(node)
       const highlightIds: string[] = connectedNodes.map((n: CyInstance) => n.id())
       useStore.getState().setHighlightedNodeIds(highlightIds)
     })
     cy.on('mouseout', 'node', () => {
+      hoveredNodeIdRef.current = null
       useStore.getState().setHighlightedNodeIds([])
     })
 
@@ -686,8 +715,48 @@ export default function CytoscapeCanvas({
         let elToAdd = elDef
         if (isTableNode) {
           domContainer = document.createElement('div')
-          domContainer.style.cssText =
-            'position:absolute;box-sizing:border-box;min-width:220px;'
+          domContainer.style.cssText = 'position:absolute;box-sizing:border-box;min-width:220px;'
+
+          // cytoscape-dom-node overlays can intercept mouse events before they reach
+          // the Cytoscape canvas, preventing Cytoscape's built-in drag detection.
+          // We implement drag manually on the DOM container instead.
+          domContainer.addEventListener('mousedown', (startEvt: MouseEvent) => {
+            if (startEvt.button !== 0) return
+            startEvt.stopPropagation() // prevent canvas pan
+            startEvt.preventDefault()
+
+            const cyEl = cyRef.current?.getElementById(id)
+            if (!cyEl || cyEl.length === 0) return
+
+            const startX = startEvt.clientX
+            const startY = startEvt.clientY
+            const initPos: { x: number; y: number } = { ...cyEl.position() }
+            let moved = false
+
+            const onMouseMove = (moveEvt: MouseEvent) => {
+              const zoom: number = cyRef.current?.zoom() ?? 1
+              const dx = (moveEvt.clientX - startX) / zoom
+              const dy = (moveEvt.clientY - startY) / zoom
+              if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true
+              cyEl.position({ x: initPos.x + dx, y: initPos.y + dy })
+            }
+
+            const onMouseUp = () => {
+              window.removeEventListener('mousemove', onMouseMove)
+              window.removeEventListener('mouseup', onMouseUp)
+              if (moved) {
+                const pos: { x: number; y: number } = cyEl.position()
+                useStore.getState().updateNodePosition(id, pos.x, pos.y)
+              } else {
+                // Tap: delegate to node click handler
+                onNodeClickRef.current(id)
+              }
+            }
+
+            window.addEventListener('mousemove', onMouseMove)
+            window.addEventListener('mouseup', onMouseUp)
+          })
+
           elToAdd = { ...elDef, data: { ...elDef.data, dom: domContainer } }
         }
         cy.add(elToAdd)
