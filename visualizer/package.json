@@ -23,6 +23,7 @@
     "cytoscape": "^3.33.1",
     "cytoscape-dagre": "^2.5.0",
     "cytoscape-dom-node": "^1.2.0",
+    "cytoscape-edgehandles": "^4.0.1",
     "dagre": "^0.8.5",
     "html-to-image": "^1.11.13",
     "js-yaml": "^4.1.1",

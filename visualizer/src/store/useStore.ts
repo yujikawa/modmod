@@ -48,6 +48,7 @@ interface AppState {
   showER: boolean;
   showLineage: boolean;
   showAnnotations: boolean;
+  connectMode: 'lineage' | 'er' | null;
   connectionStartHandle: { nodeId: string; handleId: string | null; handleType: string | null } | null;
   theme: 'dark' | 'light';
   isDetailPanelSuppressed: boolean;
@@ -67,6 +68,7 @@ interface AppState {
   setShowER: (show: boolean) => void;
   setShowLineage: (show: boolean) => void;
   setShowAnnotations: (show: boolean) => void;
+  setConnectMode: (mode: 'lineage' | 'er' | null) => void;
   setIsPresentationMode: (enabled: boolean) => void;
   setIsAutoSaveEnabled: (enabled: boolean) => void;
   setLastUpdateSource: (source: 'user' | 'visual' | 'undo') => void;
@@ -176,6 +178,7 @@ export const useStore = create<AppState>((set, get) => ({
   showER: true,
   showLineage: true,
   showAnnotations: true,
+  connectMode: null,
   connectionStartHandle: null,
   theme: 'dark',
   isDetailPanelSuppressed: false,
@@ -246,6 +249,7 @@ export const useStore = create<AppState>((set, get) => ({
   setShowER: (show) => set({ showER: show }),
   setShowLineage: (show) => set({ showLineage: show }),
   setShowAnnotations: (show) => set({ showAnnotations: show }),
+  setConnectMode: (mode) => set({ connectMode: mode }),
 
   updateNodePosition: (id, x, y, parentId) => {
     const { schema } = get();
@@ -400,14 +404,24 @@ export const useStore = create<AppState>((set, get) => ({
     if (!schema) return;
     const regex = new RegExp('^' + targetPattern.replace(/\*/g, '.*') + '$', 'i');
     const matchedTables = schema.tables.filter(t => regex.test(t.id) || (t.columns || []).some(c => regex.test(`${t.id}.${c.id}`)));
-    
-    const newRels = matchedTables.map(t => {
+
+    if (type === 'lineage') {
+      const tables = schema.tables.map(t => {
+        if (!matchedTables.some(m => m.id === t.id)) return t;
+        const upstream = t.lineage?.upstream ?? [];
+        if (upstream.includes(source.table)) return t;
+        return { ...t, lineage: { ...t.lineage, upstream: [...upstream, source.table] } };
+      });
+      set({ schema: { ...schema, tables } });
+    } else {
+      const newRels = matchedTables.map(t => {
         let targetCol = undefined;
         if (targetPattern.includes('.')) targetCol = targetPattern.split('.')[1];
         return { from: source, to: { table: t.id, column: targetCol }, type };
-    });
+      });
+      set({ schema: { ...schema, relationships: [...(schema.relationships || []), ...newRels] } });
+    }
 
-    set({ schema: { ...schema, relationships: [...(schema.relationships || []), ...newRels] } });
     get().syncToYamlInput();
     get().saveSchema();
   },
@@ -415,8 +429,13 @@ export const useStore = create<AppState>((set, get) => ({
   addLineage: (source, target) => {
     const { schema } = get();
     if (!schema) return;
-    const newRel: Relationship = { from: { table: source }, to: { table: target }, type: 'lineage' as any };
-    set({ schema: { ...schema, relationships: [...(schema.relationships || []), newRel] } });
+    const tables = schema.tables.map(t => {
+      if (t.id !== target) return t;
+      const upstream = t.lineage?.upstream ?? [];
+      if (upstream.includes(source)) return t; // already exists
+      return { ...t, lineage: { ...t.lineage, upstream: [...upstream, source] } };
+    });
+    set({ schema: { ...schema, tables } });
     get().syncToYamlInput();
     get().saveSchema();
   },

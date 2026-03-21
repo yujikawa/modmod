@@ -27,7 +27,6 @@ type CyFactory = ((opts?: unknown) => CyInstance) & { use: (ext: unknown) => voi
 import cytoscapeModule from 'cytoscape'
 import cytoscapeDagreModule from 'cytoscape-dagre'
 import cytoscapeDomNodeModule from 'cytoscape-dom-node'
-
 const cytoscape = cytoscapeModule as unknown as CyFactory
 
 // Register extensions once at module load
@@ -407,6 +406,7 @@ interface CytoscapeCanvasProps {
   onFitView: (fitFn: () => void) => void
   onFocusNode: (focusFn: (id: string) => void) => void
   onAutoLayout: (layoutFn: () => void) => void
+  onEdgeCreated: (kind: 'lineage' | 'er', sourceId: string, targetId: string) => void
 }
 
 export default function CytoscapeCanvas({
@@ -421,6 +421,7 @@ export default function CytoscapeCanvas({
   onFitView,
   onFocusNode,
   onAutoLayout,
+  onEdgeCreated,
 }: CytoscapeCanvasProps) {
   const {
     schema,
@@ -438,6 +439,7 @@ export default function CytoscapeCanvas({
     updateNodePosition,
     updateNodesPosition,
     updateAnnotation,
+    connectMode,
   } = useStore(
     useShallow((s) => ({
       schema: s.schema,
@@ -455,6 +457,7 @@ export default function CytoscapeCanvas({
       updateNodePosition: s.updateNodePosition,
       updateNodesPosition: s.updateNodesPosition,
       updateAnnotation: s.updateAnnotation,
+      connectMode: s.connectMode,
     }))
   )
 
@@ -464,6 +467,7 @@ export default function CytoscapeCanvas({
   const domAnnRef = useRef<HTMLDivElement | null>(null)
   const domHandleRef = useRef<HTMLDivElement | null>(null) // domain drag handles (z-index: 25)
   const rootMapRef = useRef<Map<string, Root>>(new Map())
+  const domContainerMapRef = useRef<Map<string, HTMLDivElement>>(new Map())
   const zoomRef = useRef<number>(1)
   const lowZoomRef = useRef<boolean>(false)
   const rafIdRef = useRef<number | null>(null)
@@ -473,6 +477,7 @@ export default function CytoscapeCanvas({
   const selectedIdsRef = useRef<string[]>([])
   const highlightedIdsRef = useRef<string[]>([])
   const hoveredNodeIdRef = useRef<string | null>(null)
+  const connectPendingSourceRef = useRef<string | null>(null)
   const presentationModeRef = useRef<boolean>(false)
   const themeRef = useRef<'dark' | 'light'>(theme)
   const hoveredColumnIdRef = useRef<string | null>(null)
@@ -520,6 +525,9 @@ export default function CytoscapeCanvas({
         const isAnythingHighlighted =
           highlightedIdsRef.current.length > 0 || presentationModeRef.current
         const isDimmed = isAnythingHighlighted && !isSelected && !isHighlighted && !isHovered
+        const currentConnectMode = useStore.getState().connectMode
+        const isPendingSource = connectPendingSourceRef.current === id
+        const isConnectMode = !!currentConnectMode
 
         root.render(
           <TableCard
@@ -528,6 +536,8 @@ export default function CytoscapeCanvas({
             isDimmed={isDimmed}
             isHighlighted={isHighlighted}
             isHovered={isHovered}
+            isPendingSource={isPendingSource}
+            isConnectMode={isConnectMode}
             zoom={zoom}
             theme={themeRef.current}
             hoveredColumnId={hoveredColumnIdRef.current}
@@ -642,7 +652,26 @@ export default function CytoscapeCanvas({
 
     // ── Interaction events ────────────────────────────────────────
     cy.on('tap', 'node', (evt: CyInstance) => {
-      onNodeClick(evt.target.id())
+      const id: string = evt.target.id()
+      const mode = useStore.getState().connectMode
+      if (mode) {
+        const pending = connectPendingSourceRef.current
+        if (!pending) {
+          // 1st click: set as source
+          connectPendingSourceRef.current = id
+          updateAllCards()
+        } else if (pending === id) {
+          // clicked same node: cancel
+          connectPendingSourceRef.current = null
+          updateAllCards()
+        } else {
+          // 2nd click: create edge
+          onEdgeCreated(mode, pending, id)
+          connectPendingSourceRef.current = null
+        }
+        return
+      }
+      onNodeClick(id)
     })
 
     cy.on('tap', 'edge', (evt: CyInstance) => {
@@ -669,6 +698,7 @@ export default function CytoscapeCanvas({
 
     // Hover: highlight hovered node and connected nodes/edges
     cy.on('mouseover', 'node', (evt: CyInstance) => {
+      if (useStore.getState().connectMode) return
       const node = evt.target
       hoveredNodeIdRef.current = node.id()
       const connectedEdges = node.connectedEdges()
@@ -677,6 +707,7 @@ export default function CytoscapeCanvas({
       useStore.getState().setHighlightedNodeIds(highlightIds)
     })
     cy.on('mouseout', 'node', () => {
+      if (useStore.getState().connectMode) return
       hoveredNodeIdRef.current = null
       useStore.getState().setHighlightedNodeIds([])
     })
@@ -822,6 +853,7 @@ export default function CytoscapeCanvas({
         if (isTableNode && domContainer) {
           const root = createRoot(domContainer)
           rootMapRef.current.set(id, root)
+          domContainerMapRef.current.set(id, domContainer)
         }
       }
     })
@@ -891,6 +923,22 @@ export default function CytoscapeCanvas({
     updateAllCards,
   ])
 
+  // ── Connect mode: reset pending source + clear hover highlight ──────
+  // DOM containers intercept mousedown (stopPropagation) to handle drag.
+  // In connect mode we disable pointer-events on them so clicks fall through
+  // to Cytoscape's canvas and the tap handler can fire.
+  useEffect(() => {
+    if (connectMode) {
+      hoveredNodeIdRef.current = null
+      highlightedIdsRef.current = []
+      domContainerMapRef.current.forEach(c => { c.style.pointerEvents = 'none' })
+    } else {
+      connectPendingSourceRef.current = null
+      domContainerMapRef.current.forEach(c => { c.style.pointerEvents = 'auto' })
+    }
+    updateAllCards()
+  }, [connectMode, updateAllCards])
+
   // ── Expose canvas API to parent ──────────────────────────────────────
   useEffect(() => {
     const fitFn = () => { cyRef.current?.fit(undefined, 40) }
@@ -951,6 +999,13 @@ export default function CytoscapeCanvas({
       if (isTyping || e.repeat) return
 
       const key = e.key.toLowerCase()
+      if (key === 'c') {
+        e.preventDefault()
+        const { connectMode, setConnectMode } = useStore.getState()
+        setConnectMode(connectMode === 'lineage' ? null : 'lineage')
+        return
+      }
+
       if (key === 't' || key === 'd' || key === 's') {
         e.preventDefault()
         const center = screenToCanvas(window.innerWidth / 2, window.innerHeight / 2)

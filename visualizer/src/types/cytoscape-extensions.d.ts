@@ -9,6 +9,11 @@ declare module 'cytoscape-dom-node' {
   export = ext
 }
 
+declare module 'cytoscape-edgehandles' {
+  const ext: (cy: unknown) => void
+  export = ext
+}
+
 // Extend the cytoscape function declaration to include `use`
 declare module 'cytoscape' {
   // Plugin registration

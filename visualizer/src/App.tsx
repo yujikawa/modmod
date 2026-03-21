@@ -23,8 +23,6 @@ function Flow() {
     setFocusNodeId,
     removeNode,
     removeEdge,
-    showER,
-    showLineage,
     showAnnotations,
     addTable,
     addDomain,
@@ -40,6 +38,8 @@ function Flow() {
     selectedTableIds,
     toggleTableSelection,
     toggleEdgeSelection,
+    connectMode,
+    setConnectMode,
   } = useStore(useShallow(s => ({
     schema: s.schema,
     setSelectedTableId: s.setSelectedTableId,
@@ -52,8 +52,6 @@ function Flow() {
     setFocusNodeId: s.setFocusNodeId,
     removeNode: s.removeNode,
     removeEdge: s.removeEdge,
-    showER: s.showER,
-    showLineage: s.showLineage,
     showAnnotations: s.showAnnotations,
     addTable: s.addTable,
     addDomain: s.addDomain,
@@ -70,10 +68,9 @@ function Flow() {
     selectedTableIds: s.selectedTableIds,
     toggleTableSelection: s.toggleTableSelection,
     toggleEdgeSelection: s.toggleEdgeSelection,
+    connectMode: s.connectMode,
+    setConnectMode: s.setConnectMode,
   })))
-
-  const isConnectionLocked = showER && showLineage
-  const isViewingDisabled = !showER && !showLineage
 
   // Callbacks exposed by CytoscapeCanvas
   const fitViewFnRef = useRef<(() => void) | null>(null)
@@ -152,6 +149,7 @@ function Flow() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (isPresentationMode) { setIsPresentationMode(false); return }
+        if (useStore.getState().connectMode) { useStore.getState().setConnectMode(null); return }
         setSelectedTableId(null)
         setSelectedEdgeId(null)
         setSelectedAnnotationId(null)
@@ -256,6 +254,15 @@ function Flow() {
     toggleTableSelection(id)
   }, [setSelectedAnnotationId, setSelectedEdgeId, toggleTableSelection])
 
+  const handleEdgeCreated = useCallback((kind: 'lineage' | 'er', sourceId: string, targetId: string) => {
+    if (kind === 'lineage') {
+      useStore.getState().addLineage(sourceId, targetId)
+    } else {
+      useStore.getState().addRelationship(sourceId, targetId)
+    }
+    // Stay in connect mode so multiple edges can be added consecutively
+  }, [])
+
   const handleAddTable = useCallback((x: number, y: number) => {
     addTable(x, y)
   }, [addTable])
@@ -276,27 +283,25 @@ function Flow() {
         <PresentationOverlay />
         <CommandPalette />
 
-        {/* Status badges */}
-        {isConnectionLocked && (
+        {connectMode && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
             <div className={`flex items-center gap-2 px-4 py-1.5 backdrop-blur-md rounded-full shadow-xl border ${
-              theme === 'dark' ? 'bg-slate-950/60 border-amber-500/50' : 'bg-white/60 border-amber-500/40'
+              theme === 'dark' ? 'bg-slate-950/70 border-green-500/50' : 'bg-white/80 border-green-500/40'
             }`}>
-              <span className={`text-[10px] font-black uppercase tracking-widest ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`}>Connections Locked</span>
-              <div className={`w-px h-3 ${theme === 'dark' ? 'bg-amber-500/20' : 'bg-amber-500/30'}`} />
-              <span className={`text-[10px] font-bold ${theme === 'dark' ? 'text-amber-400/70' : 'text-amber-600/70'}`}>ER &amp; Lineage active</span>
-            </div>
-          </div>
-        )}
-
-        {isViewingDisabled && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
-            <div className={`flex items-center gap-2 px-4 py-1.5 backdrop-blur-md rounded-full shadow-xl border ${
-              theme === 'dark' ? 'bg-slate-950/60 border-blue-500/50' : 'bg-white/60 border-blue-500/40'
-            }`}>
-              <span className={`text-[10px] font-black uppercase tracking-widest ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>Connections Hidden</span>
-              <div className={`w-px h-3 ${theme === 'dark' ? 'bg-blue-500/20' : 'bg-blue-500/30'}`} />
-              <span className={`text-[10px] font-bold ${theme === 'dark' ? 'text-blue-400/70' : 'text-blue-600/70'}`}>Enable a View Mode to draw edges</span>
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <span className={`text-[10px] font-black uppercase tracking-widest ${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`}>
+                {connectMode === 'lineage' ? 'Lineage' : 'ER'} Connect Mode
+              </span>
+              <div className={`w-px h-3 ${theme === 'dark' ? 'bg-green-500/20' : 'bg-green-500/30'}`} />
+              <span className={`text-[10px] font-bold ${theme === 'dark' ? 'text-green-400/70' : 'text-green-600/70'}`}>
+                Click source → target · Esc to exit
+              </span>
+              <button
+                className="pointer-events-auto ml-1 opacity-60 hover:opacity-100 transition-opacity"
+                onClick={() => setConnectMode(null)}
+              >
+                <span className={`text-[10px] font-bold ${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`}>✕</span>
+              </button>
             </div>
           </div>
         )}
@@ -323,6 +328,7 @@ function Flow() {
             onFitView={handleFitView}
             onFocusNode={handleFocusNode}
             onAutoLayout={handleAutoLayout}
+            onEdgeCreated={handleEdgeCreated}
           />
         )}
       </div>

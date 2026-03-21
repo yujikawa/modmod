@@ -1,35 +1,37 @@
 import { useState } from 'react'
 import { useStore } from '../../store/useStore'
-import { 
-  Tag, 
-  Grid, 
-  Layout, 
-  Network, 
-  GitGraph, 
-  LayoutTemplate, 
-  Sun, 
+import {
+  Tag,
+  Grid,
+  Layout,
+  Network,
+  LayoutTemplate,
+  Sun,
   Moon,
   Plus,
   ChevronLeft,
   Play,
   CircleHelp,
   X,
-  Command
+  Command,
+  Spline,
 } from 'lucide-react'
 import logo from '/favicon.svg?url'
 
 const ActivityBar = () => {
-  const { 
+  const {
     isSidebarOpen,
     setIsSidebarOpen,
     isPresentationMode,
     setIsPresentationMode,
+    showAnnotations,
+    setShowAnnotations,
     showER,
     setShowER,
     showLineage,
     setShowLineage,
-    showAnnotations,
-    setShowAnnotations,
+    connectMode,
+    setConnectMode,
     addTable,
     addDomain,
     addAnnotation,
@@ -132,17 +134,17 @@ const ActivityBar = () => {
             View
           </div>
           <div className="flex flex-col gap-2">
-            <button onClick={() => setShowER(!showER)} className={iconClass(showER, 'text-emerald-500')}>
-              <Network size={20} />
-              <Tooltip text={showER ? "Hide ER" : "Show ER"} />
-            </button>
-            <button onClick={() => setShowLineage(!showLineage)} className={iconClass(showLineage, 'text-blue-500')}>
-              <GitGraph size={20} />
-              <Tooltip text={showLineage ? "Hide Lineage" : "Show Lineage"} />
-            </button>
             <button onClick={() => setShowAnnotations(!showAnnotations)} className={iconClass(showAnnotations, 'text-amber-500')}>
               <Tag size={20} />
               <Tooltip text={showAnnotations ? "Hide Annotations" : "Show Annotations"} />
+            </button>
+            <button onClick={() => setShowER(!showER)} className={iconClass(showER, 'text-slate-400')}>
+              <Network size={20} />
+              <Tooltip text={showER ? "Hide ER Edges" : "Show ER Edges"} />
+            </button>
+            <button onClick={() => setShowLineage(!showLineage)} className={iconClass(showLineage, 'text-blue-400')}>
+              <Spline size={20} />
+              <Tooltip text={showLineage ? "Hide Lineage Edges" : "Show Lineage Edges"} />
             </button>
           </div>
         </div>
@@ -175,6 +177,14 @@ const ActivityBar = () => {
                 <Plus size={10} className="absolute -bottom-1 -right-1 text-amber-500 font-bold stroke-[3px]" />
               </div>
               <Tooltip text="Add Sticky Note (S)" />
+            </button>
+            <button onClick={() => setConnectMode(connectMode === 'lineage' ? null : 'lineage')} className={iconClass(connectMode === 'lineage', 'text-blue-400')}>
+              <Spline size={20} />
+              <Tooltip text={connectMode === 'lineage' ? "Exit Lineage Mode (Esc)" : "Draw Lineage Edge (C)"} />
+            </button>
+            <button onClick={() => setConnectMode(connectMode === 'er' ? null : 'er')} className={iconClass(connectMode === 'er', 'text-emerald-400')}>
+              <Network size={20} />
+              <Tooltip text={connectMode === 'er' ? "Exit ER Mode (Esc)" : "Draw ER Edge"} />
             </button>
           </div>
         </div>
