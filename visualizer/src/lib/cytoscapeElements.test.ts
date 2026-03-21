@@ -80,14 +80,9 @@ describe('yamlToElements', () => {
     const schema = makeSchema({
       tables: [
         { id: 'src', name: 'Source', appearance: { type: 'fact' }, columns: [] },
-        {
-          id: 'mart',
-          name: 'Mart',
-          appearance: { type: 'mart' },
-          lineage: { upstream: ['src'] },
-          columns: [],
-        },
+        { id: 'mart', name: 'Mart', appearance: { type: 'mart' }, columns: [] },
       ],
+      lineage: [{ from: 'src', to: 'mart' }],
     })
     const elements = yamlToElements(schema)
     const edges = elements.filter(e => e.classes === 'lineage-edge')
@@ -152,14 +147,9 @@ describe('yamlToElements', () => {
       tables: [
         { id: 'a', name: 'A', appearance: { type: 'fact' }, columns: [] },
         { id: 'b', name: 'B', appearance: { type: 'fact' }, columns: [] },
-        {
-          id: 'mart',
-          name: 'Mart',
-          appearance: { type: 'mart' },
-          lineage: { upstream: ['a', 'b'] },
-          columns: [],
-        },
+        { id: 'mart', name: 'Mart', appearance: { type: 'mart' }, columns: [] },
       ],
+      lineage: [{ from: 'a', to: 'mart' }, { from: 'b', to: 'mart' }],
     })
     const elements = yamlToElements(schema)
     const lineageEdges = elements.filter(e => e.classes === 'lineage-edge')

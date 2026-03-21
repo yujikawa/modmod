@@ -84,7 +84,7 @@ interface AppState {
   bulkAddRelationship: (source: { table: string, column?: string }, targetPattern: string, type: Relationship['type'] | 'lineage') => void;
   addLineage: (source: string, target: string) => void;
   updateRelationship: (index: number, updates: Partial<Relationship>) => void;
-  removeEdge: (sourceId: string, targetId: string) => void;
+  removeEdge: (sourceId: string, targetId: string, kind?: 'er' | 'lineage') => void;
   removeNode: (id: string) => void;
   bulkRemoveTables: (ids: string[]) => void;
   updateTable: (id: string, updates: Partial<Table>) => void;
@@ -399,13 +399,11 @@ export const useStore = create<AppState>((set, get) => ({
     const matchedTables = schema.tables.filter(t => regex.test(t.id) || (t.columns || []).some(c => regex.test(`${t.id}.${c.id}`)));
 
     if (type === 'lineage') {
-      const tables = schema.tables.map(t => {
-        if (!matchedTables.some(m => m.id === t.id)) return t;
-        const upstream = t.lineage?.upstream ?? [];
-        if (upstream.includes(source.table)) return t;
-        return { ...t, lineage: { ...t.lineage, upstream: [...upstream, source.table] } };
-      });
-      set({ schema: { ...schema, tables } });
+      const existing = schema.lineage ?? [];
+      const newEdges = matchedTables
+        .filter(t => !existing.some(e => e.from === source.table && e.to === t.id))
+        .map(t => ({ from: source.table, to: t.id }));
+      set({ schema: { ...schema, lineage: [...existing, ...newEdges] } });
     } else {
       const newRels = matchedTables.map(t => {
         let targetCol = undefined;
@@ -422,13 +420,9 @@ export const useStore = create<AppState>((set, get) => ({
   addLineage: (source, target) => {
     const { schema } = get();
     if (!schema) return;
-    const tables = schema.tables.map(t => {
-      if (t.id !== target) return t;
-      const upstream = t.lineage?.upstream ?? [];
-      if (upstream.includes(source)) return t; // already exists
-      return { ...t, lineage: { ...t.lineage, upstream: [...upstream, source] } };
-    });
-    set({ schema: { ...schema, tables } });
+    const existing = schema.lineage ?? [];
+    if (existing.some(e => e.from === source && e.to === target)) return; // already exists
+    set({ schema: { ...schema, lineage: [...existing, { from: source, to: target }] } });
     get().syncToYamlInput();
     get().saveSchema();
   },
@@ -443,11 +437,16 @@ export const useStore = create<AppState>((set, get) => ({
     get().saveSchema();
   },
 
-  removeEdge: (sourceId, targetId) => {
+  removeEdge: (sourceId, targetId, kind) => {
     const { schema } = get();
     if (!schema) return;
-    const newRels = schema.relationships.filter(r => !(r.from.table === sourceId && r.to.table === targetId));
-    set({ schema: { ...schema, relationships: newRels }, selectedEdgeId: null });
+    const newRels = (kind === 'lineage')
+      ? schema.relationships
+      : schema.relationships.filter(r => !(r.from.table === sourceId && r.to.table === targetId));
+    const newLineage = (kind === 'er')
+      ? (schema.lineage ?? [])
+      : (schema.lineage ?? []).filter(e => !(e.from === sourceId && e.to === targetId));
+    set({ schema: { ...schema, relationships: newRels, lineage: newLineage }, selectedEdgeId: null });
     get().syncToYamlInput();
     get().saveSchema();
   },
@@ -459,6 +458,7 @@ export const useStore = create<AppState>((set, get) => ({
     const newTables = schema.tables.filter(t => t.id !== id);
     const newDomains = (schema.domains || []).filter(d => d.id !== id).map(d => ({ ...d, tables: d.tables.filter(tid => tid !== id) }));
     const newRelationships = schema.relationships.filter(r => r.from.table !== id && r.to.table !== id);
+    const newLineage = (schema.lineage ?? []).filter(e => e.from !== id && e.to !== id);
     const newLayout = { ...(schema.layout || {}) };
     delete newLayout[id];
 
@@ -471,7 +471,7 @@ export const useStore = create<AppState>((set, get) => ({
       });
     }
 
-    set({ schema: { ...schema, tables: newTables, domains: newDomains, relationships: newRelationships, layout: newLayout }, selectedTableId: null });
+    set({ schema: { ...schema, tables: newTables, domains: newDomains, relationships: newRelationships, lineage: newLineage, layout: newLayout }, selectedTableId: null });
     get().syncToYamlInput();
     get().saveSchema();
   },
@@ -483,8 +483,9 @@ export const useStore = create<AppState>((set, get) => ({
     const newLayout = { ...(schema.layout || {}) };
     ids.forEach(id => delete newLayout[id]);
     const newRelationships = (schema.relationships || []).filter(r => !ids.includes(r.from.table) && !ids.includes(r.to.table));
+    const newLineage = (schema.lineage ?? []).filter(e => !ids.includes(e.from) && !ids.includes(e.to));
     const newDomains = (schema.domains || []).map(d => ({ ...d, tables: d.tables.filter(tid => !ids.includes(tid)) }));
-    set({ schema: { ...schema, tables: newTables, relationships: newRelationships, domains: newDomains, layout: newLayout }, selectedTableIds: [] });
+    set({ schema: { ...schema, tables: newTables, relationships: newRelationships, lineage: newLineage, domains: newDomains, layout: newLayout }, selectedTableIds: [] });
     get().syncToYamlInput();
     get().saveSchema();
   },
@@ -647,6 +648,7 @@ export const useStore = create<AppState>((set, get) => ({
           
           tempSchema.tables = tempSchema.tables.filter((t: any) => !tableIdsToDelete.includes(t.id));
           tempSchema.domains = (tempSchema.domains || []).filter((d: any) => !domainIdsToDelete.includes(d.id));
+          tempSchema.lineage = (tempSchema.lineage ?? []).filter((e: any) => !tableIdsToDelete.includes(e.from) && !tableIdsToDelete.includes(e.to));
           
           // CRITICAL: Cleanup parentId references if domains were deleted
           if (domainIdsToDelete.length > 0 && tempSchema.layout) {
@@ -830,9 +832,12 @@ export const useStore = create<AppState>((set, get) => ({
     const { schema, selectedEdgeId } = get();
     if (!schema || !selectedEdgeId) return null;
     if (selectedEdgeId.startsWith('lin-')) {
-      const parts = selectedEdgeId.split('-');
-      // lin-{srcId}-{tgtId}-{i}  (srcId and tgtId may contain hyphens so use first/last)
-      return { relationship: { from: { table: parts[1] }, to: { table: parts[2] }, type: 'lineage' as any }, index: -1, kind: 'lineage' as const };
+      // lin-{from}-{to}-{index} — find the actual lineage edge by index
+      const lastDash = selectedEdgeId.lastIndexOf('-');
+      const idx = parseInt(selectedEdgeId.slice(lastDash + 1));
+      const edge = schema.lineage?.[idx];
+      if (!edge) return null;
+      return { relationship: { from: { table: edge.from }, to: { table: edge.to }, type: 'lineage' as any }, index: idx, kind: 'lineage' as const };
     }
     if (!selectedEdgeId.startsWith('er-')) return null;
     const index = parseInt(selectedEdgeId.split('-')[1]);

@@ -148,9 +148,6 @@ tables:
       type: dimension
       scd: type2
       icon: 👤
-    lineage:
-      upstream:
-        - stg_customers
     implementation:
       materialization: table
     columns:
@@ -198,9 +195,6 @@ tables:
     appearance:
       type: dimension
       icon: 📦
-    lineage:
-      upstream:
-        - stg_products
     implementation:
       materialization: table
     columns:
@@ -282,10 +276,6 @@ tables:
       type: fact
       sub_type: transaction
       icon: 🛒
-    lineage:
-      upstream:
-        - stg_orders
-        - stg_order_items
     implementation:
       materialization: incremental
       incremental_strategy: merge
@@ -347,10 +337,6 @@ tables:
     appearance:
       type: mart
       icon: 📊
-    lineage:
-      upstream:
-        - fct_orders
-        - dim_dates
     implementation:
       materialization: table
       partition_by:
@@ -389,10 +375,6 @@ tables:
     appearance:
       type: mart
       icon: 👤
-    lineage:
-      upstream:
-        - fct_orders
-        - dim_customers
     implementation:
       materialization: table
     columns:
@@ -440,10 +422,6 @@ tables:
     appearance:
       type: mart
       icon: 📦
-    lineage:
-      upstream:
-        - fct_orders
-        - dim_products
     implementation:
       materialization: table
     columns:
@@ -484,6 +462,27 @@ tables:
           type: Int
           additivity: fully
     sampleData: []
+lineage:
+  - from: stg_customers
+    to: dim_customers
+  - from: stg_products
+    to: dim_products
+  - from: stg_orders
+    to: fct_orders
+  - from: stg_order_items
+    to: fct_orders
+  - from: fct_orders
+    to: mart_daily_revenue
+  - from: dim_dates
+    to: mart_daily_revenue
+  - from: fct_orders
+    to: mart_customer_ltv
+  - from: dim_customers
+    to: mart_customer_ltv
+  - from: fct_orders
+    to: mart_product_performance
+  - from: dim_products
+    to: mart_product_performance
 relationships:
   - from:
       table: stg_orders

@@ -204,8 +204,15 @@ function Flow() {
 
       if ((e.key === 'Backspace' || e.key === 'Delete') && !selectedTableId && !selectedAnnotationId) {
         if (selectedEdgeId) {
-          const rel = schema?.relationships?.find((_, i) => `er-${i}` === selectedEdgeId)
-          if (rel) removeEdge(rel.from.table, rel.to.table)
+          if (selectedEdgeId.startsWith('lin-')) {
+            const lastDash = selectedEdgeId.lastIndexOf('-')
+            const idx = parseInt(selectedEdgeId.slice(lastDash + 1))
+            const edge = schema?.lineage?.[idx]
+            if (edge) removeEdge(edge.from, edge.to, 'lineage')
+          } else {
+            const rel = schema?.relationships?.find((_, i) => `er-${i}` === selectedEdgeId)
+            if (rel) removeEdge(rel.from.table, rel.to.table, 'er')
+          }
           setSelectedEdgeId(null)
         }
         return

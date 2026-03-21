@@ -106,19 +106,17 @@ export function yamlToElements(schema: Schema): CyElementDefinition[] {
   // Build set of existing table IDs for edge validation
   const tableIdSet = new Set(schema.tables.map(t => t.id))
 
-  // Lineage edges (from lineage.upstream[])
-  schema.tables.forEach(table => {
-    table.lineage?.upstream?.forEach((upId, i) => {
-      if (!tableIdSet.has(upId)) return // skip if source table no longer exists
-      elements.push({
-        data: {
-          id: `lin-${upId}-${table.id}-${i}`,
-          source: upId,
-          target: table.id,
-          kind: 'lineage',
-        },
-        classes: 'lineage-edge',
-      })
+  // Lineage edges (from top-level schema.lineage[])
+  schema.lineage?.forEach((edge, i) => {
+    if (!tableIdSet.has(edge.from) || !tableIdSet.has(edge.to)) return // skip dangling edges
+    elements.push({
+      data: {
+        id: `lin-${edge.from}-${edge.to}-${i}`,
+        source: edge.from,
+        target: edge.to,
+        kind: 'lineage',
+      },
+      classes: 'lineage-edge',
     })
   })
 

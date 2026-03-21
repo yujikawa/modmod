@@ -67,16 +67,13 @@ function generateMermaidLineage(schema) {
   let mermaid = 'graph TD\n';
   let hasLineage = false;
 
-  schema.tables.forEach(table => {
-    if (table.lineage?.upstream && table.lineage.upstream.length > 0) {
-      hasLineage = true;
-      const targetName = sanitize(table.name);
-      table.lineage.upstream.forEach(upId => {
-        const sourceTable = schema.tables.find(t => t.id === upId);
-        const sourceName = sanitize(sourceTable?.name || upId);
-        mermaid += `    ${sourceName} --> ${targetName}\n`;
-      });
-    }
+  (schema.lineage || []).forEach(edge => {
+    hasLineage = true;
+    const sourceTable = schema.tables.find(t => t.id === edge.from);
+    const targetTable = schema.tables.find(t => t.id === edge.to);
+    const sourceName = sanitize(sourceTable?.name || edge.from);
+    const targetName = sanitize(targetTable?.name || edge.to);
+    mermaid += `    ${sourceName} --> ${targetName}\n`;
   });
 
   return hasLineage ? mermaid : null;
@@ -197,10 +194,11 @@ export function generateMarkdown(schema, modelName) {
     }
 
     // Lineage
-    if (table.lineage?.upstream?.length > 0) {
-      const upstreamNames = table.lineage.upstream.map(upId => {
-        const t = schema.tables.find(t => t.id === upId);
-        return t ? t.name : upId;
+    const upstreamEdges = (schema.lineage || []).filter(e => e.to === table.id);
+    if (upstreamEdges.length > 0) {
+      const upstreamNames = upstreamEdges.map(e => {
+        const t = schema.tables.find(t => t.id === e.from);
+        return t ? t.name : e.from;
       });
       md += `**Upstream**: ${upstreamNames.map(n => `\`${n}\``).join(' → ')}\n\n`;
     }

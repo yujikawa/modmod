@@ -68,10 +68,6 @@ tables:
     appearance:
       type: mart
       icon: 📈
-    lineage:
-      upstream:
-        - fct_sales
-        - dim_dates
     columns:
       - id: month_key
         logical:
@@ -84,6 +80,11 @@ tables:
           type: Decimal
           additivity: fully
     sampleData: []
+lineage:
+  - from: fct_sales
+    to: mart_monthly_revenue
+  - from: dim_dates
+    to: mart_monthly_revenue
 relationships:
   - from:
       table: dim_products

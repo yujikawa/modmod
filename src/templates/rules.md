@@ -8,9 +8,9 @@
 ## QUICK REFERENCE (read this first)
 
 ```
-ROOT KEYS      domains | tables | relationships | annotations | layout
+ROOT KEYS      domains | tables | relationships | lineage | annotations | layout
 COORDINATES    ONLY in `layout`. NEVER inside tables or domains.
-LINEAGE        Use lineage.upstream (not relationships) for mart/aggregated tables.
+LINEAGE        Use top-level `lineage` section (not relationships, not table.lineage.upstream).
 parentId       Declare a table's domain membership inside layout, not inside domains.
 IDs            Every object (table, domain, annotation) needs a unique `id`.
 sampleData     First row = column IDs. At least 3 realistic data rows.
@@ -27,6 +27,7 @@ A valid `model.yaml` has exactly these top-level keys.
 domains:       # (array) visual containers — OPTIONAL but recommended
 tables:        # (array) entity definitions — REQUIRED
 relationships: # (array) ER cardinality edges — OPTIONAL
+lineage:       # (array) data lineage edges — OPTIONAL
 annotations:   # (array) sticky notes / callouts — OPTIONAL
 layout:        # (object) ALL coordinates — REQUIRED if any objects exist
 ```
@@ -140,17 +141,15 @@ relationships:
 
 ## 4. Data Lineage
 
-`lineage.upstream` declares which source tables a derived table is built from.
-This is rendered as animated arrows in **Lineage Mode**. It is separate from ER relationships.
+Top-level `lineage` section declares data flow between tables (which source tables feed which derived tables).
+This is rendered as dashed arrows in **Lineage Mode**. It is separate from ER relationships.
 
 ```yaml
-tables:
-  - id: mart_revenue
-    appearance: { type: mart }
-    lineage:
-      upstream:
-        - fct_orders    # list of source table IDs
-        - dim_dates
+lineage:
+  - from: fct_orders    # source table id
+    to: mart_revenue    # derived table id
+  - from: dim_dates
+    to: mart_revenue
 ```
 
 ### When to use lineage vs relationships
@@ -158,21 +157,21 @@ tables:
 | Situation | Use |
 |-----------|-----|
 | `dim_customers` → `fct_orders` (FK join) | `relationships` |
-| `fct_orders` + `dim_dates` → `mart_revenue` (aggregation) | `lineage.upstream` |
+| `fct_orders` + `dim_dates` → `mart_revenue` (aggregation) | `lineage` |
 
-**MUST** define `lineage.upstream` for every `mart` or aggregated table.
-**MUST NOT** define `lineage.upstream` for raw tables (`fact`, `dimension`, `hub`, `link`, `satellite`).
-**MUST NOT** add a `relationships` entry for a connection already expressed in `lineage.upstream`.
+**MUST** define `lineage` entries for every `mart` or aggregated table.
+**MUST NOT** define `lineage` entries for raw tables (`fact`, `dimension`, `hub`, `link`, `satellite`) as sources.
+**MUST NOT** add a `relationships` entry for a connection already expressed in `lineage`.
 
 #### Example: correct separation
 
 ```yaml
 # CORRECT
-tables:
-  - id: mart_revenue
-    appearance: { type: mart }
-    lineage:
-      upstream: [fct_orders, dim_dates]   # lineage only
+lineage:
+  - from: fct_orders
+    to: mart_revenue
+  - from: dim_dates
+    to: mart_revenue
 
 relationships:
   - from: { table: dim_customers, column: customer_key }
@@ -409,11 +408,9 @@ relationships:
 
 ```yaml
 # CORRECT
-tables:
-  - id: mart_revenue
-    appearance: { type: mart }
-    lineage:
-      upstream: [fct_orders]    # ✅ express lineage here
+lineage:
+  - from: fct_orders
+    to: mart_revenue    # ✅ express lineage in the top-level lineage section
 ```
 
 ---
@@ -663,10 +660,6 @@ tables:
     logical_name: "Executive Revenue Summary"
     physical_name: "mart_finance_monthly_revenue_agg"
     appearance: { type: mart, icon: "📈" }
-    lineage:                        # mart → use lineage, not relationships
-      upstream:
-        - fct_orders
-        - dim_customers
     implementation:
       materialization: table
       grain: [month_key]
@@ -683,6 +676,12 @@ tables:
       - ["2024-01", 12450.50]
       - ["2024-02", 15200.00]
       - ["2024-03", 18900.75]
+
+lineage:                            # data flow — separate from ER
+  - from: fct_orders
+    to: mart_monthly_revenue
+  - from: dim_customers
+    to: mart_monthly_revenue
 
 relationships:                      # ER only — not for lineage
   - from: { table: dim_customers, column: customer_key }
