@@ -41,6 +41,7 @@ function Flow() {
     toggleEdgeSelection,
     connectMode,
     setConnectMode,
+    currentModelSlug,
   } = useStore(useShallow(s => ({
     schema: s.schema,
     setSelectedTableId: s.setSelectedTableId,
@@ -72,6 +73,7 @@ function Flow() {
     toggleEdgeSelection: s.toggleEdgeSelection,
     connectMode: s.connectMode,
     setConnectMode: s.setConnectMode,
+    currentModelSlug: s.currentModelSlug,
   })))
 
   // Callbacks exposed by CytoscapeCanvas
@@ -84,6 +86,13 @@ function Flow() {
   const handleFocusNode = useCallback((fn: (id: string) => void) => {
     focusNodeFnRef.current = fn
   }, [])
+
+  // Fit view whenever the active model changes
+  useEffect(() => {
+    if (!currentModelSlug) return
+    const timer = setTimeout(() => fitViewFnRef.current?.(), 300)
+    return () => clearTimeout(timer)
+  }, [currentModelSlug])
 
   // WebSocket live sync
   const wsRef = useRef<WebSocket | null>(null)

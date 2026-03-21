@@ -679,6 +679,7 @@ export default function CytoscapeCanvas({
       style: buildCytoscapeStyle(themeRef.current),
       minZoom: 0.05,
       maxZoom: 3,
+      wheelSensitivity: 1.5,
       boxSelectionEnabled: true,
       userZoomingEnabled: true,
       userPanningEnabled: true,
@@ -1015,7 +1016,17 @@ export default function CytoscapeCanvas({
 
   // ── Expose canvas API to parent ──────────────────────────────────────
   useEffect(() => {
-    const fitFn = () => { cyRef.current?.fit(undefined, 40) }
+    const fitFn = () => {
+      const cy = cyRef.current
+      if (!cy) return
+      cy.fit(undefined, 40)
+      // If the result is too zoomed out (e.g. 1000 tables), cap at a readable minimum
+      const MIN_ZOOM = 0.3
+      if (cy.zoom() < MIN_ZOOM) {
+        cy.zoom(MIN_ZOOM)
+        cy.center(cy.elements())
+      }
+    }
     onFitView(fitFn)
     ;(window as any).__modscapeFitView = fitFn
   }, [onFitView])

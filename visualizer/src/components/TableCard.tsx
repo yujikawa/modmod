@@ -53,6 +53,8 @@ const TableCard = ({
 
   return (
     <div
+      data-testid="table-node"
+      data-table-id={table.id}
       style={{
         width: '100%',
         height: '100%',
