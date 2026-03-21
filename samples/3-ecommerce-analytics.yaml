@@ -548,20 +548,20 @@ layout:
     width: 756
     height: 1384
   stg_customers:
-    x: 40
-    'y': 60
+    x: 1177.1346418173716
+    'y': -22.743638278439903
     parentId: staging
   stg_products:
-    x: 400
-    'y': 60
+    x: 1537.1346418173716
+    'y': -22.743638278439903
     parentId: staging
   stg_orders:
-    x: 187.31714041733085
-    'y': 492.6937161291277
+    x: 1324.4517822347025
+    'y': 409.9500778506878
     parentId: staging
   stg_order_items:
-    x: 295.97299648938156
-    'y': 979
+    x: 1433.1076383067534
+    'y': 896.2563617215601
     parentId: staging
   core_dwh:
     x: 1536.6990065468297
@@ -569,20 +569,20 @@ layout:
     width: 814
     height: 1396
   dim_customers:
-    x: 40
-    'y': 60
+    x: 3925.8046293001435
+    'y': 928.4375329660008
     parentId: core_dwh
   dim_products:
-    x: 443.93003186753003
-    'y': 90.13734587719486
+    x: 4215.2986009094575
+    'y': -123.36605907883958
     parentId: core_dwh
   dim_dates:
-    x: 60.93075503591194
-    'y': 816.6066094029468
+    x: 4361.994304215626
+    'y': 75.7416823714066
     parentId: core_dwh
   fct_orders:
-    x: 557.3117121441007
-    'y': 845.8481462051072
+    x: 2812.9823971997275
+    'y': 724.6926460220891
     parentId: core_dwh
   analytics_mart:
     x: 2407.9416441807534
@@ -590,14 +590,14 @@ layout:
     width: 403
     height: 1385
   mart_daily_revenue:
-    x: 49.26090291592823
-    'y': 40.8517737796939
+    x: 2650.6924901727634
+    'y': -209.94583314140803
     parentId: analytics_mart
   mart_customer_ltv:
-    x: 68.34151742462859
-    'y': 395.51485882361646
+    x: 2669.7731046814642
+    'y': 144.7172519025146
     parentId: analytics_mart
   mart_product_performance:
-    x: 59.712354895917315
-    'y': 878.4985740039285
+    x: 2661.143942152752
+    'y': 627.7009670828265
     parentId: analytics_mart

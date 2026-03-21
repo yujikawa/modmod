@@ -16,7 +16,6 @@ import {
   X,
   Command
 } from 'lucide-react'
-import { useReactFlow } from 'reactflow'
 import logo from '/favicon.svg?url'
 
 const ActivityBar = () => {
@@ -41,25 +40,35 @@ const ActivityBar = () => {
     getSelectedDomain
   } = useStore()
 
-  const { screenToFlowPosition } = useReactFlow()
   const [showHelp, setShowHelp] = useState(false)
+
+  // Convert screen center to canvas coordinates via Cytoscape viewport
+  const screenToCanvasCenter = () => {
+    const cy = (window as any).__modscapeCy
+    if (!cy) return { x: window.innerWidth / 2, y: window.innerHeight / 2 }
+    const pan: { x: number; y: number } = cy.pan()
+    const zoom: number = cy.zoom()
+    const sx = window.innerWidth / 2
+    const sy = window.innerHeight / 2
+    return { x: (sx - pan.x) / zoom, y: (sy - pan.y) / zoom }
+  }
   
   const table = getSelectedTable()
   const domain = getSelectedDomain()
 
   const handleAddDomain = () => {
-    const center = screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 })
+    const center = screenToCanvasCenter()
     addDomain(center.x - 300, center.y - 200)
   }
 
   const handleAddTable = () => {
-    const center = screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 })
+    const center = screenToCanvasCenter()
     addTable(center.x - 160, center.y - 125)
   }
 
   const handleAddAnnotation = () => {
     const target = table || domain
-    const center = screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 })
+    const center = screenToCanvasCenter()
     
     if (!showAnnotations) setShowAnnotations(true)
 

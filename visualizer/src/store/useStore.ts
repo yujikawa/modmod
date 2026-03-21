@@ -849,28 +849,84 @@ export const useStore = create<AppState>((set, get) => ({
   calculateAutoLayout: () => {
     const { schema } = get();
     if (!schema) return;
-    const g = new dagre.graphlib.Graph({ compound: true });
-    g.setGraph({ rankdir: 'LR', nodesep: 80, ranksep: 120, marginx: 40, marginy: 40 });
-    g.setDefaultEdgeLabel(() => ({}));
-    (schema.domains || []).forEach(d => { g.setNode(d.id, { label: d.name, width: 600, height: 400 }); });
+
+    const NODE_W = 280, NODE_H = 160;
+    const NODE_SEP = 60, RANK_SEP = 120;
+    const DOMAIN_PAD = 60, DOMAIN_GAP = 120;
+
+    // Collect all edges (relationships + lineage)
+    const allEdges: { from: string; to: string }[] = [];
+    (schema.relationships || []).forEach(r => allEdges.push({ from: r.from.table, to: r.to.table }));
     schema.tables.forEach(t => {
-      const domain = (schema.domains || []).find(d => d.tables.includes(t.id));
-      g.setNode(t.id, { width: 220, height: 300 });
-      if (domain) g.setParent(t.id, domain.id);
+      (t.lineage?.upstream || []).forEach(upId => allEdges.push({ from: upId, to: t.id }));
     });
-    (schema.relationships || []).forEach(r => { g.setEdge(r.from.table, r.to.table); });
-    dagre.layout(g);
+
+    // Run dagre on a subset of tables, return center positions
+    function layoutGroup(tableIds: string[]): Record<string, { x: number; y: number }> {
+      const g = new dagre.graphlib.Graph();
+      g.setGraph({ rankdir: 'LR', nodesep: NODE_SEP, ranksep: RANK_SEP });
+      g.setDefaultEdgeLabel(() => ({}));
+      tableIds.forEach(id => g.setNode(id, { width: NODE_W, height: NODE_H }));
+      allEdges.forEach(e => {
+        if (tableIds.includes(e.from) && tableIds.includes(e.to)) g.setEdge(e.from, e.to);
+      });
+      dagre.layout(g);
+      const result: Record<string, { x: number; y: number }> = {};
+      tableIds.forEach(id => { const n = g.node(id); result[id] = { x: n.x, y: n.y }; });
+      return result;
+    }
+
+    // Bounding box (top-left origin) from center positions
+    function bbox(pos: Record<string, { x: number; y: number }>) {
+      const xs = Object.values(pos).map(p => p.x);
+      const ys = Object.values(pos).map(p => p.y);
+      return {
+        x1: Math.min(...xs) - NODE_W / 2,
+        y1: Math.min(...ys) - NODE_H / 2,
+        w: Math.max(...xs) - Math.min(...xs) + NODE_W,
+        h: Math.max(...ys) - Math.min(...ys) + NODE_H,
+      };
+    }
+
     const newLayout: Record<string, any> = {};
-    g.nodes().forEach(v => {
-      const node = g.node(v);
-      const parent = g.parent(v);
-      if (parent) {
-        const pNode = g.node(parent);
-        newLayout[v] = { x: node.x - node.width/2 - (pNode.x - pNode.width/2), y: node.y - node.height/2 - (pNode.y - pNode.height/2), parentId: parent };
-      } else {
-        newLayout[v] = { x: node.x - node.width/2, y: node.y - node.height/2 };
+    let cursorX = 0;
+
+    // Layout each domain group independently, place side by side
+    for (const domain of (schema.domains || [])) {
+      const tableIds = domain.tables.filter(id => schema.tables.some(t => t.id === id));
+      if (tableIds.length === 0) continue;
+
+      const positions = layoutGroup(tableIds);
+      const bb = bbox(positions);
+      const domW = bb.w + DOMAIN_PAD * 2;
+      const domH = bb.h + DOMAIN_PAD * 2;
+
+      // Domain absolute position (top-left)
+      newLayout[domain.id] = { x: cursorX, y: 0, width: domW, height: domH };
+
+      // Tables: domain-relative coordinates (spec convention)
+      for (const [id, pos] of Object.entries(positions)) {
+        newLayout[id] = {
+          x: pos.x - bb.x1 + DOMAIN_PAD,
+          y: pos.y - bb.y1 + DOMAIN_PAD,
+          parentId: domain.id,
+        };
       }
-    });
+
+      cursorX += domW + DOMAIN_GAP;
+    }
+
+    // Standalone tables (not in any domain)
+    const domainTableIds = new Set((schema.domains || []).flatMap(d => d.tables));
+    const standaloneIds = schema.tables.map(t => t.id).filter(id => !domainTableIds.has(id));
+    if (standaloneIds.length > 0) {
+      const positions = layoutGroup(standaloneIds);
+      const bb = bbox(positions);
+      for (const [id, pos] of Object.entries(positions)) {
+        newLayout[id] = { x: cursorX + pos.x - bb.x1, y: pos.y - bb.y1 };
+      }
+    }
+
     set({ schema: { ...schema, layout: newLayout } });
     get().syncToYamlInput();
     get().saveSchema();

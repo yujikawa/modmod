@@ -1,7 +1,6 @@
 import { memo, useState, useEffect, useRef, useMemo } from 'react'
 import { useStore } from '../store/useStore'
 import { useShallow } from 'zustand/react/shallow'
-import { useReactFlow } from 'reactflow'
 import {
   Command,
   Search,
@@ -36,7 +35,6 @@ const CommandPalette = memo(() => {
     theme: s.theme,
   })))
 
-  const { fitView } = useReactFlow()
   const [input, setInput] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [feedback, setFeedback] = useState<{ type: 'success' | 'info', msg: string } | null>(null)
@@ -180,7 +178,7 @@ const CommandPalette = memo(() => {
 
     // Simple one-off UI commands
     if (finalInput === 'fit') {
-      fitView({ duration: 800 })
+      ;(window as any).__modscapeFitView?.()
       showFeedback('success', 'View fitted')
       return
     }

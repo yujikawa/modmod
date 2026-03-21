@@ -1,862 +1,336 @@
-import { useCallback, useEffect, useMemo, useState, useRef } from 'react'
-import ReactFlow, { 
-  Background, 
-  Controls, 
-  type Node, 
-  type Edge,
-  useNodesState,
-  useEdgesState,
-  type Connection,
-  useReactFlow,
-  ReactFlowProvider,
-  MarkerType,
-  SelectionMode
-} from 'reactflow'
-import 'reactflow/dist/style.css'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useStore } from './store/useStore'
 import { useShallow } from 'zustand/react/shallow'
-import TableNode from './components/TableNode'
-import DomainNode from './components/DomainNode'
-import AnnotationNode from './components/AnnotationNode'
+import CytoscapeCanvas from './components/CytoscapeCanvas'
 import DetailPanel from './components/DetailPanel'
 import Sidebar from './components/Sidebar/Sidebar'
 import RightPanel from './components/RightPanel/RightPanel'
 import CommandPalette from './components/CommandPalette'
 import PresentationOverlay from './components/PresentationOverlay'
 import SelectionToolbar from './components/SelectionToolbar'
-import ButtonEdge from './components/ButtonEdge'
-import LineageEdge from './components/LineageEdge'
-import AnnotationEdge from './components/AnnotationEdge'
 
-const nodeTypes = {
-  table: TableNode,
-  domain: DomainNode,
-  annotation: AnnotationNode,
-}
-
-const edgeTypes = {
-  button: ButtonEdge,
-  lineage: LineageEdge,
-  annotation: AnnotationEdge,
-}
-
+// ── Flow (Canvas area) ────────────────────────────────────────────────
 function Flow() {
   const {
     schema,
     setSelectedTableId,
-    setSelectedTableIds,
     selectedTableId,
     selectedEdgeId,
     setSelectedEdgeId,
     selectedAnnotationId,
     setSelectedAnnotationId,
-    updateNodePosition,
-    updateNodesPosition,
-    isCliMode,
     focusNodeId,
     setFocusNodeId,
-    addRelationship,
     removeNode,
     removeEdge,
-    toggleTableSelection,
-    toggleEdgeSelection,
-    toggleAnnotationSelection,
     showER,
     showLineage,
     showAnnotations,
-    addLineage,
-    setConnectionStartHandle,
     addTable,
     addDomain,
     addAnnotation,
-    updateAnnotation,
     theme,
-    currentModelSlug,
     isPresentationMode,
     setIsPresentationMode,
-    pathFinderResult,
     refreshModelData,
     fetchAvailableFiles,
-    isModelLoading
-  } = useStore(useShallow((s) => ({
+    isModelLoading,
+    isCliMode,
+    distributeSelectedTables,
+    selectedTableIds,
+    toggleTableSelection,
+    toggleEdgeSelection,
+  } = useStore(useShallow(s => ({
     schema: s.schema,
     setSelectedTableId: s.setSelectedTableId,
-    setSelectedTableIds: s.setSelectedTableIds,
     selectedTableId: s.selectedTableId,
     selectedEdgeId: s.selectedEdgeId,
     setSelectedEdgeId: s.setSelectedEdgeId,
     selectedAnnotationId: s.selectedAnnotationId,
     setSelectedAnnotationId: s.setSelectedAnnotationId,
-    updateNodePosition: s.updateNodePosition,
-    updateNodesPosition: s.updateNodesPosition,
-    isCliMode: s.isCliMode,
     focusNodeId: s.focusNodeId,
     setFocusNodeId: s.setFocusNodeId,
-    addRelationship: s.addRelationship,
     removeNode: s.removeNode,
     removeEdge: s.removeEdge,
-    toggleTableSelection: s.toggleTableSelection,
-    toggleEdgeSelection: s.toggleEdgeSelection,
-    toggleAnnotationSelection: s.toggleAnnotationSelection,
     showER: s.showER,
     showLineage: s.showLineage,
     showAnnotations: s.showAnnotations,
-    addLineage: s.addLineage,
-    setConnectionStartHandle: s.setConnectionStartHandle,
     addTable: s.addTable,
     addDomain: s.addDomain,
     addAnnotation: s.addAnnotation,
-    updateAnnotation: s.updateAnnotation,
     theme: s.theme,
-    currentModelSlug: s.currentModelSlug,
     isPresentationMode: s.isPresentationMode,
     setIsPresentationMode: s.setIsPresentationMode,
-    pathFinderResult: s.pathFinderResult,
     refreshModelData: s.refreshModelData,
     fetchAvailableFiles: s.fetchAvailableFiles,
     isModelLoading: s.isModelLoading,
+    isCliMode: s.isCliMode,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    distributeSelectedTables: (s as any).distributeSelectedTables as ((dir: string) => void) | undefined,
+    selectedTableIds: s.selectedTableIds,
+    toggleTableSelection: s.toggleTableSelection,
+    toggleEdgeSelection: s.toggleEdgeSelection,
   })))
-  
-  const [nodes, setNodes, onNodesChange] = useNodesState([])
-  const [edges, setEdges, onEdgesChange] = useEdgesState([])
-  const { fitView, getViewport, setViewport, screenToFlowPosition, getNodes } = useReactFlow()
-  const [edgeSyncTrigger, setEdgeSyncTrigger] = useState(0)
-  const [canvasVisible, setCanvasVisible] = useState(true)
-
-  const wsRef = useRef<WebSocket | null>(null)
-  const reconnectTimeoutRef = useRef<number | null>(null)
-  const reconnectDelayRef = useRef<number>(1000)
-
-  // Live Sync via WebSocket
-  useEffect(() => {
-    if (!isCliMode) return;
-
-    const connect = () => {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}`;
-      const ws = new WebSocket(wsUrl);
-
-      ws.onopen = () => {
-        console.log('🔌 Connected to Modscape Dev Server (Live Sync active)');
-        reconnectDelayRef.current = 1000;
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === 'update') {
-            console.log('🔄 File update signal received from server');
-            refreshModelData();
-          } else if (data.type === 'files_changed') {
-            console.log('📁 File list update signal received from server');
-            fetchAvailableFiles();
-          }
-        } catch (e) {
-          console.error('Failed to parse WS message:', e);
-        }
-      };
-
-      ws.onclose = () => {
-        console.warn('🔌 Disconnected from Modscape Dev Server. Reconnecting...');
-        wsRef.current = null;
-        
-        // Exponential backoff
-        if (reconnectTimeoutRef.current) window.clearTimeout(reconnectTimeoutRef.current);
-        reconnectTimeoutRef.current = window.setTimeout(() => {
-          reconnectDelayRef.current = Math.min(reconnectDelayRef.current * 1.5, 30000);
-          connect();
-        }, reconnectDelayRef.current);
-      };
-
-      ws.onerror = () => {
-        ws.close();
-      };
-
-      wsRef.current = ws;
-    };
-
-    connect();
-
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.onclose = null; // Prevent reconnection on unmount
-        wsRef.current.close();
-      }
-      if (reconnectTimeoutRef.current) window.clearTimeout(reconnectTimeoutRef.current);
-    };
-  }, [isCliMode, refreshModelData, fetchAvailableFiles]);
 
   const isConnectionLocked = showER && showLineage
   const isViewingDisabled = !showER && !showLineage
 
-  // Memoized Sets for O(1) path lookups
-  const pathNodeIds = useMemo(
-    () => pathFinderResult ? new Set(pathFinderResult.nodeIds) : null,
-    [pathFinderResult]
-  )
-  const pathEdgeIds = useMemo(
-    () => pathFinderResult ? new Set(pathFinderResult.edgeIds) : null,
-    [pathFinderResult]
-  )
+  // Callbacks exposed by CytoscapeCanvas
+  const fitViewFnRef = useRef<(() => void) | null>(null)
+  const focusNodeFnRef = useRef<((id: string) => void) | null>(null)
+  const autoLayoutFnRef = useRef<(() => void) | null>(null)
 
-  // Handle global keyboard shortcuts
+  const handleFitView = useCallback((fn: () => void) => {
+    fitViewFnRef.current = fn
+  }, [])
+  const handleFocusNode = useCallback((fn: (id: string) => void) => {
+    focusNodeFnRef.current = fn
+  }, [])
+  const handleAutoLayout = useCallback((fn: () => void) => {
+    autoLayoutFnRef.current = fn
+  }, [])
+
+  // WebSocket live sync
+  const wsRef = useRef<WebSocket | null>(null)
+  const reconnectTimeoutRef = useRef<number | null>(null)
+  const reconnectDelayRef = useRef<number>(1000)
+
+  useEffect(() => {
+    if (!isCliMode) return
+
+    const connect = () => {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      const ws = new WebSocket(`${protocol}//${window.location.host}`)
+
+      ws.onopen = () => {
+        reconnectDelayRef.current = 1000
+      }
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          if (data.type === 'update') refreshModelData()
+          else if (data.type === 'files_changed') fetchAvailableFiles()
+        } catch (_) {}
+      }
+      ws.onclose = () => {
+        wsRef.current = null
+        if (reconnectTimeoutRef.current) window.clearTimeout(reconnectTimeoutRef.current)
+        reconnectTimeoutRef.current = window.setTimeout(() => {
+          reconnectDelayRef.current = Math.min(reconnectDelayRef.current * 1.5, 30000)
+          connect()
+        }, reconnectDelayRef.current)
+      }
+      ws.onerror = () => ws.close()
+      wsRef.current = ws
+    }
+
+    connect()
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.onclose = null
+        wsRef.current.close()
+      }
+      if (reconnectTimeoutRef.current) window.clearTimeout(reconnectTimeoutRef.current)
+    }
+  }, [isCliMode, refreshModelData, fetchAvailableFiles])
+
+  // Handle focusNodeId → focus in canvas
+  useEffect(() => {
+    if (focusNodeId && focusNodeFnRef.current) {
+      focusNodeFnRef.current(focusNodeId)
+      setFocusNodeId(null)
+    }
+  }, [focusNodeId, setFocusNodeId])
+
+  // Expose fit-view trigger (e.g. from toolbar)
+  useEffect(() => {
+    ;(window as any).__modscapeFitView = () => fitViewFnRef.current?.()
+  }, [])
+
+  // Keyboard shortcuts (canvas-agnostic: Escape, K, /, L, V, H, Delete)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Exit Presentation Mode on Escape
       if (e.key === 'Escape') {
-        if (isPresentationMode) {
-          setIsPresentationMode(false);
-          return;
-        }
-        setSelectedTableId(null);
-        setSelectedEdgeId(null);
-        setSelectedAnnotationId(null);
-        return;
+        if (isPresentationMode) { setIsPresentationMode(false); return }
+        setSelectedTableId(null)
+        setSelectedEdgeId(null)
+        setSelectedAnnotationId(null)
+        return
       }
 
-      const activeEl = document.activeElement;
-      const isTyping = 
-        activeEl?.tagName === 'INPUT' || 
-        activeEl?.tagName === 'TEXTAREA' || 
+      const activeEl = document.activeElement
+      const isTyping =
+        activeEl?.tagName === 'INPUT' ||
+        activeEl?.tagName === 'TEXTAREA' ||
         (activeEl as HTMLElement)?.isContentEditable ||
-        activeEl?.closest('.cm-editor') || // CodeMirror 6 container
-        activeEl?.closest('.cm-content') || // CodeMirror 6 content
-        activeEl?.closest('[role="dialog"]') || // Modals/Dialogs
-        activeEl?.closest('.sidebar-content'); // Additional safeguard for our panels
+        activeEl?.closest('.cm-editor') ||
+        activeEl?.closest('.sidebar-content')
+      if (isTyping || e.repeat) return
 
-      if (isTyping) return;
-      
-      // Prevention of continuous creation on long press
-      if (e.repeat) return;
+      const key = e.key.toLowerCase()
 
-      const key = e.key.toLowerCase();
-
-      // Navigation Shortcuts
-      if (e.key === '/') {
-        e.preventDefault();
-        useStore.getState().setIsRightPanelOpen(true);
-        useStore.getState().setActiveRightPanelTab('tables');
-        return;
+      if (key === '/' ) {
+        e.preventDefault()
+        useStore.getState().setIsRightPanelOpen(true)
+        useStore.getState().setActiveRightPanelTab('tables')
+        return
       }
 
-      // Command Palette (Ctrl+K or Cmd+K)
       if (key === 'k' && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault();
-        useStore.getState().setIsCommandPaletteOpen(!useStore.getState().isCommandPaletteOpen);
-        return;
+        e.preventDefault()
+        useStore.getState().setIsCommandPaletteOpen(!useStore.getState().isCommandPaletteOpen)
+        return
       }
 
-      // Object Creation Shortcuts
-      if (key === 't' || key === 'd' || key === 's' || key === 'l' || key === 'v' || key === 'h') {
-        // Alignment shortcuts (require multi-select)
-        if (key === 'v' || key === 'h') {
-          const { selectedTableIds, distributeSelectedTables } = useStore.getState();
-          if (selectedTableIds.length > 1) {
-            e.preventDefault();
-            distributeSelectedTables(key === 'v' ? 'vertical' : 'horizontal');
-          }
-          return;
-        }
-
-        e.preventDefault();
-        if (key === 'l') {
-          const currentTab = useStore.getState().activeTab;
-          useStore.getState().setActiveTab(currentTab === 'connect' ? 'editor' : 'connect');
-          useStore.getState().setIsSidebarOpen(true);
-          return;
-        }
-
-        const center = screenToFlowPosition({
-          x: window.innerWidth / 2,
-          y: window.innerHeight / 2,
-        });
-
-        if (key === 't') {
-          addTable(center.x - 160, center.y - 125);
-        } else if (key === 'd') {
-          addDomain(center.x - 300, center.y - 200);
-        } else if (key === 's') {
-          if (!showAnnotations) {
-            useStore.getState().setShowAnnotations(true);
-          }
-          addAnnotation({ x: center.x - 60, y: center.y - 40 });
-        }
-        return;
+      if (key === 'l') {
+        e.preventDefault()
+        const currentTab = useStore.getState().activeTab
+        useStore.getState().setActiveTab(currentTab === 'connect' ? 'editor' : 'connect')
+        useStore.getState().setIsSidebarOpen(true)
+        return
       }
 
-      if (selectedTableId || selectedEdgeId || selectedAnnotationId) return;
-
-      if (e.key.startsWith('Arrow')) {
-        const { x, y, zoom } = getViewport();
-        const MOVE_STEP = 100;
-
-        if (e.key === 'ArrowUp') {
-          setViewport({ x, y: y + MOVE_STEP, zoom }, { duration: 150 });
-        } else if (e.key === 'ArrowDown') {
-          setViewport({ x, y: y - MOVE_STEP, zoom }, { duration: 150 });
-        } else if (e.key === 'ArrowLeft') {
-          setViewport({ x: x + MOVE_STEP, y, zoom }, { duration: 150 });
-        } else if (e.key === 'ArrowRight') {
-          setViewport({ x: x - MOVE_STEP, y, zoom }, { duration: 150 });
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [setSelectedTableId, setSelectedEdgeId, setSelectedAnnotationId, getViewport, setViewport, selectedTableId, selectedEdgeId, selectedAnnotationId, isPresentationMode, setIsPresentationMode]);
-
-  // Handle focusNodeId changes
-  useEffect(() => {
-    if (focusNodeId) {
-      fitView({ nodes: [{ id: focusNodeId }], duration: 800, padding: 0.5 });
-      setFocusNodeId(null);
-    }
-  }, [focusNodeId, fitView, setFocusNodeId]);
-
-  // Sync Nodes — depends only on schema structure, NOT on selection/path state
-  useEffect(() => {
-    if (!schema) return
-
-    const newNodes: Node[] = []
-    const TABLE_WIDTH = 320;
-    const TABLE_HEIGHT = 250;
-    const DOMAIN_PADDING = 60;
-    const GRID_COLS = 3;
-    const currentFlowNodes = getNodes();
-
-    // Build Maps for O(1) lookups instead of repeated .find() calls
-    const tableMap = new Map(schema.tables.map(t => [t.id, t]));
-    const currentFlowNodeMap = new Map(currentFlowNodes.map(n => [n.id, n]));
-
-    if (schema.domains) {
-      const DOMAIN_GRID_COLS = 2;
-      const DOMAIN_X_GAP = 1600;
-      const DOMAIN_Y_GAP = 1200;
-
-      schema.domains.forEach((domain, dIndex) => {
-        const tableCount = domain.tables.length;
-        const rows = Math.ceil(tableCount / GRID_COLS);
-        const cols = Math.min(tableCount, GRID_COLS);
-        const autoWidth = Math.max(2, cols) * TABLE_WIDTH + DOMAIN_PADDING;
-        const autoHeight = Math.max(1.5, rows) * TABLE_HEIGHT + DOMAIN_PADDING;
-        const layout = schema.layout?.[domain.id];
-        const currentNode = currentFlowNodeMap.get(domain.id);
-        const dRow = Math.floor(dIndex / DOMAIN_GRID_COLS);
-        const dCol = dIndex % DOMAIN_GRID_COLS;
-        const x = layout?.x ?? currentNode?.position.x ?? (dCol * DOMAIN_X_GAP);
-        const y = layout?.y ?? currentNode?.position.y ?? (dRow * DOMAIN_Y_GAP);
-        const width = layout?.width ?? autoWidth;
-        const height = layout?.height ?? autoHeight;
-        const isLocked = layout?.isLocked ?? domain.isLocked ?? false;
-
-        // Inline path styling
-        const isPartOfPath = pathNodeIds?.has(domain.id);
-        const style: any = { width, height, pointerEvents: isLocked ? 'none' : 'auto' };
-        if (pathNodeIds) {
-          style.opacity = isPartOfPath ? 1 : 0.1;
-          style.transition = 'opacity 0.5s ease-in-out';
-        }
-
-        newNodes.push({
-          id: domain.id,
-          type: 'domain',
-          position: { x, y },
-          style,
-          draggable: !isLocked,
-          selectable: !isLocked,
-          deletable: !isLocked,
-          dragHandle: isLocked ? undefined : '.domain-drag-handle',
-          data: { label: domain.name, color: domain.color, isLocked },
-          zIndex: isPartOfPath ? 900 : undefined,
-        });
-
-        domain.tables.forEach((tableId, tIndex) => {
-          const table = tableMap.get(tableId);
-          if (!table) return;
-          const localRow = Math.floor(tIndex / GRID_COLS);
-          const localCol = tIndex % GRID_COLS;
-          const tableLayout = schema.layout?.[table.id];
-          const currentTableNode = currentFlowNodeMap.get(table.id);
-          const tx = tableLayout?.x ?? currentTableNode?.position.x ?? (localCol * TABLE_WIDTH + DOMAIN_PADDING / 2);
-          const ty = tableLayout?.y ?? currentTableNode?.position.y ?? (localRow * TABLE_HEIGHT + DOMAIN_PADDING / 2);
-          const defaultHeight = (table.columns && table.columns.length > 10) ? 350 : undefined;
-          const nodeHeight = tableLayout?.height ?? defaultHeight;
-
-          // Inline path styling
-          const isPartOfPath = pathNodeIds?.has(table.id);
-          const style: any = {
-            ...(tableLayout?.width ? { width: tableLayout.width } : {}),
-            ...(nodeHeight ? { height: nodeHeight } : {})
-          };
-          if (pathNodeIds) {
-            style.opacity = isPartOfPath ? 1 : 0.1;
-            style.pointerEvents = isPartOfPath ? 'all' : 'none';
-            style.transition = 'opacity 0.5s ease-in-out';
-          }
-
-          newNodes.push({
-            id: table.id,
-            type: 'table',
-            position: { x: tx, y: ty },
-            style,
-            dragHandle: '.table-drag-handle',
-            data: { table },
-            parentNode: domain.id,
-            extent: 'parent',
-            zIndex: isPartOfPath ? 1000 : undefined,
-          });
-        });
-      });
-    }
-
-    const domainTableIds = new Set(schema.domains?.flatMap(d => d.tables) || []);
-    const topLevelTables = schema.tables.filter(t => !domainTableIds.has(t.id));
-
-    topLevelTables.forEach((table, index) => {
-      const tableLayout = schema.layout?.[table.id];
-      const currentTableNode = currentFlowNodeMap.get(table.id);
-      const lx = tableLayout?.x ?? currentTableNode?.position.x ?? (index * 300);
-      const ly = tableLayout?.y ?? currentTableNode?.position.y ?? 100;
-      const defaultHeight = (table.columns && table.columns.length > 10) ? 350 : undefined;
-      const nodeHeight = tableLayout?.height ?? defaultHeight;
-
-      // Inline path styling
-      const isPartOfPath = pathNodeIds?.has(table.id);
-      const style: any = {
-        ...(tableLayout?.width ? { width: tableLayout.width } : {}),
-        ...(nodeHeight ? { height: nodeHeight } : {})
-      };
-
-      if (pathNodeIds) {
-        style.opacity = isPartOfPath ? 1 : 0.1;
-        style.pointerEvents = isPartOfPath ? 'all' : 'none';
-        style.transition = 'opacity 0.5s ease-in-out';
+      if ((key === 'v' || key === 'h') && selectedTableIds.length > 1) {
+        e.preventDefault()
+        distributeSelectedTables?.(key === 'v' ? 'vertical' : 'horizontal')
+        return
       }
 
-      newNodes.push({
-        id: table.id,
-        type: 'table',
-        position: { x: lx, y: ly },
-        style,
-        dragHandle: '.table-drag-handle',
-        data: { table },
-        zIndex: isPartOfPath ? 1000 : undefined,
-      });
-    });
-
-    if (showAnnotations && schema.annotations) {
-      const newNodeMap = new Map(newNodes.map(n => [n.id, n]));
-      schema.annotations.forEach(annotation => {
-        let x = annotation.offset.x;
-        let y = annotation.offset.y;
-        let parentNode = undefined;
-
-        if (annotation.targetId) {
-          const targetNode = newNodeMap.get(annotation.targetId);
-          if (targetNode) {
-            x = targetNode.position.x + annotation.offset.x;
-            y = targetNode.position.y + annotation.offset.y;
-            parentNode = targetNode.parentNode;
-          }
+      if ((e.key === 'Backspace' || e.key === 'Delete') && !selectedTableId && !selectedAnnotationId) {
+        if (selectedEdgeId) {
+          const rel = schema?.relationships?.find((_, i) => `er-${i}` === selectedEdgeId)
+          if (rel) removeEdge(rel.from.table, rel.to.table)
+          setSelectedEdgeId(null)
         }
-
-        const isPartOfPath = pathNodeIds?.has(annotation.id);
-        const style: any = {};
-        if (pathNodeIds) {
-          style.opacity = isPartOfPath ? 1 : 0.1;
-          style.pointerEvents = isPartOfPath ? 'all' : 'none';
-          style.transition = 'opacity 0.5s ease-in-out';
-        }
-
-        newNodes.push({
-          id: annotation.id,
-          type: 'annotation',
-          position: { x, y },
-          data: { annotation },
-          style,
-          parentNode,
-          zIndex: isPartOfPath ? 1000 : undefined,
-        });
-      });
-    }
-
-    setNodes(newNodes)
-    setEdgeSyncTrigger(v => v + 1);
-  }, [schema, setNodes, currentModelSlug, showAnnotations, pathNodeIds])
-
-  // Hide canvas when model slug changes (loading starts)
-  useEffect(() => {
-    if (!currentModelSlug) return;
-    setCanvasVisible(false);
-  }, [currentModelSlug])
-
-  // FadeIn + FitView once nodes are built after a model switch
-  useEffect(() => {
-    if (canvasVisible || !currentModelSlug || nodes.length === 0) return;
-    const timer = setTimeout(() => {
-      fitView({ duration: 0, padding: 0.1 });
-      window.dispatchEvent(new Event('resize'));
-      setCanvasVisible(true);
-    }, 50);
-    return () => clearTimeout(timer);
-  }, [nodes, canvasVisible, currentModelSlug, fitView])
-
-  // Sync Store Selection & UI Flags
-  useEffect(() => {
-    const isAnythingSelected = !!(selectedTableId || selectedAnnotationId);
-    setNodes((nds) => 
-      nds.map((node) => ({
-        ...node,
-        selected: node.id === selectedTableId || node.id === selectedAnnotationId,
-        data: {
-          ...node.data,
-          isPresentationMode,
-          isAnythingSelected,
-          selectedTableId, // Still useful for some internal node logic
-        }
-      }))
-    )
-  }, [selectedTableId, selectedAnnotationId, isPresentationMode, setNodes])
-
-  // Sync Edges
-  useEffect(() => {
-    if (!schema) return
-    const newEdges: Edge[] = [];
-
-    if (showER && schema.relationships) {
-      const HIGHLIGHT_STYLE = { stroke: theme === 'dark' ? '#f1f5f9' : '#0f172a', strokeWidth: 5 };
-      const PATH_STYLE = { stroke: '#3b82f6', strokeWidth: 8 }; 
-      const NORMAL_STYLE = { stroke: theme === 'dark' ? '#94a3b8' : '#64748b', strokeWidth: 3 };
-
-      const erEdges = schema.relationships.map((rel, index) => {
-        const edgeId = `e-${index}`;
-        const isPartOfPath = pathEdgeIds?.has(edgeId);
-        const isConnectedToSelectedTable = selectedTableId === rel.from.table || selectedTableId === rel.to.table;
-        const isDirectlySelected = selectedEdgeId === edgeId;
-        const isHighlighted = isConnectedToSelectedTable || isDirectlySelected;
-        const sourceHandle = rel.from.column 
-          ? `${rel.from.table}-${rel.from.column}-er-source-right` 
-          : `${rel.from.table}-er-source-bottom`;
-        const targetHandle = rel.to.column 
-          ? `${rel.to.table}-${rel.to.column}-er-target-left` 
-          : `${rel.to.table}-er-target-top`;
-
-        return {
-          id: edgeId,
-          source: rel.from.table,
-          sourceHandle,
-          target: rel.to.table,
-          targetHandle,
-          type: 'button',
-          data: { isConnectedToSelectedTable, isDirectlySelected, label: rel.type },
-          selected: isDirectlySelected,
-          animated: isPartOfPath || false,
-          style: {
-            ...(isPartOfPath ? PATH_STYLE : (isHighlighted ? HIGHLIGHT_STYLE : NORMAL_STYLE)),
-            opacity: pathEdgeIds ? (isPartOfPath ? 1 : 0.1) : 1
-          },
-          zIndex: isPartOfPath ? 100 : (isHighlighted ? 10 : 1),
-        }
-      });
-      newEdges.push(...erEdges);
-    }
-
-    if (showLineage) {
-      schema.tables.forEach(table => {
-        if (table.lineage?.upstream) {
-          table.lineage.upstream.forEach((upstreamId) => {
-            const edgeId = `lin-${upstreamId}-${table.id}`;
-            const isPartOfPath = pathEdgeIds?.has(edgeId);
-            const isConnectedToSelected = selectedTableId === table.id || selectedTableId === upstreamId;
-            const isDirectlySelected = selectedEdgeId === edgeId;
-            const isHighlighted = isConnectedToSelected || isDirectlySelected;
-
-            newEdges.push({
-              id: edgeId,
-              source: upstreamId,
-              target: table.id,
-              sourceHandle: `${upstreamId}-lin-source-right`,
-              targetHandle: `${table.id}-lin-target-left`,
-              type: 'lineage',
-              data: { isHighlighted },
-              selected: isDirectlySelected,
-              animated: true,
-              markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6', width: 20, height: 20 },
-              style: {
-                ...(isPartOfPath ? { stroke: '#3b82f6', strokeWidth: 8 } : {}),
-                opacity: pathEdgeIds ? (isPartOfPath ? 1 : 0.1) : 1
-              },
-              zIndex: isPartOfPath ? 110 : (isHighlighted ? 15 : 2), 
-            });
-          });
-        }
-      });
-    }
-
-    if (showAnnotations && schema.annotations) {
-      schema.annotations.forEach(annotation => {
-        if (annotation.type === 'callout' && annotation.targetId) {
-          const isPartOfPath = pathEdgeIds?.has(`e-ann-${annotation.id}`);
-          newEdges.push({
-            id: `e-ann-${annotation.id}`,
-            source: annotation.id,
-            target: annotation.targetId,
-            type: 'annotation',
-            style: {
-              opacity: pathEdgeIds ? (isPartOfPath ? 1 : 0.1) : 1
-            },
-            zIndex: 0,
-          });
-        }
-      });
-    }
-
-    setEdges(newEdges);
-  }, [schema, selectedTableId, selectedEdgeId, setEdges, showER, showLineage, showAnnotations, theme, edgeSyncTrigger, pathEdgeIds])
-
-  const onConnect = useCallback(
-    (params: Connection) => {
-      if (params.source && params.target) {
-        const isLinConnection = params.sourceHandle?.includes('lin-') || params.targetHandle?.includes('lin-');
-        if (isLinConnection) {
-          addLineage(params.source, params.target);
-          return;
-        }
-        let finalSource = params.source;
-        let finalTarget = params.target;
-        let finalSourceHandle = params.sourceHandle;
-        let finalTargetHandle = params.targetHandle;
-        const isSourceTargetRole = params.sourceHandle?.includes('target');
-        const isTargetSourceRole = params.targetHandle?.includes('source');
-        if (isSourceTargetRole || isTargetSourceRole) {
-          finalSource = params.target;
-          finalTarget = params.source;
-          finalSourceHandle = params.targetHandle;
-          finalTargetHandle = params.sourceHandle;
-        }
-        addRelationship(finalSource, finalTarget, finalSourceHandle, finalTargetHandle);
+        return
       }
-    },
-    [addRelationship, addLineage]
-  )
 
-  const onNodesDelete = useCallback((deletedNodes: Node[]) => {
-    deletedNodes.forEach(node => removeNode(node.id));
-  }, [removeNode]);
-
-  const onEdgesDelete = useCallback((deletedEdges: Edge[]) => {
-    deletedEdges.forEach(edge => removeEdge(edge.source, edge.target));
-  }, [removeEdge]);
-
-  const onPaneClick = useCallback(() => {
-    setSelectedTableId(null);
-    setSelectedEdgeId(null);
-    setSelectedAnnotationId(null);
-  }, [setSelectedTableId, setSelectedEdgeId, setSelectedAnnotationId]);
-
-  const onNodeClick = useCallback((_: any, node: Node) => {
-    if (node.type === 'annotation') {
-      toggleAnnotationSelection(node.id);
-    } else {
-      toggleTableSelection(node.id);
-    }
-  }, [toggleTableSelection, toggleAnnotationSelection]);
-
-  const onEdgeClick = useCallback((_: any, edge: Edge) => {
-    toggleEdgeSelection(edge.id);
-  }, [toggleEdgeSelection]);
-
-  const onConnectStart = useCallback((_: any, { nodeId, handleId, handleType }: any) => {
-    setConnectionStartHandle({ nodeId, handleId, handleType });
-  }, [setConnectionStartHandle]);
-
-  const onConnectEnd = useCallback(() => {
-    setConnectionStartHandle(null);
-  }, [setConnectionStartHandle]);
-
-  const onNodeDrag = useCallback((_: any, node: Node) => {
-    if (node.type === 'table' || node.type === 'domain') {
-      setNodes(nds => nds.map(n => {
-        if (n.type === 'annotation') {
-          const ann = schema?.annotations?.find(a => a.id === n.id);
-          if (ann && ann.targetId === node.id) {
-            return {
-              ...n,
-              position: {
-                x: node.position.x + ann.offset.x,
-                y: node.position.y + ann.offset.y
-              }
-            };
-          }
+      if ((e.key === 'Backspace' || e.key === 'Delete') && (selectedTableId || selectedAnnotationId)) {
+        const id = selectedTableId || selectedAnnotationId
+        if (id) {
+          removeNode(id)
+          setSelectedTableId(null)
+          setSelectedAnnotationId(null)
         }
-        return n;
-      }));
-    }
-  }, [schema, setNodes]);
-
-  const onNodeDragStop = useCallback((_: any, node: Node) => {
-    if (node.type === 'annotation') {
-      const annotation = schema?.annotations?.find(a => a.id === node.id);
-      if (annotation) {
-        if (annotation.targetId) {
-          const targetNode = nodes.find(n => n.id === annotation.targetId);
-          if (targetNode) {
-            const newOffset = {
-              x: node.position.x - targetNode.position.x,
-              y: node.position.y - targetNode.position.y
-            };
-            updateAnnotation(node.id, { offset: newOffset });
-          }
-        } else {
-          updateAnnotation(node.id, { offset: { x: node.position.x, y: node.position.y } });
-        }
+        return
       }
-      return;
-    }
-    const parentId = node.parentNode;
-    updateNodePosition(node.id, node.position.x, node.position.y, parentId);
-  }, [isCliMode, updateNodePosition, updateAnnotation, schema, nodes]);
-
-  const onSelectionDragStop = useCallback((_: any, nodes: Node[]) => {
-    const updates = nodes.map(node => ({
-      id: node.id,
-      x: node.position.x,
-      y: node.position.y,
-      parentId: node.parentNode
-    }));
-    updateNodesPosition(updates);
-  }, [isCliMode, updateNodesPosition]);
-
-  const onSelectionChange = useCallback(({ nodes, edges }: { nodes: Node[], edges: Edge[] }) => {
-    const tableIds = nodes.filter(n => n.type === 'table').map(n => n.id);
-    setSelectedTableIds(tableIds);
-    
-    // Clear singular node selection if multiple nodes are selected or if selection is empty
-    if (nodes.length !== 1 && edges.length === 0) {
-      setSelectedTableId(null);
     }
 
-    // Clear singular selections if multiple total objects are selected
-    if (nodes.length + edges.length > 1) {
-      setSelectedEdgeId(null);
-      setSelectedAnnotationId(null);
-    }
-  }, [setSelectedTableId, setSelectedTableIds, setSelectedEdgeId, setSelectedAnnotationId]);
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [
+    isPresentationMode, setIsPresentationMode,
+    setSelectedTableId, setSelectedEdgeId, setSelectedAnnotationId,
+    selectedTableId, selectedEdgeId, selectedAnnotationId,
+    selectedTableIds, distributeSelectedTables,
+    schema, removeNode, removeEdge,
+  ])
 
-  const onNodeDoubleClick = useCallback(() => {
-    // No-op to prevent unexpected expansion
-  }, []);
+  // ── CytoscapeCanvas callbacks ─────────────────────────────────────
+  const handleNodeClick = useCallback((id: string) => {
+    toggleTableSelection(id)
+  }, [toggleTableSelection])
 
-  const onEdgeDoubleClick = useCallback(() => {
-    // No-op to prevent unexpected expansion
-  }, []);
+  const handleEdgeClick = useCallback((edgeData: {
+    id: string; kind: string; source: string; target: string;
+    fromColumn?: string; toColumn?: string; relType?: string
+  }) => {
+    toggleEdgeSelection(edgeData.id)
+  }, [toggleEdgeSelection])
 
-  const isValidConnection = useCallback((connection: Connection) => {
-    return connection.source !== connection.target;
-  }, []);
-return (
-  <div className="flex-1 relative h-full flex flex-col overflow-hidden">
-    <div className="flex-1 relative">
-      {!isPresentationMode && <SelectionToolbar />}
-      <PresentationOverlay />
-      <CommandPalette />
+  const handlePaneClick = useCallback(() => {
+    setSelectedTableId(null)
+    setSelectedEdgeId(null)
+    setSelectedAnnotationId(null)
+  }, [setSelectedTableId, setSelectedEdgeId, setSelectedAnnotationId])
 
-      {/* Badges */}
-        {/* Badges ... (Omitting inner badge JSX for brevity, but they stay) */}
+  const handleAddTable = useCallback((x: number, y: number) => {
+    addTable(x, y)
+  }, [addTable])
+
+  const handleAddDomain = useCallback((x: number, y: number) => {
+    addDomain(x, y)
+  }, [addDomain])
+
+  const handleAddAnnotation = useCallback((x: number, y: number) => {
+    if (!showAnnotations) useStore.getState().setShowAnnotations(true)
+    addAnnotation({ x, y })
+  }, [addAnnotation, showAnnotations])
+
+  return (
+    <div className="flex-1 relative h-full flex flex-col overflow-hidden">
+      <div className="flex-1 relative overflow-hidden">
+        {!isPresentationMode && <SelectionToolbar />}
+        <PresentationOverlay />
+        <CommandPalette />
+
+        {/* Status badges */}
         {isConnectionLocked && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-2 text-center pointer-events-none">
-            <div className="flex flex-col items-center">
-              <div className={`flex items-center gap-2 px-4 py-1.5 backdrop-blur-md rounded-full shadow-xl border transition-colors ${
-                theme === 'dark' ? 'bg-slate-950/60 border-amber-500/50' : 'bg-white/60 border-amber-500/40'
-              }`}>
-                <span className={`text-[10px] font-black uppercase tracking-widest ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`}>Connections Locked</span>
-                <div className={`w-px h-3 ${theme === 'dark' ? 'bg-amber-500/20' : 'bg-amber-500/30'}`} />
-                <span className={`text-[10px] font-bold ${theme === 'dark' ? 'text-amber-400/70' : 'text-amber-600/70'}`}>ER & Lineage active</span>
-              </div>
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+            <div className={`flex items-center gap-2 px-4 py-1.5 backdrop-blur-md rounded-full shadow-xl border ${
+              theme === 'dark' ? 'bg-slate-950/60 border-amber-500/50' : 'bg-white/60 border-amber-500/40'
+            }`}>
+              <span className={`text-[10px] font-black uppercase tracking-widest ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`}>Connections Locked</span>
+              <div className={`w-px h-3 ${theme === 'dark' ? 'bg-amber-500/20' : 'bg-amber-500/30'}`} />
+              <span className={`text-[10px] font-bold ${theme === 'dark' ? 'text-amber-400/70' : 'text-amber-600/70'}`}>ER &amp; Lineage active</span>
             </div>
           </div>
         )}
 
         {isViewingDisabled && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-2 text-center pointer-events-none">
-            <div className="flex flex-col items-center">
-              <div className={`flex items-center gap-2 px-4 py-1.5 backdrop-blur-md rounded-full shadow-xl border transition-colors ${
-                theme === 'dark' ? 'bg-slate-950/60 border-blue-500/50' : 'bg-white/60 border-blue-500/40'
-              }`}>
-                <span className={`text-[10px] font-black uppercase tracking-widest ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>Connections Hidden</span>
-                <div className={`w-px h-3 ${theme === 'dark' ? 'bg-blue-500/20' : 'bg-blue-500/30'}`} />
-                <span className={`text-[10px] font-bold ${theme === 'dark' ? 'text-blue-400/70' : 'text-blue-600/70'}`}>Enable a View Mode to draw edges</span>
-              </div>
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+            <div className={`flex items-center gap-2 px-4 py-1.5 backdrop-blur-md rounded-full shadow-xl border ${
+              theme === 'dark' ? 'bg-slate-950/60 border-blue-500/50' : 'bg-white/60 border-blue-500/40'
+            }`}>
+              <span className={`text-[10px] font-black uppercase tracking-widest ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>Connections Hidden</span>
+              <div className={`w-px h-3 ${theme === 'dark' ? 'bg-blue-500/20' : 'bg-blue-500/30'}`} />
+              <span className={`text-[10px] font-bold ${theme === 'dark' ? 'text-blue-400/70' : 'text-blue-600/70'}`}>Enable a View Mode to draw edges</span>
             </div>
           </div>
         )}
 
-        {(!canvasVisible || isModelLoading) && (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, zIndex: 10 }}>
+        {isModelLoading && (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, zIndex: 10, pointerEvents: 'none' }}>
             <div style={{ width: 36, height: 36, border: `3px solid ${theme === 'dark' ? '#334155' : '#e2e8f0'}`, borderTopColor: theme === 'dark' ? '#60a5fa' : '#3b82f6', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
             <span style={{ fontSize: 13, color: theme === 'dark' ? '#94a3b8' : '#64748b', fontWeight: 500 }}>Loading model…</span>
           </div>
         )}
+
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
-        <div style={{ position: 'absolute', inset: 0, opacity: canvasVisible ? 1 : 0, transition: 'opacity 0.3s ease' }}>
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onNodesDelete={onNodesDelete}
-          onEdgesDelete={onEdgesDelete}
-          onNodeDrag={onNodeDrag}
-          onNodeDragStop={onNodeDragStop}
-          onNodeClick={onNodeClick}
-          onEdgeClick={onEdgeClick}
-          onNodeDoubleClick={onNodeDoubleClick}
-          onEdgeDoubleClick={onEdgeDoubleClick}
-          onPaneClick={onPaneClick}
-          onConnect={onConnect}
-          onConnectStart={onConnectStart}
-          onConnectEnd={onConnectEnd}
-          onSelectionChange={onSelectionChange}
-          onSelectionDragStop={onSelectionDragStop}
-          isValidConnection={isValidConnection}
-          nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
-          connectionRadius={30}
-          deleteKeyCode={['Backspace', 'Delete']}
-          selectionMode={SelectionMode.Partial}
-          selectionOnDrag={true}
-          selectionKeyCode="Shift"
-          selectNodesOnDrag={true}
-          minZoom={0.05}
-          maxZoom={2}
-          fitView
-          onlyRenderVisibleElements={true}
-        >
-          <Background color={theme === 'dark' ? '#334155' : '#e2e8f0'} gap={20} />
-          <Controls />
-        </ReactFlow>
-        </div>
+        {schema && (
+          <CytoscapeCanvas
+            onNodeClick={handleNodeClick}
+            onEdgeClick={handleEdgeClick}
+            onPaneClick={handlePaneClick}
+            onAddTableAt={handleAddTable}
+            onAddDomainAt={handleAddDomain}
+            onAddAnnotationAt={handleAddAnnotation}
+            onFitView={handleFitView}
+            onFocusNode={handleFocusNode}
+            onAutoLayout={handleAutoLayout}
+          />
+        )}
       </div>
 
-      {/* Bottom: Detail Panel (Hidden in Presentation Mode) */}
       {!isPresentationMode && <DetailPanel />}
     </div>
   )
 }
 
+// ── App root ──────────────────────────────────────────────────────────
 function App() {
-  const { 
-    isCliMode, 
-    fetchAvailableFiles, 
-    setCurrentModel, 
+  const [mounted, setMounted] = useState(false)
+  const {
+    isCliMode,
+    fetchAvailableFiles,
+    setCurrentModel,
     setSchema,
     theme,
-    isPresentationMode
+    isPresentationMode,
   } = useStore()
 
-  const hasInjectedData = !!(window as any).__MODSCAPE_DATA__;
+  const hasInjectedData = !!(window as any).__MODSCAPE_DATA__
 
   useEffect(() => {
     if (isCliMode) {
@@ -864,42 +338,41 @@ function App() {
         const params = new URLSearchParams(window.location.search)
         const modelSlug = params.get('model')
         if (modelSlug) setCurrentModel(modelSlug)
-        else fetch('/api/model').then(res => res.json()).then(data => setSchema(data));
-      });
-      if ((import.meta as any).hot) (import.meta as any).hot.on('model-update', (data: any) => setSchema(data));
-      return;
+        else fetch('/api/model').then(res => res.json()).then(data => setSchema(data))
+      })
+      if ((import.meta as any).hot) {
+        ;(import.meta as any).hot.on('model-update', (data: any) => setSchema(data))
+      }
+      setMounted(true)
+      return
     }
     if (hasInjectedData) {
-      const data = (window as any).__MODSCAPE_DATA__;
-      if (data && data.models && data.models.length > 0) {
+      const data = (window as any).__MODSCAPE_DATA__
+      if (data?.models?.length > 0) {
         fetchAvailableFiles().then(() => {
           const params = new URLSearchParams(window.location.search)
           const modelSlug = params.get('model')
           if (modelSlug) setCurrentModel(modelSlug)
           else {
-            setSchema(data.models[0].schema);
-            if (data.models[0].slug) setCurrentModel(data.models[0].slug);
+            setSchema(data.models[0].schema)
+            if (data.models[0].slug) setCurrentModel(data.models[0].slug)
           }
-        });
+        })
       }
     }
-  }, [isCliMode, hasInjectedData, fetchAvailableFiles, setCurrentModel, setSchema]);
+    setMounted(true)
+  }, [isCliMode, hasInjectedData, fetchAvailableFiles, setCurrentModel, setSchema])
+
+  if (!mounted) return null
 
   return (
-    <ReactFlowProvider>
-      <div className={`flex h-screen w-screen overflow-hidden font-sans transition-colors duration-300 ${
-        theme === 'dark' ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'
-      }`}>
-        {/* Left Column: Sidebar (Editor) */}
-        {!isPresentationMode && <Sidebar />}
-
-        {/* Middle Column: Main Container (Canvas + DetailPanel) */}
-        <Flow />
-
-        {/* Right Column: Entities Panel */}
-        {!isPresentationMode && <RightPanel />}
-      </div>
-    </ReactFlowProvider>
+    <div className={`flex h-screen w-screen overflow-hidden font-sans transition-colors duration-300 ${
+      theme === 'dark' ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'
+    }`}>
+      {!isPresentationMode && <Sidebar />}
+      <Flow />
+      {!isPresentationMode && <RightPanel />}
+    </div>
   )
 }
 

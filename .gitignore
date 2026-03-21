@@ -13,3 +13,6 @@ playwright-report/
 blob-report/
 
 settings.local.json
+
+samples/test_*.yaml
+samples/test_*.yml
