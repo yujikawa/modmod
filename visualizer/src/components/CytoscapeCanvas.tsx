@@ -35,6 +35,7 @@ cytoscape.use(cytoscapeDomNodeModule as unknown as (cy: unknown) => void)
 
 // Zoom below this threshold uses native Cytoscape canvas rendering (no React DOM)
 const LOW_ZOOM_THRESHOLD = 0.12
+const PAD = 24
 
 // ── Hit-test helper ─────────────────────────────────────────────────────
 // Returns true if (clientX, clientY) falls within a card's screen bounds.
@@ -213,7 +214,6 @@ function renderDomainBackgrounds(
 
   const zoom: number = cy.zoom()
   const pan: { x: number; y: number } = cy.pan()
-  const PAD = 24
 
   // Build map of existing background divs by domain id
   const existing = new Map<string, HTMLDivElement>()
@@ -258,7 +258,12 @@ function renderDomainBackgrounds(
     const labelText = memberNodes.length === 0 ? `${domain.name} (empty)` : domain.name
     const fontSize = `${Math.max(10, 12 * zoom)}px`
     const bgColor = domain.color ?? 'rgba(99,102,241,0.07)'
-    const headerColor = domain.color?.replace('0.1', '0.8').replace('0.07', '0.6') ?? 'rgba(99,102,241,0.5)'
+    
+    // Robust color derivation:
+    // If domain.color is rgba(r,g,b,a), create a solid version for header and a themed border
+    const baseColor = domain.color || 'rgba(99,102,241,1)'
+    const headerColor = baseColor.replace(/[\d.]+\)$/, '0.8)') // make it more opaque
+    const borderColor = baseColor.replace(/[\d.]+\)$/, '0.4)') // make it slightly transparent
 
     const div = existing.get(domain.id)
     if (div) {
@@ -267,6 +272,7 @@ function renderDomainBackgrounds(
       div.style.width = `${sw}px`
       div.style.height = `${sh}px`
       div.style.background = bgColor
+      div.style.border = `2px solid ${borderColor}`
       const label = div.firstElementChild as HTMLElement | null
       if (label) {
         label.textContent = labelText
@@ -284,7 +290,7 @@ function renderDomainBackgrounds(
         width: ${sw}px;
         height: ${sh}px;
         background: ${bgColor};
-        border: 2px solid ${headerColor.replace(/[\d.]+\)$/, '0.3)')};
+        border: 2px solid ${borderColor};
         border-radius: 12px;
         pointer-events: none;
       `
@@ -341,7 +347,6 @@ function renderDomainHandles(
 
   const zoom: number = cy.zoom()
   const pan: { x: number; y: number } = cy.pan()
-  const PAD = 24
 
   // Build map of existing handles by domain id
   const existing = new Map<string, HTMLDivElement>()
@@ -784,10 +789,19 @@ export default function CytoscapeCanvas({
 
       // Calculate final absolute canvas position for the domain handle
       // handle position is in screen pixels, so we convert back to canvas coords
-      const finalX = (initialHandleX + lastDx * zoom - pan.x) / zoom
-      const finalY = (initialHandleY + lastDy * zoom - pan.y) / zoom
+      const finalHandleCanvasX = (initialHandleX + lastDx * zoom - pan.x) / zoom
+      const finalHandleCanvasY = (initialHandleY + lastDy * zoom - pan.y) / zoom
       
-      updates.push({ id: domainId, x: Math.round(finalX), y: Math.round(finalY) })
+      const headerH = Math.max(24, 32 * zoom)
+      const TOP_PAD = PAD + (headerH / zoom)
+
+      // The stored (x,y) should be the anchor of the content area.
+      // Since handle is at (x - PAD, y - TOP_PAD), we add them back.
+      updates.push({ 
+        id: domainId, 
+        x: Math.round(finalHandleCanvasX + PAD), 
+        y: Math.round(finalHandleCanvasY + TOP_PAD) 
+      })
 
       // Member nodes: read actual Cytoscape positions after the drag
       domain.tables.forEach((tableId) => {
