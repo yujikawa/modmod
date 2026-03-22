@@ -270,7 +270,6 @@ modscape export ./models -o docs/ARCHITECTURE.md
 
 Modscape は以下の素晴らしいオープンソースプロジェクトによって支えられています：
 
-- [React Flow](https://reactflow.dev/) - インタラクティブなグラフ UI フレームワーク。
 - [CodeMirror 6](https://codemirror.net/) - 次世代のウェブベース・コードエディタ。
 - [Dagre](https://github.com/dagrejs/dagre) - 階層型グラフ・レイアウトエンジン。
 - [Lucide React](https://lucide.dev/) - シンプルで美しいアイコンセット。
