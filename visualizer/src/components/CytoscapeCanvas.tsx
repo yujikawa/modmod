@@ -36,6 +36,28 @@ cytoscape.use(cytoscapeDomNodeModule as unknown as (cy: unknown) => void)
 // Zoom below this threshold uses native Cytoscape canvas rendering (no React DOM)
 const LOW_ZOOM_THRESHOLD = 0.12
 
+// ── Hit-test helper ─────────────────────────────────────────────────────
+// Returns true if (clientX, clientY) falls within a card's screen bounds.
+// cytoscape-dom-node centers containers on the node position, so bounds are
+// ±(offsetWidth/2) horizontally and ±(offsetHeight/2) vertically.
+function hitTestCard(
+  clientX: number, clientY: number,
+  domCont: HTMLDivElement,
+  nodePos: { x: number; y: number },
+  zoom: number,
+  pan: { x: number; y: number },
+  containerRect: DOMRect,
+): boolean {
+  const snx = containerRect.left + nodePos.x * zoom + pan.x
+  const sny = containerRect.top  + nodePos.y * zoom + pan.y
+  const hw = domCont.offsetWidth  > 0 ? domCont.offsetWidth  / 2 : 140
+  const hh = domCont.offsetHeight > 0 ? domCont.offsetHeight / 2 : 80
+  return (
+    clientX >= snx - hw * zoom && clientX <= snx + hw * zoom &&
+    clientY >= sny - hh * zoom && clientY <= sny + hh * zoom
+  )
+}
+
 // ── Cytoscape base stylesheet ──────────────────────────────────────────
 function buildCytoscapeStyle(theme: 'dark' | 'light', lowZoom = false) {
   const erStroke = theme === 'dark' ? '#94a3b8' : '#64748b'
@@ -964,8 +986,6 @@ export default function CytoscapeCanvas({
           useStore.getState().setSelectedTableIds(ids)
         } else {
           // Shift+click: find node under cursor and toggle in selectedTableIds
-          const cx = startX
-          const cy2 = startY
           const zoom = currCy.zoom()
           const pan = currCy.pan()
           let clickedId: string | null = null
@@ -973,13 +993,7 @@ export default function CytoscapeCanvas({
             if (clickedId) return
             const node = currCy.getElementById(nid)
             if (!node || node.length === 0) return
-            const pos = node.position()
-            const snx = containerRect.left + pos.x * zoom + pan.x
-            const sny = containerRect.top + pos.y * zoom + pan.y
-            const hw = domCont.offsetWidth > 0 ? domCont.offsetWidth / 2 : 140
-            const hh = domCont.offsetHeight > 0 ? domCont.offsetHeight / 2 : 80
-            if (cx >= snx - hw * zoom && cx <= snx + hw * zoom &&
-                cy2 >= sny - hh * zoom && cy2 <= sny + hh * zoom) {
+            if (hitTestCard(startX, startY, domCont, node.position(), zoom, pan, containerRect)) {
               clickedId = nid
             }
           })
@@ -1111,52 +1125,20 @@ export default function CytoscapeCanvas({
             const cyEl = cy?.getElementById(id)
             if (!cyEl || cyEl.length === 0) return
 
-            // Hit-test: at low zoom, DOM containers overlap each other on screen.
-            // Only intercept when the click is within THIS card's actual screen bounds.
-            // If outside, let the event bubble to Cytoscape which does its own hit-test.
-            //
-            // cytoscape-dom-node positions containers with:
-            //   transform: translate(-50%, -50%) translate(nodeX, nodeY)
-            // meaning the container CENTER is at the node position.
-            // So bounds are ±(offsetWidth/2) horizontally, ±(offsetHeight/2) vertically.
-            {
-              const zoom: number = cy.zoom()
-              const pan: { x: number; y: number } = cy.pan()
-              const nodePos: { x: number; y: number } = cyEl.position()
-              const rect = cyContainerRef.current?.getBoundingClientRect()
-              if (rect) {
-                const screenNodeX = rect.left + nodePos.x * zoom + pan.x
-                const screenNodeY = rect.top + nodePos.y * zoom + pan.y
-                // Use actual rendered dimensions; fall back to stylesheet defaults (280×160)
-                const halfW = domContainer!.offsetWidth  > 0 ? domContainer!.offsetWidth  / 2 : 140
-                const halfH = domContainer!.offsetHeight > 0 ? domContainer!.offsetHeight / 2 : 80
-                const cardLeft   = screenNodeX - halfW * zoom
-                const cardTop    = screenNodeY - halfH * zoom
-                const cardRight  = screenNodeX + halfW * zoom
-                const cardBottom = screenNodeY + halfH * zoom
-                if (
-                  startEvt.clientX < cardLeft || startEvt.clientX > cardRight ||
-                  startEvt.clientY < cardTop  || startEvt.clientY > cardBottom
-                ) {
-                  // Outside this card's bounds — let Cytoscape handle the tap
-                  return
-                }
-              }
+            // Hit-test: at low zoom DOM containers overlap — only intercept when
+            // the click is within THIS card's actual screen bounds.
+            const rect = cyContainerRef.current?.getBoundingClientRect()
+            if (!rect || !hitTestCard(startEvt.clientX, startEvt.clientY, domContainer!, cyEl.position(), cy.zoom(), cy.pan(), rect)) {
+              return
             }
+
+            // Shift+mousedown is handled by the capture-phase listener on the cy
+            // container (handleShiftCapture) which fires before this bubbling handler.
+            // If shiftKey somehow reaches here, ignore it to avoid double-handling.
+            if (startEvt.shiftKey) return
 
             startEvt.stopPropagation() // prevent canvas pan / box-select start
             startEvt.preventDefault()
-
-            // Shift+click: toggle this node in/out of multi-selection
-            // (Shift+drag lasso is handled by the capture listener on the cy container)
-            if (startEvt.shiftKey) {
-              const { selectedTableIds, setSelectedTableIds } = useStore.getState()
-              const next = selectedTableIds.includes(id)
-                ? selectedTableIds.filter(sid => sid !== id)
-                : [...selectedTableIds, id]
-              setSelectedTableIds(next)
-              return
-            }
 
             const startX = startEvt.clientX
             const startY = startEvt.clientY
