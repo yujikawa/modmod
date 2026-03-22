@@ -252,13 +252,13 @@ export const useStore = create<AppState>((set, get) => ({
   updateNodePosition: (id, x, y, parentId) => {
     const { schema } = get();
     if (!schema) return;
-    const existing = schema.layout?.[id] || {};
+    const currentLayout = schema.layout || {};
+    const existing = currentLayout[id] || {};
     const newLayout = {
-      ...(schema.layout || {}),
-      // width/height を保持しながら x/y だけ更新する
-      [id]: { ...existing, x, y, ...(parentId ? { parentId } : {}) }
+      ...currentLayout,
+      [id]: { ...existing, x: Math.round(x), y: Math.round(y), ...(parentId ? { parentId } : {}) }
     };
-    set({ schema: { ...schema, layout: newLayout } });
+    set({ schema: { ...schema, layout: newLayout }, lastUpdateSource: 'visual' });
     get().syncToYamlInput();
     get().saveSchema();
   },
@@ -266,13 +266,13 @@ export const useStore = create<AppState>((set, get) => ({
   updateNodesPosition: (updates) => {
     const { schema } = get();
     if (!schema) return;
-    const newLayout = { ...(schema.layout || {}) };
+    const currentLayout = schema.layout || {};
+    const newLayout = { ...currentLayout };
     updates.forEach(({ id, x, y, parentId }) => {
       const existing = newLayout[id] || {};
-      // width/height を保持しながら x/y だけ更新する
-      newLayout[id] = { ...existing, x, y, ...(parentId ? { parentId } : {}) };
+      newLayout[id] = { ...existing, x: Math.round(x), y: Math.round(y), ...(parentId ? { parentId } : {}) };
     });
-    set({ schema: { ...schema, layout: newLayout } });
+    set({ schema: { ...schema, layout: newLayout }, lastUpdateSource: 'visual' });
     get().syncToYamlInput();
     get().saveSchema();
   },

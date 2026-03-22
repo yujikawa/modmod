@@ -17,6 +17,20 @@ export function normalizeSchema(data: any): Schema {
     layout: data.layout || {}
   }
 
+  // Auto-repair: Sync layout.parentId with domain.tables membership
+  if (schema.domains && schema.layout) {
+    schema.domains.forEach(domain => {
+      domain.tables.forEach(tableId => {
+        if (schema.layout![tableId]) {
+          schema.layout![tableId].parentId = domain.id;
+        } else {
+          // If no layout exists for this table, create a placeholder so it has a parent
+          schema.layout![tableId] = { x: 0, y: 0, parentId: domain.id };
+        }
+      });
+    });
+  }
+
   // Migrate legacy format: table.lineage.upstream[] → schema.lineage[]
   const legacyLineage: { from: string; to: string }[] = []
   schema.tables.forEach((table: any) => {

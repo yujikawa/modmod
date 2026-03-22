@@ -170,21 +170,34 @@ function buildCytoscapeStyle(theme: 'dark' | 'light', lowZoom = false) {
 }
 
 // ── Domain bounding box helper ──────────────────────────────────────────
-// Cytoscape's boundingBox() uses the stylesheet node size (width:280, height:160),
-// but DOM containers can be much taller when tables have many columns.
-// This helper expands y2 to cover the actual rendered DOM height.
-const NODE_HALF_H = 80 // half of stylesheet height 160
-function getDomainBB(memberNodes: any, zoom: number) {
-  const bb = memberNodes.boundingBox({})
-  let y2: number = bb.y2
+// Calculates the bounding box of a set of nodes, accounting for their actual
+// DOM rendered height (since Cytoscape only knows the static stylesheet size).
+function getDomainBB(memberNodes: any, _zoom: number, schema: Schema) {
+  if (memberNodes.length === 0) return { x1: 0, y1: 0, x2: 0, y2: 0, w: 0, h: 0 }
+
+  let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity
+
   memberNodes.forEach((n: CyInstance) => {
+    const pos: { x: number; y: number } = n.position()
     const domEl: HTMLElement | undefined = n.data('dom')
-    if (domEl && domEl.offsetHeight > 0) {
-      const actualY2 = (n.position('y') as number) - NODE_HALF_H + domEl.offsetHeight / zoom
-      if (actualY2 > y2) y2 = actualY2
-    }
+    const tableId = n.id() as string
+    const tableLayout = schema.layout?.[tableId]
+    
+    // Use the actual DOM dimensions if available, otherwise fallback to stored layout or defaults.
+    // This prevents the domain from snapping to default sizes when nodes are off-screen (0 width).
+    const w = (domEl && domEl.offsetWidth > 0) ? domEl.offsetWidth : (tableLayout?.width ?? 280)
+    const h = (domEl && domEl.offsetHeight > 0) ? domEl.offsetHeight : (tableLayout?.height ?? 160)
+    
+    const hw = w / 2
+    const hh = h / 2
+    
+    if (pos.x - hw < x1) x1 = pos.x - hw
+    if (pos.x + hw > x2) x2 = pos.x + hw
+    if (pos.y - hh < y1) y1 = pos.y - hh
+    if (pos.y + hh > y2) y2 = pos.y + hh
   })
-  return { x1: bb.x1 as number, y1: bb.y1 as number, y2, w: bb.w as number, h: y2 - (bb.y1 as number) }
+
+  return { x1, y1, x2, y2, w: x2 - x1, h: y2 - y1 }
 }
 
 // ── Domain background renderer (visual only, no interaction) ───────────
@@ -210,34 +223,45 @@ function renderDomainBackgrounds(
 
   const active = new Set<string>()
 
-  schema.domains.forEach((domain) => {
+    schema.domains.forEach((domain) => {
     active.add(domain.id)
     const memberNodes = cy.nodes().filter((n: CyInstance) => domain.tables.includes(n.id()))
+    const layoutEntry = schema.layout?.[domain.id]
+    const headerH = Math.max(24, 32 * zoom)
+    const TOP_PAD = PAD + (headerH / zoom)
 
     let sx: number, sy: number, sw: number, sh: number
     if (memberNodes.length === 0) {
-      const layoutEntry = schema.layout?.[domain.id]
       const cx = layoutEntry?.x ?? 0
       const cy2 = layoutEntry?.y ?? 0
+      const lw = layoutEntry?.width ?? 300
+      const lh = layoutEntry?.height ?? 120
       sx = (cx - PAD) * zoom + pan.x
-      sy = (cy2 - PAD) * zoom + pan.y
-      sw = (300 + PAD * 2) * zoom
-      sh = (120 + PAD * 2) * zoom
+      sy = (cy2 - TOP_PAD) * zoom + pan.y
+      sw = (lw + PAD * 2) * zoom
+      sh = (lh + PAD + TOP_PAD) * zoom
     } else {
-      const bb = getDomainBB(memberNodes, zoom)
-      sx = (bb.x1 - PAD) * zoom + pan.x
-      sy = (bb.y1 - PAD) * zoom + pan.y
-      sw = (bb.w + PAD * 2) * zoom
-      sh = (bb.h + PAD * 2) * zoom
+      const bb = getDomainBB(memberNodes, zoom, schema)
+      const lw = layoutEntry?.width ?? 0
+      const lh = layoutEntry?.height ?? 0
+      const finalW = Math.max(bb.w, lw)
+      const finalH = Math.max(bb.h, lh)
+      const cx = bb.x1 + bb.w / 2
+      const cyCenter = bb.y1 + bb.h / 2
+      
+      sx = (cx - finalW / 2 - PAD) * zoom + pan.x
+      sy = (cyCenter - finalH / 2 - TOP_PAD) * zoom + pan.y
+      sw = (finalW + PAD * 2) * zoom
+      sh = (finalH + PAD + TOP_PAD) * zoom
     }
 
     const labelText = memberNodes.length === 0 ? `${domain.name} (empty)` : domain.name
     const fontSize = `${Math.max(10, 12 * zoom)}px`
     const bgColor = domain.color ?? 'rgba(99,102,241,0.07)'
+    const headerColor = domain.color?.replace('0.1', '0.8').replace('0.07', '0.6') ?? 'rgba(99,102,241,0.5)'
 
     const div = existing.get(domain.id)
     if (div) {
-      // Reuse: update geometry and content only
       div.style.left = `${sx}px`
       div.style.top = `${sy}px`
       div.style.width = `${sw}px`
@@ -247,6 +271,8 @@ function renderDomainBackgrounds(
       if (label) {
         label.textContent = labelText
         label.style.fontSize = fontSize
+        label.style.height = `${headerH}px`
+        label.style.background = headerColor
       }
     } else {
       const newDiv = document.createElement('div')
@@ -258,7 +284,7 @@ function renderDomainBackgrounds(
         width: ${sw}px;
         height: ${sh}px;
         background: ${bgColor};
-        border: 1.5px dashed rgba(99,102,241,0.3);
+        border: 2px solid ${headerColor.replace(/[\d.]+\)$/, '0.3)')};
         border-radius: 12px;
         pointer-events: none;
       `
@@ -266,15 +292,22 @@ function renderDomainBackgrounds(
       label.textContent = labelText
       label.style.cssText = `
         position: absolute;
-        top: 6px;
-        left: 10px;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: ${headerH}px;
+        background: ${headerColor};
+        color: white;
+        border-radius: 10px 10px 0 0;
+        padding: 0 12px;
         font-size: ${fontSize};
-        font-weight: 700;
-        opacity: 0.5;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.2);
         pointer-events: none;
         white-space: nowrap;
         overflow: hidden;
-        color: inherit;
       `
       newDiv.appendChild(label)
       container.appendChild(newDiv)
@@ -298,7 +331,7 @@ function renderDomainHandles(
   container: HTMLDivElement,
   bgContainer: HTMLDivElement,
   _theme: 'dark' | 'light',
-  onDomainDragEnd: (domainId: string, dx: number, dy: number) => void,
+  onDomainDragEnd: (domainId: string, dx: number, dy: number, handleX: number, handleY: number) => void,
   onDomainClick: (id: string) => void,
 ) {
   if (!schema.domains?.length) {
@@ -309,7 +342,6 @@ function renderDomainHandles(
   const zoom: number = cy.zoom()
   const pan: { x: number; y: number } = cy.pan()
   const PAD = 24
-  const HEADER_H = Math.max(24, 32 * zoom)
 
   // Build map of existing handles by domain id
   const existing = new Map<string, HTMLDivElement>()
@@ -322,20 +354,29 @@ function renderDomainHandles(
   schema.domains.forEach((domain) => {
     active.add(domain.id)
     const memberNodes = cy.nodes().filter((n: CyInstance) => domain.tables.includes(n.id()))
+    const layoutEntry = schema.layout?.[domain.id]
+    const headerH = Math.max(24, 32 * zoom)
+    const TOP_PAD = PAD + (headerH / zoom)
 
     let sx: number, sy: number, sw: number
     if (memberNodes.length === 0) {
-      const layoutEntry = schema.layout?.[domain.id]
       const cx = layoutEntry?.x ?? 0
       const cy2 = layoutEntry?.y ?? 0
+      const lw = layoutEntry?.width ?? 300
       sx = (cx - PAD) * zoom + pan.x
-      sy = (cy2 - PAD) * zoom + pan.y
-      sw = (300 + PAD * 2) * zoom
+      sy = (cy2 - TOP_PAD) * zoom + pan.y
+      sw = (lw + PAD * 2) * zoom
     } else {
-      const bb = getDomainBB(memberNodes, zoom)
-      sx = (bb.x1 - PAD) * zoom + pan.x
-      sy = (bb.y1 - PAD) * zoom + pan.y
-      sw = (bb.w + PAD * 2) * zoom
+      const bb = getDomainBB(memberNodes, zoom, schema)
+      const lw = layoutEntry?.width ?? 0
+      const finalW = Math.max(bb.w, lw)
+      const cx = bb.x1 + bb.w / 2
+      const cyCenter = bb.y1 + bb.h / 2
+      const finalH = Math.max(bb.h, (layoutEntry?.height ?? 0))
+
+      sx = (cx - finalW / 2 - PAD) * zoom + pan.x
+      sy = (cyCenter - finalH / 2 - TOP_PAD) * zoom + pan.y
+      sw = (finalW + PAD * 2) * zoom
     }
 
     const existingHandle = existing.get(domain.id)
@@ -344,7 +385,7 @@ function renderDomainHandles(
       existingHandle.style.left = `${sx}px`
       existingHandle.style.top = `${sy}px`
       existingHandle.style.width = `${sw}px`
-      existingHandle.style.height = `${HEADER_H}px`
+      existingHandle.style.height = `${headerH}px`
       return
     }
 
@@ -356,7 +397,7 @@ function renderDomainHandles(
       left: ${sx}px;
       top: ${sy}px;
       width: ${sw}px;
-      height: ${HEADER_H}px;
+      height: ${headerH}px;
       cursor: grab;
       user-select: none;
       pointer-events: auto;
@@ -371,13 +412,23 @@ function renderDomainHandles(
       const startY = startEvt.clientY
       const handleInitLeft = parseFloat(handle.style.left)
       const handleInitTop = parseFloat(handle.style.top)
-      // Read memberNodes fresh at interaction time to avoid stale closure
-      const currentMemberNodes = cy.nodes().filter((n: CyInstance) => domain.tables.includes(n.id()))
+
+      // Use latest schema from store to avoid stale closures from the time of creation
+      const currentSchema = useStore.getState().schema
+      const latestDomain = currentSchema?.domains?.find(d => d.id === domain.id)
+      if (!latestDomain) return
+
+      // Read memberNodes fresh at interaction time
+      const currentMemberNodes = cy.nodes().filter((n: CyInstance) => latestDomain.tables.includes(n.id()))
       const initialPositions = new Map<string, { x: number; y: number }>()
       currentMemberNodes.forEach((n: CyInstance) => {
         const pos: { x: number; y: number } = n.position()
         initialPositions.set(n.id() as string, { x: pos.x, y: pos.y })
       })
+
+      // Find background div to move it visually during drag
+      const bgDiv = bgContainer.querySelector<HTMLDivElement>(`[data-domain-bg="${domain.id}"]`)
+
       let lastDx = 0
       let lastDy = 0
       let moved = false
@@ -385,21 +436,37 @@ function renderDomainHandles(
       const onMouseMove = (moveEvt: MouseEvent) => {
         const screenDx = moveEvt.clientX - startX
         const screenDy = moveEvt.clientY - startY
-        if (Math.abs(screenDx) > 3 || Math.abs(screenDy) > 3) {
+        if (Math.abs(screenDx) > 2 || Math.abs(screenDy) > 2) {
           moved = true
           handle.style.cursor = 'grabbing'
         }
         if (!moved) return
+        
         const currentZoom: number = cy.zoom()
         lastDx = screenDx / currentZoom
         lastDy = screenDy / currentZoom
+
+        // 1. Move member nodes in Cytoscape
         currentMemberNodes.forEach((n: CyInstance) => {
           const init = initialPositions.get(n.id() as string)!
           n.position({ x: init.x + lastDx, y: init.y + lastDy })
         })
-        handle.style.left = (handleInitLeft + screenDx) + 'px'
-        handle.style.top = (handleInitTop + screenDy) + 'px'
-        renderDomainBackgrounds(cy, schema, bgContainer)
+
+        // 2. Move handle and background div in sync (visual only)
+        const newL = handleInitLeft + screenDx
+        const newT = handleInitTop + screenDy
+        handle.style.left = `${newL}px`
+        handle.style.top = `${newT}px`
+        
+        if (bgDiv) {
+          bgDiv.style.left = `${newL}px`
+          bgDiv.style.top = `${newT}px`
+        }
+
+        // 3. For domains with tables, re-render to adjust for table height changes if any
+        if (currentMemberNodes.length > 0) {
+          renderDomainBackgrounds(cy, useStore.getState().schema!, bgContainer)
+        }
       }
 
       const onMouseUp = () => {
@@ -409,7 +476,7 @@ function renderDomainHandles(
         if (!moved) {
           onDomainClick(domain.id)
         } else {
-          onDomainDragEnd(domain.id, lastDx, lastDy)
+          onDomainDragEnd(domain.id, lastDx, lastDy, handleInitLeft, handleInitTop)
         }
       }
 
@@ -579,7 +646,6 @@ export default function CytoscapeCanvas({
     theme,
     hoveredColumnId,
     updateNodePosition,
-    updateNodesPosition,
     updateAnnotation,
     connectMode,
   } = useStore(
@@ -598,7 +664,6 @@ export default function CytoscapeCanvas({
       theme: s.theme,
       hoveredColumnId: s.hoveredColumnId,
       updateNodePosition: s.updateNodePosition,
-      updateNodesPosition: s.updateNodesPosition,
       updateAnnotation: s.updateAnnotation,
       connectMode: s.connectMode,
     }))
@@ -704,12 +769,9 @@ export default function CytoscapeCanvas({
   }, [])
 
   // ── Domain drag end callback ─────────────────────────────────────────
-  // All layout coords are absolute. Save the domain entry and all member node
-  // positions using their actual Cytoscape positions after the drag.
-  // Works even when layout: {} (no prior entries).
   const onDomainDragEnd = useCallback(
-    (domainId: string, dx: number, dy: number) => {
-      const schema = useStore.getState().schema
+    (domainId: string, lastDx: number, lastDy: number, initialHandleX: number, initialHandleY: number) => {
+      const { schema, updateNodesPosition } = useStore.getState()
       if (!schema) return
       const domain = schema.domains?.find((d) => d.id === domainId)
       if (!domain) return
@@ -717,26 +779,31 @@ export default function CytoscapeCanvas({
       if (!cy) return
 
       const updates: { id: string; x: number; y: number }[] = []
+      const zoom = cy.zoom()
+      const pan = cy.pan()
 
-      // Domain entry: shift existing or create from dx/dy
-      const domLayout = schema.layout?.[domainId]
-      updates.push({ id: domainId, x: (domLayout?.x ?? 0) + dx, y: (domLayout?.y ?? 0) + dy })
+      // Calculate final absolute canvas position for the domain handle
+      // handle position is in screen pixels, so we convert back to canvas coords
+      const finalX = (initialHandleX + lastDx * zoom - pan.x) / zoom
+      const finalY = (initialHandleY + lastDy * zoom - pan.y) / zoom
+      
+      updates.push({ id: domainId, x: Math.round(finalX), y: Math.round(finalY) })
 
       // Member nodes: read actual Cytoscape positions after the drag
       domain.tables.forEach((tableId) => {
         const cyNode = cy.getElementById(tableId)
         if (cyNode && cyNode.length > 0) {
           const pos: { x: number; y: number } = cyNode.position()
-          updates.push({ id: tableId, x: pos.x, y: pos.y })
+          updates.push({ id: tableId, x: Math.round(pos.x), y: Math.round(pos.y) })
         }
       })
 
       updateNodesPosition(updates)
     },
-    [updateNodesPosition]
+    []
   )
 
-  // Stable ref so the event handler inside renderDomainBackgrounds always calls the latest version
+  // Stable ref so the event handler inside renderDomainHandles always calls the latest version
   const onDomainDragEndRef = useRef(onDomainDragEnd)
   useEffect(() => { onDomainDragEndRef.current = onDomainDragEnd }, [onDomainDragEnd])
 
