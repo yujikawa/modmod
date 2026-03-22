@@ -171,28 +171,36 @@ function renderDomainBackgrounds(
   schema: Schema,
   container: HTMLDivElement
 ) {
-  container.innerHTML = ''
-  if (!schema.domains?.length) return
+  if (!schema.domains?.length) {
+    container.innerHTML = ''
+    return
+  }
 
   const zoom: number = cy.zoom()
   const pan: { x: number; y: number } = cy.pan()
   const PAD = 24
 
+  // Build map of existing background divs by domain id
+  const existing = new Map<string, HTMLDivElement>()
+  container.querySelectorAll<HTMLDivElement>('[data-domain-bg]').forEach(el => {
+    existing.set(el.dataset.domainBg!, el)
+  })
+
+  const active = new Set<string>()
+
   schema.domains.forEach((domain) => {
+    active.add(domain.id)
     const memberNodes = cy.nodes().filter((n: CyInstance) => domain.tables.includes(n.id()))
 
     let sx: number, sy: number, sw: number, sh: number
     if (memberNodes.length === 0) {
-      // Empty domain: use layout entry if available, otherwise show a placeholder
       const layoutEntry = schema.layout?.[domain.id]
       const cx = layoutEntry?.x ?? 0
       const cy2 = layoutEntry?.y ?? 0
-      const w = 300
-      const h = 120
       sx = (cx - PAD) * zoom + pan.x
       sy = (cy2 - PAD) * zoom + pan.y
-      sw = (w + PAD * 2) * zoom
-      sh = (h + PAD * 2) * zoom
+      sw = (300 + PAD * 2) * zoom
+      sh = (120 + PAD * 2) * zoom
     } else {
       const bb = getDomainBB(memberNodes, zoom)
       sx = (bb.x1 - PAD) * zoom + pan.x
@@ -201,34 +209,59 @@ function renderDomainBackgrounds(
       sh = (bb.h + PAD * 2) * zoom
     }
 
-    const div = document.createElement('div')
-    div.style.cssText = `
-      position: absolute;
-      left: ${sx}px;
-      top: ${sy}px;
-      width: ${sw}px;
-      height: ${sh}px;
-      background: ${domain.color ?? 'rgba(99,102,241,0.07)'};
-      border: 1.5px dashed rgba(99,102,241,0.3);
-      border-radius: 12px;
-      pointer-events: none;
-    `
-    const label = document.createElement('div')
-    label.textContent = memberNodes.length === 0 ? `${domain.name} (empty)` : domain.name
-    label.style.cssText = `
-      position: absolute;
-      top: 6px;
-      left: 10px;
-      font-size: ${Math.max(10, 12 * zoom)}px;
-      font-weight: 700;
-      opacity: 0.5;
-      pointer-events: none;
-      white-space: nowrap;
-      overflow: hidden;
-      color: inherit;
-    `
-    div.appendChild(label)
-    container.appendChild(div)
+    const labelText = memberNodes.length === 0 ? `${domain.name} (empty)` : domain.name
+    const fontSize = `${Math.max(10, 12 * zoom)}px`
+    const bgColor = domain.color ?? 'rgba(99,102,241,0.07)'
+
+    const div = existing.get(domain.id)
+    if (div) {
+      // Reuse: update geometry and content only
+      div.style.left = `${sx}px`
+      div.style.top = `${sy}px`
+      div.style.width = `${sw}px`
+      div.style.height = `${sh}px`
+      div.style.background = bgColor
+      const label = div.firstElementChild as HTMLElement | null
+      if (label) {
+        label.textContent = labelText
+        label.style.fontSize = fontSize
+      }
+    } else {
+      const newDiv = document.createElement('div')
+      newDiv.dataset.domainBg = domain.id
+      newDiv.style.cssText = `
+        position: absolute;
+        left: ${sx}px;
+        top: ${sy}px;
+        width: ${sw}px;
+        height: ${sh}px;
+        background: ${bgColor};
+        border: 1.5px dashed rgba(99,102,241,0.3);
+        border-radius: 12px;
+        pointer-events: none;
+      `
+      const label = document.createElement('div')
+      label.textContent = labelText
+      label.style.cssText = `
+        position: absolute;
+        top: 6px;
+        left: 10px;
+        font-size: ${fontSize};
+        font-weight: 700;
+        opacity: 0.5;
+        pointer-events: none;
+        white-space: nowrap;
+        overflow: hidden;
+        color: inherit;
+      `
+      newDiv.appendChild(label)
+      container.appendChild(newDiv)
+    }
+  })
+
+  // Remove stale backgrounds
+  existing.forEach((el, id) => {
+    if (!active.has(id)) el.remove()
   })
 }
 
@@ -246,15 +279,26 @@ function renderDomainHandles(
   onDomainDragEnd: (domainId: string, dx: number, dy: number) => void,
   onDomainClick: (id: string) => void,
 ) {
-  container.innerHTML = ''
-  if (!schema.domains?.length) return
+  if (!schema.domains?.length) {
+    container.innerHTML = ''
+    return
+  }
 
   const zoom: number = cy.zoom()
   const pan: { x: number; y: number } = cy.pan()
   const PAD = 24
   const HEADER_H = Math.max(24, 32 * zoom)
 
+  // Build map of existing handles by domain id
+  const existing = new Map<string, HTMLDivElement>()
+  container.querySelectorAll<HTMLDivElement>('[data-domain-handle]').forEach(el => {
+    existing.set(el.dataset.domainHandle!, el)
+  })
+
+  const active = new Set<string>()
+
   schema.domains.forEach((domain) => {
+    active.add(domain.id)
     const memberNodes = cy.nodes().filter((n: CyInstance) => domain.tables.includes(n.id()))
 
     let sx: number, sy: number, sw: number
@@ -272,8 +316,19 @@ function renderDomainHandles(
       sw = (bb.w + PAD * 2) * zoom
     }
 
-    // Transparent header strip — same position as the domain label in the background
+    const existingHandle = existing.get(domain.id)
+    if (existingHandle) {
+      // Reuse: update position only, event listener stays intact
+      existingHandle.style.left = `${sx}px`
+      existingHandle.style.top = `${sy}px`
+      existingHandle.style.width = `${sw}px`
+      existingHandle.style.height = `${HEADER_H}px`
+      return
+    }
+
+    // New domain: create handle with event listener
     const handle = document.createElement('div')
+    handle.dataset.domainHandle = domain.id
     handle.style.cssText = `
       position: absolute;
       left: ${sx}px;
@@ -294,8 +349,10 @@ function renderDomainHandles(
       const startY = startEvt.clientY
       const handleInitLeft = parseFloat(handle.style.left)
       const handleInitTop = parseFloat(handle.style.top)
+      // Read memberNodes fresh at interaction time to avoid stale closure
+      const currentMemberNodes = cy.nodes().filter((n: CyInstance) => domain.tables.includes(n.id()))
       const initialPositions = new Map<string, { x: number; y: number }>()
-      memberNodes.forEach((n: CyInstance) => {
+      currentMemberNodes.forEach((n: CyInstance) => {
         const pos: { x: number; y: number } = n.position()
         initialPositions.set(n.id() as string, { x: pos.x, y: pos.y })
       })
@@ -314,7 +371,7 @@ function renderDomainHandles(
         const currentZoom: number = cy.zoom()
         lastDx = screenDx / currentZoom
         lastDy = screenDy / currentZoom
-        memberNodes.forEach((n: CyInstance) => {
+        currentMemberNodes.forEach((n: CyInstance) => {
           const init = initialPositions.get(n.id() as string)!
           n.position({ x: init.x + lastDx, y: init.y + lastDy })
         })
@@ -339,6 +396,11 @@ function renderDomainHandles(
     })
 
     container.appendChild(handle)
+  })
+
+  // Remove handles for deleted domains
+  existing.forEach((el, id) => {
+    if (!active.has(id)) el.remove()
   })
 }
 
@@ -544,11 +606,21 @@ export default function CytoscapeCanvas({
   const isCompactModeRef = useRef<boolean>(isCompactMode)
   const schemaRef = useRef<Schema | null>(null)
   const showAnnotationsRef = useRef<boolean>(showAnnotations)
+  // Track structural parts of schema to detect layout-only changes
+  const prevSchemaStructRef = useRef<{
+    tables: Schema['tables']
+    lineage: Schema['lineage']
+    relationships: Schema['relationships']
+    domains: Schema['domains']
+    annotations: Schema['annotations']
+  } | null>(null)
   const onNodeClickRef = useRef(onNodeClick)
+  const onEdgeCreatedRef = useRef(onEdgeCreated)
 
   // Keep refs in sync
   useEffect(() => { showAnnotationsRef.current = showAnnotations }, [showAnnotations])
   useEffect(() => { onNodeClickRef.current = onNodeClick }, [onNodeClick])
+  useEffect(() => { onEdgeCreatedRef.current = onEdgeCreated }, [onEdgeCreated])
 
   // ── updateAllCards: re-render visible TableCard portals (RAF-debounced) ──
   const updateAllCards = useCallback(() => {
@@ -827,7 +899,107 @@ export default function CytoscapeCanvas({
     // Pan: re-render newly visible nodes
     cy.on('pan', updateAllCards)
 
+    // ── Shift-lasso: capture-phase listener on the cy container ──────────
+    // Card DOM handlers call stopPropagation in bubble phase, preventing
+    // Cytoscape's built-in box-select from starting when shift+dragging over cards.
+    // We intercept Shift+mousedown in CAPTURE phase (before cards see it),
+    // then implement click-vs-drag ourselves.
+    const handleShiftCapture = (downEvt: MouseEvent) => {
+      if (!downEvt.shiftKey || downEvt.button !== 0) return
+      // Take ownership — card bubbling handlers won't fire
+      downEvt.stopPropagation()
+      downEvt.preventDefault()
+
+      const startX = downEvt.clientX
+      const startY = downEvt.clientY
+      const containerRect = container.getBoundingClientRect()
+      let moved = false
+      let lassoEl: HTMLDivElement | null = null
+
+      const onMove = (me: MouseEvent) => {
+        const dx = me.clientX - startX
+        const dy = me.clientY - startY
+        if (!moved && Math.abs(dx) + Math.abs(dy) < 4) return
+        moved = true
+        if (!lassoEl) {
+          lassoEl = document.createElement('div')
+          lassoEl.style.cssText =
+            'position:absolute;border:2px dashed #3b82f6;background:rgba(59,130,246,0.1);pointer-events:none;z-index:100;'
+          container.appendChild(lassoEl)
+        }
+        const x = Math.min(startX, me.clientX) - containerRect.left
+        const y = Math.min(startY, me.clientY) - containerRect.top
+        const w = Math.abs(me.clientX - startX)
+        const h = Math.abs(me.clientY - startY)
+        lassoEl.style.left = `${x}px`
+        lassoEl.style.top = `${y}px`
+        lassoEl.style.width = `${w}px`
+        lassoEl.style.height = `${h}px`
+      }
+
+      const onUp = (upEvt: MouseEvent) => {
+        document.removeEventListener('mousemove', onMove)
+        document.removeEventListener('mouseup', onUp)
+        if (lassoEl && lassoEl.parentNode) lassoEl.parentNode.removeChild(lassoEl)
+        const currCy = cyRef.current
+        if (!currCy) return
+
+        if (moved) {
+          // Lasso: collect nodes whose Cytoscape position maps inside the selection rect
+          const selL = Math.min(startX, upEvt.clientX) - containerRect.left
+          const selT = Math.min(startY, upEvt.clientY) - containerRect.top
+          const selR = Math.max(startX, upEvt.clientX) - containerRect.left
+          const selB = Math.max(startY, upEvt.clientY) - containerRect.top
+          const zoom = currCy.zoom()
+          const pan = currCy.pan()
+          const ids: string[] = []
+          currCy.nodes().forEach((node: CyInstance) => {
+            const pos = node.position()
+            const sx = pos.x * zoom + pan.x
+            const sy = pos.y * zoom + pan.y
+            if (sx >= selL && sx <= selR && sy >= selT && sy <= selB) {
+              ids.push(node.id() as string)
+            }
+          })
+          useStore.getState().setSelectedTableIds(ids)
+        } else {
+          // Shift+click: find node under cursor and toggle in selectedTableIds
+          const cx = startX
+          const cy2 = startY
+          const zoom = currCy.zoom()
+          const pan = currCy.pan()
+          let clickedId: string | null = null
+          domContainerMapRef.current.forEach((domCont, nid) => {
+            if (clickedId) return
+            const node = currCy.getElementById(nid)
+            if (!node || node.length === 0) return
+            const pos = node.position()
+            const snx = containerRect.left + pos.x * zoom + pan.x
+            const sny = containerRect.top + pos.y * zoom + pan.y
+            const hw = domCont.offsetWidth > 0 ? domCont.offsetWidth / 2 : 140
+            const hh = domCont.offsetHeight > 0 ? domCont.offsetHeight / 2 : 80
+            if (cx >= snx - hw * zoom && cx <= snx + hw * zoom &&
+                cy2 >= sny - hh * zoom && cy2 <= sny + hh * zoom) {
+              clickedId = nid
+            }
+          })
+          if (clickedId) {
+            const { selectedTableIds, setSelectedTableIds } = useStore.getState()
+            const next = selectedTableIds.includes(clickedId)
+              ? selectedTableIds.filter(sid => sid !== clickedId)
+              : [...selectedTableIds, clickedId]
+            setSelectedTableIds(next)
+          }
+        }
+      }
+
+      document.addEventListener('mousemove', onMove)
+      document.addEventListener('mouseup', onUp)
+    }
+    container.addEventListener('mousedown', handleShiftCapture, true)
+
     return () => {
+      container.removeEventListener('mousedown', handleShiftCapture, true)
       rootMapRef.current.forEach((root) => root.unmount())
       rootMapRef.current.clear()
       cy.destroy()
@@ -842,6 +1014,46 @@ export default function CytoscapeCanvas({
     if (!cy || !schema) return
 
     schemaRef.current = schema
+
+    // Fast path: if only layout changed, skip full element rebuild
+    const prev = prevSchemaStructRef.current
+    const onlyLayoutChanged =
+      prev !== null &&
+      schema.tables === prev.tables &&
+      (schema.lineage ?? null) === (prev.lineage ?? null) &&
+      (schema.relationships ?? null) === (prev.relationships ?? null) &&
+      (schema.domains ?? null) === (prev.domains ?? null) &&
+      (schema.annotations ?? null) === (prev.annotations ?? null)
+
+    prevSchemaStructRef.current = {
+      tables: schema.tables,
+      lineage: schema.lineage,
+      relationships: schema.relationships,
+      domains: schema.domains,
+      annotations: schema.annotations,
+    }
+
+    if (onlyLayoutChanged) {
+      // Sync positions (needed for applyLayout; drag handler already updates cy positions)
+      schema.tables.forEach(table => {
+        const layout = schema.layout?.[table.id]
+        if (layout) {
+          const el = cy.getElementById(table.id)
+          if (el.length > 0) el.position({ x: layout.x, y: layout.y })
+        }
+      })
+      cy.edges('.er-edge').style('display', showER ? 'element' : 'none')
+      cy.edges('.lineage-edge').style('display', showLineage ? 'element' : 'none')
+      if (domBgRef.current) renderDomainBackgrounds(cy, schema, domBgRef.current)
+      if (domHandleRef.current && domBgRef.current) renderDomainHandles(cy, schema, domHandleRef.current, domBgRef.current, theme, onDomainDragEndRef.current, onDomainClickRef.current)
+      if (domAnnRef.current) {
+        if (showAnnotations) renderAnnotations(cy, schema, domAnnRef.current, theme, onAnnotationDragEndRef.current, onAnnotationClickRef.current, selectedAnnotationIdRef.current)
+        else domAnnRef.current.innerHTML = ''
+      }
+      updateAllCards()
+      return
+    }
+
     const elements = yamlToElements(schema)
     const existingIds = new Set<string>(
       cy.elements().map((el: CyInstance) => el.id() as string)
@@ -894,10 +1106,49 @@ export default function CytoscapeCanvas({
           // We implement drag manually on the DOM container instead.
           domContainer.addEventListener('mousedown', (startEvt: MouseEvent) => {
             if (startEvt.button !== 0) return
+
+            const cy = cyRef.current
+            const cyEl = cy?.getElementById(id)
+            if (!cyEl || cyEl.length === 0) return
+
+            // Hit-test: at low zoom, DOM containers overlap each other on screen.
+            // Only intercept when the click is within THIS card's actual screen bounds.
+            // If outside, let the event bubble to Cytoscape which does its own hit-test.
+            //
+            // cytoscape-dom-node positions containers with:
+            //   transform: translate(-50%, -50%) translate(nodeX, nodeY)
+            // meaning the container CENTER is at the node position.
+            // So bounds are ±(offsetWidth/2) horizontally, ±(offsetHeight/2) vertically.
+            {
+              const zoom: number = cy.zoom()
+              const pan: { x: number; y: number } = cy.pan()
+              const nodePos: { x: number; y: number } = cyEl.position()
+              const rect = cyContainerRef.current?.getBoundingClientRect()
+              if (rect) {
+                const screenNodeX = rect.left + nodePos.x * zoom + pan.x
+                const screenNodeY = rect.top + nodePos.y * zoom + pan.y
+                // Use actual rendered dimensions; fall back to stylesheet defaults (280×160)
+                const halfW = domContainer!.offsetWidth  > 0 ? domContainer!.offsetWidth  / 2 : 140
+                const halfH = domContainer!.offsetHeight > 0 ? domContainer!.offsetHeight / 2 : 80
+                const cardLeft   = screenNodeX - halfW * zoom
+                const cardTop    = screenNodeY - halfH * zoom
+                const cardRight  = screenNodeX + halfW * zoom
+                const cardBottom = screenNodeY + halfH * zoom
+                if (
+                  startEvt.clientX < cardLeft || startEvt.clientX > cardRight ||
+                  startEvt.clientY < cardTop  || startEvt.clientY > cardBottom
+                ) {
+                  // Outside this card's bounds — let Cytoscape handle the tap
+                  return
+                }
+              }
+            }
+
             startEvt.stopPropagation() // prevent canvas pan / box-select start
             startEvt.preventDefault()
 
             // Shift+click: toggle this node in/out of multi-selection
+            // (Shift+drag lasso is handled by the capture listener on the cy container)
             if (startEvt.shiftKey) {
               const { selectedTableIds, setSelectedTableIds } = useStore.getState()
               const next = selectedTableIds.includes(id)
@@ -906,10 +1157,6 @@ export default function CytoscapeCanvas({
               setSelectedTableIds(next)
               return
             }
-
-            const cy = cyRef.current
-            const cyEl = cy?.getElementById(id)
-            if (!cyEl || cyEl.length === 0) return
 
             const startX = startEvt.clientX
             const startY = startEvt.clientY
@@ -929,10 +1176,13 @@ export default function CytoscapeCanvas({
             }
 
             const onMouseMove = (moveEvt: MouseEvent) => {
+              const screenDx = moveEvt.clientX - startX
+              const screenDy = moveEvt.clientY - startY
+              // Use screen pixels for click/drag detection so low-zoom doesn't false-positive
+              if (Math.abs(screenDx) > 4 || Math.abs(screenDy) > 4) moved = true
               const zoom: number = cyRef.current?.zoom() ?? 1
-              const dx = (moveEvt.clientX - startX) / zoom
-              const dy = (moveEvt.clientY - startY) / zoom
-              if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true
+              const dx = screenDx / zoom
+              const dy = screenDy / zoom
               initPositions.forEach((initPos, nodeId) => {
                 const node = cyRef.current?.getElementById(nodeId)
                 if (node && node.length > 0) node.position({ x: initPos.x + dx, y: initPos.y + dy })
@@ -955,8 +1205,24 @@ export default function CytoscapeCanvas({
                   useStore.getState().updateNodePosition(id, pos.x, pos.y)
                 }
               } else {
-                // Tap: delegate to node click handler
-                onNodeClickRef.current(id)
+                // Tap: handle connect mode or regular node click
+                const { connectMode } = useStore.getState()
+                if (connectMode) {
+                  const pending = connectPendingSourceRef.current
+                  if (!pending) {
+                    connectPendingSourceRef.current = id
+                    updateAllCards()
+                  } else if (pending === id) {
+                    connectPendingSourceRef.current = null
+                    updateAllCards()
+                  } else {
+                    onEdgeCreatedRef.current(connectMode, pending, id)
+                    connectPendingSourceRef.current = null
+                    updateAllCards()
+                  }
+                } else {
+                  onNodeClickRef.current(id)
+                }
               }
             }
 
@@ -1053,17 +1319,15 @@ export default function CytoscapeCanvas({
   }, [theme])
 
   // ── Connect mode: reset pending source + clear hover highlight ──────
-  // DOM containers intercept mousedown (stopPropagation) to handle drag.
-  // In connect mode we disable pointer-events on them so clicks fall through
-  // to Cytoscape's canvas and the tap handler can fire.
+  // Connect mode is handled entirely in the DOM mousedown handler's tap branch
+  // (using onEdgeCreatedRef to avoid stale closure issues).
+  // DOM containers keep pointer-events:auto so the mousedown handler fires normally.
   useEffect(() => {
     if (connectMode) {
       hoveredNodeIdRef.current = null
       highlightedIdsRef.current = []
-      domContainerMapRef.current.forEach(c => { c.style.pointerEvents = 'none' })
     } else {
       connectPendingSourceRef.current = null
-      domContainerMapRef.current.forEach(c => { c.style.pointerEvents = 'auto' })
     }
     updateAllCards()
   }, [connectMode, updateAllCards])
