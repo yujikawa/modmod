@@ -34,6 +34,13 @@ modscape/
 │   ├── import-dbt.js      # dbt import command
 │   ├── sync-dbt.js        # dbt sync command
 │   ├── merge.js           # merge command
+│   ├── extract.js         # extract command
+│   ├── model-utils.js     # shared YAML read/write utilities
+│   ├── table.js           # table subcommands
+│   ├── column.js          # column subcommands
+│   ├── relationship.js    # relationship subcommands
+│   ├── lineage.js         # lineage subcommands
+│   ├── domain.js          # domain subcommands
 │   └── templates/         # Templates for init/create
 ├── visualizer/
 │   └── src/
@@ -87,6 +94,37 @@ npm run test:all          # build-ui + test:cli
 
 # Update snapshots (required after visual UI changes)
 npm run test:update       # build-ui + update snapshots
+```
+
+## CLI Commands
+
+```bash
+# Model visualization
+modscape dev <paths...>          # Start dev visualizer
+modscape build <paths...>        # Build static site
+modscape export <paths...>       # Export to Mermaid markdown
+
+# Model initialization
+modscape init                    # Initialize project with AI rules
+modscape new <path>              # Create new YAML from template
+
+# YAML file operations
+modscape merge <paths...>        # Merge multiple YAMLs (first-wins on duplicate ID)
+modscape extract <paths...> --tables <ids>  # Extract specific tables by ID
+modscape layout <path>           # Auto-calculate layout coordinates
+
+# dbt integration
+modscape dbt import [dir]        # Import dbt project into YAML
+modscape dbt sync [dir]          # Sync dbt changes into existing YAML
+
+# Model mutation (AI-friendly atomic operations)
+modscape table list/get/add/update/remove <file>
+modscape column add/update/remove <file>
+modscape relationship list/add/remove <file>
+modscape lineage list/add/remove <file>
+modscape domain list/get/add/update/remove <file>
+modscape domain member add/remove <file>
+# All mutation commands support --json for machine-readable output
 ```
 
 ## Development Rules

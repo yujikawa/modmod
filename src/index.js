@@ -14,6 +14,11 @@ import { applyLayout } from './layout.js';
 import { createRequire } from 'module';
 import { mergeModels } from './merge.js';
 import { extractModels } from './extract.js';
+import { tableCommand } from './table.js';
+import { columnCommand } from './column.js';
+import { relationshipCommand } from './relationship.js';
+import { lineageCommand } from './lineage.js';
+import { domainCommand } from './domain.js';
 
 const require = createRequire(import.meta.url);
 const pkg = require('../package.json');
@@ -115,6 +120,12 @@ program
   .action((paths, options) => {
     extractModels(paths, options);
   });
+
+program.addCommand(tableCommand());
+program.addCommand(columnCommand());
+program.addCommand(relationshipCommand());
+program.addCommand(lineageCommand());
+program.addCommand(domainCommand());
 
 program
   .command('layout')

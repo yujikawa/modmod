@@ -592,7 +592,105 @@ modscape merge ./sales ./marketing -o combined.yaml
 
 ---
 
-## 13. Project-Specific Rule Extensions
+## 13. Model Mutation CLI
+
+Use the built-in mutation commands to **add, update, or remove individual entities** in a YAML model. These commands validate input and write atomically — safer than editing YAML directly.
+
+**MUST** use these commands when making targeted changes. Only edit YAML directly for complex nested fields not covered by CLI flags (e.g., `implementation`, `sampleData`, `columns` full definition).
+
+### 13-1. Available Operations
+
+| Resource | Operations |
+|----------|-----------|
+| `table` | `list` `get` `add` `update` `remove` |
+| `column` | `add` `update` `remove` |
+| `relationship` | `list` `add` `remove` |
+| `lineage` | `list` `add` `remove` |
+| `domain` | `list` `get` `add` `update` `remove` |
+| `domain member` | `add` `remove` |
+
+### 13-2. Recommended AI Agent Flow
+
+Before `add` or `update`, check existence with `get` or `list`:
+
+```bash
+# 1. Check if table exists
+modscape table get model.yaml --id fct_orders --json
+# → found: use update / not found: use add
+
+# 2a. Add new table
+modscape table add model.yaml --id fct_orders --name "Orders" --type fact
+
+# 2b. Update existing table
+modscape table update model.yaml --id fct_orders --physical-name fct_sales_orders
+```
+
+### 13-3. CLI Flag Reference
+
+**table add / update**
+```bash
+modscape table add model.yaml \
+  --id <id> --name <name> \
+  [--type fact|dimension|mart|hub|link|satellite|table] \
+  [--logical-name <name>] [--physical-name <name>] \
+  [--description <text>] [--json]
+```
+
+**column add / update**
+```bash
+modscape column add model.yaml \
+  --table <tableId> --id <id> --name <name> \
+  [--type Int|String|Decimal|Date|Timestamp|Boolean] \
+  [--primary-key] [--foreign-key] \
+  [--physical-name <name>] [--physical-type <type>] [--json]
+```
+
+**relationship add**
+```bash
+modscape relationship add model.yaml \
+  --from <table.column> --to <table.column> \
+  --type one-to-one|one-to-many|many-to-one|many-to-many [--json]
+```
+
+**lineage add**
+```bash
+modscape lineage add model.yaml --from <tableId> --to <tableId> [--json]
+```
+
+**domain add / update**
+```bash
+modscape domain add model.yaml \
+  --id <id> --name <name> [--description <text>] [--color <color>] [--json]
+```
+
+**domain member add / remove**
+```bash
+modscape domain member add model.yaml --domain <domainId> --table <tableId> [--json]
+modscape domain member remove model.yaml --domain <domainId> --table <tableId> [--json]
+```
+
+### 13-4. After Adding Tables
+
+`table add` does **not** create layout coordinates. After adding tables, run:
+
+```bash
+modscape layout model.yaml
+```
+
+This assigns coordinates to all layout-less entries automatically.
+
+### 13-5. JSON Output for AI Pipelines
+
+All commands support `--json` for machine-readable output:
+
+```json
+{ "ok": true,  "action": "add", "resource": "table", "id": "fct_orders" }
+{ "ok": false, "error": "Table \"fct_orders\" already exists", "hint": "Use `table update` instead" }
+```
+
+---
+
+## 15. Project-Specific Rule Extensions
 
 A project MAY place a `.modscape/rules.custom.md` file to define rules that extend or override this base file.
 
@@ -626,7 +724,7 @@ A project MAY place a `.modscape/rules.custom.md` file to define rules that exte
 
 ---
 
-## 14. Complete Example
+## 16. Complete Example
 
 ```yaml
 domains:

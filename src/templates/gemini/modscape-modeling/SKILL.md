@@ -11,6 +11,19 @@ BEFORE making any suggestions or changes, you MUST read and strictly follow the 
 
 If a requested change violates these rules, warn the user.
 
+## Mutation CLI — Use Before Editing YAML Directly
+
+For targeted changes to tables, columns, relationships, lineage, or domains, **PREFER the mutation CLI commands** over editing YAML directly. CLI commands validate input and write atomically.
+
+Recommended flow:
+1. Check existence: `modscape table get model.yaml --id <id> --json`
+2. Add or update: `modscape table add` / `modscape table update`
+3. After adding tables: `modscape layout model.yaml` to assign coordinates
+
+See Section 13 of `.modscape/rules.md` for the full command reference.
+
+Only edit YAML directly for complex nested fields not covered by CLI flags (e.g., `implementation`, `sampleData`, full `columns` definition).
+
 ## 📁 Multi-file Awareness
 `modscape dev` supports pointing to a directory (e.g., `modscape dev samples/`).
 -   **Switching Models**: Identify which YAML file you are editing from the directory.
