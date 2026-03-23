@@ -6,7 +6,10 @@ import {
   ChevronRight,
   ChevronLeft,
   Route,
-  MessageSquare
+  MessageSquare,
+  Play,
+  Sun,
+  Moon,
 } from 'lucide-react'
 import TablesTab from './TablesTab'
 import PathFinderTab from './PathFinderTab'
@@ -18,13 +21,19 @@ const RightPanel = memo(() => {
     setIsRightPanelOpen,
     activeRightPanelTab,
     setActiveRightPanelTab,
-    theme
+    theme,
+    isPresentationMode,
+    setIsPresentationMode,
+    toggleTheme,
   } = useStore(useShallow((s) => ({
     isRightPanelOpen: s.isRightPanelOpen,
     setIsRightPanelOpen: s.setIsRightPanelOpen,
     activeRightPanelTab: s.activeRightPanelTab,
     setActiveRightPanelTab: s.setActiveRightPanelTab,
     theme: s.theme,
+    isPresentationMode: s.isPresentationMode,
+    setIsPresentationMode: s.setIsPresentationMode,
+    toggleTheme: s.toggleTheme,
   })))
 
   const iconClass = (isActive: boolean) => `
@@ -84,6 +93,20 @@ const RightPanel = memo(() => {
           >
             <MessageSquare size={20} />
             <Tooltip text="Note Search" />
+          </button>
+        </div>
+
+        <div className="mt-auto flex flex-col gap-2 pb-2">
+          <button
+            onClick={() => setIsPresentationMode(true)}
+            className={iconClass(isPresentationMode)}
+          >
+            <Play size={20} />
+            <Tooltip text="Presentation Mode" />
+          </button>
+          <button onClick={toggleTheme} className={iconClass(false)}>
+            {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+            <Tooltip text={theme === 'dark' ? 'Light Mode' : 'Dark Mode'} />
           </button>
         </div>
       </div>

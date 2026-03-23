@@ -34,6 +34,7 @@ export async function importDbt(projectDir, options) {
     console.log(`  🔍 Parsing dbt manifest: ${manifestPath}`);
 
     const tables = [];
+    const lineage = [];
     const domainsMap = new Map();
     const tableSplitKeyMap = new Map();
 
@@ -66,7 +67,6 @@ export async function importDbt(projectDir, options) {
         appearance: { type: 'table' },
         conceptual: { description: node.description || '' },
         columns,
-        lineage: { upstream: [] }
       };
 
       tables.push(tableEntry);
@@ -92,13 +92,12 @@ export async function importDbt(projectDir, options) {
     }
 
     // lineage
-    for (const [uniqueId, node] of Object.entries(allNodes)) {
+    for (const [, node] of Object.entries(allNodes)) {
       if (!['model', 'seed', 'snapshot', 'source'].includes(node.resource_type)) continue;
-      const tableEntry = tables.find(t => t.id === node.unique_id);
-      if (tableEntry && node.depends_on?.nodes) {
+      if (node.depends_on?.nodes) {
         for (const upstreamId of node.depends_on.nodes) {
           if (allNodes[upstreamId]) {
-            tableEntry.lineage.upstream.push(upstreamId);
+            lineage.push({ from: upstreamId, to: node.unique_id });
           }
         }
       }
@@ -122,11 +121,10 @@ export async function importDbt(projectDir, options) {
         const tableIds = new Set(splitTables.map(t => t.id));
         let internal = 0;
         let external = 0;
-        for (const table of splitTables) {
-          for (const upstreamId of table.lineage?.upstream || []) {
-            if (tableIds.has(upstreamId)) internal++;
-            else external++;
-          }
+        for (const edge of lineage) {
+          if (!tableIds.has(edge.to)) continue;
+          if (tableIds.has(edge.from)) internal++;
+          else external++;
         }
         const total = internal + external;
         const rate = total > 0 ? Math.round(internal / total * 100) : 100;
@@ -145,9 +143,12 @@ export async function importDbt(projectDir, options) {
             tables: d.tables.filter(tid => splitTables.some(t => t.id === tid))
           }));
 
+        const splitTableIds = new Set(splitTables.map(t => t.id));
+        const splitLineage = lineage.filter(e => splitTableIds.has(e.from) || splitTableIds.has(e.to));
         const outputModel = {
           tables: splitTables,
           relationships: [],
+          lineage: splitLineage,
           domains: splitDomains
         };
 
@@ -167,6 +168,7 @@ export async function importDbt(projectDir, options) {
       const outputModel = {
         tables,
         relationships: [],
+        lineage,
         domains: Array.from(domainsMap.values())
       };
 

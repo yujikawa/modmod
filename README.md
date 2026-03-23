@@ -261,7 +261,6 @@ modscape export ./models -o docs/ARCHITECTURE.md
 
 Modscape is made possible by these incredible open-source projects:
 
-- [React Flow](https://reactflow.dev/) - Interactive node-based UI framework.
 - [CodeMirror 6](https://codemirror.net/) - Next-generation code editor for the web.
 - [Dagre](https://github.com/dagrejs/dagre) - Directed graph layout engine.
 - [Lucide React](https://lucide.dev/) - Beautifully simple pixel-perfect icons.

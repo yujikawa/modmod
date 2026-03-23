@@ -8,11 +8,14 @@ Read this file alongside `.modscape/rules.md` (which defines the YAML schema) be
 
 ## 1. Dependency Order (DAG)
 
-Use `lineage.upstream` to determine build order. Always generate upstream models before downstream ones.
+Use the top-level `lineage` section to determine build order. Always generate upstream (`from`) models before downstream (`to`) ones.
 
 ```yaml
 lineage:
-  upstream: [stg_orders, stg_order_items]  # these must be generated first
+  - from: stg_orders       # must be generated first
+    to: fct_orders
+  - from: stg_order_items  # must be generated first
+    to: fct_orders
 ```
 
 In dbt this becomes `{{ ref('stg_orders') }}`. In SQLMesh, `MODEL (... grain [...])` with `@this_model` references. Apply the equivalent pattern for your target tool.
@@ -123,7 +126,7 @@ Common TODO patterns:
 
 ## 8. Physical Table Names
 
-When `physical_name` is set on a table, use it as the actual table name in DDL or config blocks. The `id` field is the logical reference name used in `ref()` calls and `lineage.upstream`.
+When `physical_name` is set on a table, use it as the actual table name in DDL or config blocks. The `id` field is the logical reference name used in `ref()` calls and the `lineage` section.
 
 ---
 

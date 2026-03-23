@@ -45,7 +45,9 @@ test.describe('CLI: dbt import', () => {
     expect(stgOrders.physical_name).toBe('stg_orders_v1'); // from dbt alias
 
     // Verify lineage
-    expect(stgOrders.lineage.upstream).toContain('source.my_project.raw_orders.orders');
+    const lineageEntry = model.lineage.find(l => l.to === 'model.my_project.stg_orders');
+    expect(lineageEntry).toBeDefined();
+    expect(lineageEntry.from).toBe('source.my_project.raw_orders.orders');
 
     // Verify domains
     expect(model.domains).toBeDefined();

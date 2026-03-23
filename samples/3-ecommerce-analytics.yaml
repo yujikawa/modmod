@@ -148,9 +148,6 @@ tables:
       type: dimension
       scd: type2
       icon: 👤
-    lineage:
-      upstream:
-        - stg_customers
     implementation:
       materialization: table
     columns:
@@ -198,9 +195,6 @@ tables:
     appearance:
       type: dimension
       icon: 📦
-    lineage:
-      upstream:
-        - stg_products
     implementation:
       materialization: table
     columns:
@@ -282,10 +276,6 @@ tables:
       type: fact
       sub_type: transaction
       icon: 🛒
-    lineage:
-      upstream:
-        - stg_orders
-        - stg_order_items
     implementation:
       materialization: incremental
       incremental_strategy: merge
@@ -347,10 +337,6 @@ tables:
     appearance:
       type: mart
       icon: 📊
-    lineage:
-      upstream:
-        - fct_orders
-        - dim_dates
     implementation:
       materialization: table
       partition_by:
@@ -389,10 +375,6 @@ tables:
     appearance:
       type: mart
       icon: 👤
-    lineage:
-      upstream:
-        - fct_orders
-        - dim_customers
     implementation:
       materialization: table
     columns:
@@ -440,10 +422,6 @@ tables:
     appearance:
       type: mart
       icon: 📦
-    lineage:
-      upstream:
-        - fct_orders
-        - dim_products
     implementation:
       materialization: table
     columns:
@@ -484,6 +462,27 @@ tables:
           type: Int
           additivity: fully
     sampleData: []
+lineage:
+  - from: stg_customers
+    to: dim_customers
+  - from: stg_products
+    to: dim_products
+  - from: stg_orders
+    to: fct_orders
+  - from: stg_order_items
+    to: fct_orders
+  - from: fct_orders
+    to: mart_daily_revenue
+  - from: dim_dates
+    to: mart_daily_revenue
+  - from: fct_orders
+    to: mart_customer_ltv
+  - from: dim_customers
+    to: mart_customer_ltv
+  - from: fct_orders
+    to: mart_product_performance
+  - from: dim_products
+    to: mart_product_performance
 relationships:
   - from:
       table: stg_orders
@@ -542,62 +541,45 @@ domains:
       - mart_product_performance
 annotations: []
 layout:
-  staging:
-    x: 709.4904315940848
-    'y': -111.3550004744079
-    width: 756
-    height: 1384
-  stg_customers:
-    x: 40
-    'y': 60
-    parentId: staging
   stg_products:
-    x: 400
-    'y': 60
-    parentId: staging
-  stg_orders:
-    x: 187.31714041733085
-    'y': 492.6937161291277
-    parentId: staging
-  stg_order_items:
-    x: 295.97299648938156
-    'y': 979
-    parentId: staging
-  core_dwh:
-    x: 1536.6990065468297
-    'y': -122.68285958266921
-    width: 814
-    height: 1396
-  dim_customers:
-    x: 40
-    'y': 60
-    parentId: core_dwh
-  dim_products:
-    x: 443.93003186753003
-    'y': 90.13734587719486
-    parentId: core_dwh
-  dim_dates:
-    x: 60.93075503591194
-    'y': 816.6066094029468
-    parentId: core_dwh
-  fct_orders:
-    x: 557.3117121441007
-    'y': 845.8481462051072
-    parentId: core_dwh
+    x: 447.56888972114405
+    'y': -284.2111593745741
   analytics_mart:
-    x: 2407.9416441807534
-    'y': -112.56478411800545
-    width: 403
-    height: 1385
+    x: 2079.350520128063
+    'y': -420.6331403281348
   mart_daily_revenue:
-    x: 49.26090291592823
-    'y': 40.8517737796939
-    parentId: analytics_mart
+    x: 2719.350520128063
+    'y': 59.36685967186519
   mart_customer_ltv:
-    x: 68.34151742462859
-    'y': 395.51485882361646
-    parentId: analytics_mart
+    x: 2079.350520128063
+    'y': 299.3668596718652
   mart_product_performance:
-    x: 59.712354895917315
-    'y': 878.4985740039285
-    parentId: analytics_mart
+    x: 2399.3505201280627
+    'y': 299.3668596718652
+  core_dwh:
+    x: 1001.181842057429
+    'y': -539.0789981384597
+  dim_customers:
+    x: 1262.6815503935165
+    'y': -71.3457198753697
+  dim_products:
+    x: 1599.3959194403487
+    'y': -50.45275856682929
+  dim_dates:
+    x: 896.7170355147272
+    'y': -40.27533296077337
+  fct_orders:
+    x: 1344.5968180579346
+    'y': 659.6284216856628
+  staging:
+    x: -3241.096547432612
+    'y': 100.0216817070687
+  stg_customers:
+    x: 497.02844380345783
+    'y': 959.5286690961346
+  stg_orders:
+    x: 439.7386461687896
+    'y': 528.0595683587331
+  stg_order_items:
+    x: 418.8270104572181
+    'y': 114.68567001758255

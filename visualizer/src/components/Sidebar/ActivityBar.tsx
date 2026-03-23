@@ -1,65 +1,72 @@
 import { useState } from 'react'
 import { useStore } from '../../store/useStore'
-import { 
-  Tag, 
-  Grid, 
-  Layout, 
-  Network, 
-  GitGraph, 
-  LayoutTemplate, 
-  Sun, 
-  Moon,
+import {
+  Tag,
+  Grid,
+  Layout,
+  Network,
   Plus,
   ChevronLeft,
-  Play,
   CircleHelp,
   X,
-  Command
+  Command,
+  Spline,
+  AlignJustify,
+  Workflow,
 } from 'lucide-react'
-import { useReactFlow } from 'reactflow'
 import logo from '/favicon.svg?url'
 
 const ActivityBar = () => {
-  const { 
+  const {
     isSidebarOpen,
     setIsSidebarOpen,
-    isPresentationMode,
-    setIsPresentationMode,
+    showAnnotations,
+    setShowAnnotations,
     showER,
     setShowER,
     showLineage,
     setShowLineage,
-    showAnnotations,
-    setShowAnnotations,
+    connectMode,
+    setConnectMode,
+    isCompactMode,
+    setIsCompactMode,
     addTable,
     addDomain,
     addAnnotation,
-    calculateAutoLayout,
     theme,
-    toggleTheme,
     getSelectedTable,
     getSelectedDomain
   } = useStore()
 
-  const { screenToFlowPosition } = useReactFlow()
   const [showHelp, setShowHelp] = useState(false)
+
+  // Convert screen center to canvas coordinates via Cytoscape viewport
+  const screenToCanvasCenter = () => {
+    const cy = (window as any).__modscapeCy
+    if (!cy) return { x: window.innerWidth / 2, y: window.innerHeight / 2 }
+    const pan: { x: number; y: number } = cy.pan()
+    const zoom: number = cy.zoom()
+    const sx = window.innerWidth / 2
+    const sy = window.innerHeight / 2
+    return { x: (sx - pan.x) / zoom, y: (sy - pan.y) / zoom }
+  }
   
   const table = getSelectedTable()
   const domain = getSelectedDomain()
 
   const handleAddDomain = () => {
-    const center = screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 })
+    const center = screenToCanvasCenter()
     addDomain(center.x - 300, center.y - 200)
   }
 
   const handleAddTable = () => {
-    const center = screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 })
+    const center = screenToCanvasCenter()
     addTable(center.x - 160, center.y - 125)
   }
 
   const handleAddAnnotation = () => {
     const target = table || domain
-    const center = screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 })
+    const center = screenToCanvasCenter()
     
     if (!showAnnotations) setShowAnnotations(true)
 
@@ -123,17 +130,21 @@ const ActivityBar = () => {
             View
           </div>
           <div className="flex flex-col gap-2">
-            <button onClick={() => setShowER(!showER)} className={iconClass(showER, 'text-emerald-500')}>
-              <Network size={20} />
-              <Tooltip text={showER ? "Hide ER" : "Show ER"} />
+            <button onClick={() => setShowLineage(!showLineage)} className={iconClass(showLineage, 'text-blue-400')}>
+              <Spline size={20} />
+              <Tooltip text={showLineage ? "Hide Lineage Edges" : "Show Lineage Edges"} />
             </button>
-            <button onClick={() => setShowLineage(!showLineage)} className={iconClass(showLineage, 'text-blue-500')}>
-              <GitGraph size={20} />
-              <Tooltip text={showLineage ? "Hide Lineage" : "Show Lineage"} />
+            <button onClick={() => setShowER(!showER)} className={iconClass(showER, 'text-slate-400')}>
+              <Network size={20} />
+              <Tooltip text={showER ? "Hide ER Edges" : "Show ER Edges"} />
             </button>
             <button onClick={() => setShowAnnotations(!showAnnotations)} className={iconClass(showAnnotations, 'text-amber-500')}>
               <Tag size={20} />
               <Tooltip text={showAnnotations ? "Hide Annotations" : "Show Annotations"} />
+            </button>
+            <button onClick={() => setIsCompactMode(!isCompactMode)} className={iconClass(isCompactMode, 'text-slate-400')}>
+              <AlignJustify size={20} />
+              <Tooltip text={isCompactMode ? "Show Columns" : "Hide Columns"} />
             </button>
           </div>
         </div>
@@ -167,27 +178,27 @@ const ActivityBar = () => {
               </div>
               <Tooltip text="Add Sticky Note (S)" />
             </button>
+            <button onClick={() => setConnectMode(connectMode === 'lineage' ? null : 'lineage')} className={iconClass(connectMode === 'lineage', 'text-blue-400')}>
+              <Spline size={20} />
+              <Tooltip text={connectMode === 'lineage' ? "Exit Lineage Mode (Esc)" : "Draw Lineage Edge (C)"} />
+            </button>
+            <button onClick={() => setConnectMode(connectMode === 'er' ? null : 'er')} className={iconClass(connectMode === 'er', 'text-emerald-400')}>
+              <Network size={20} />
+              <Tooltip text={connectMode === 'er' ? "Exit ER Mode (Esc)" : "Draw ER Edge"} />
+            </button>
           </div>
         </div>
 
         <div className={`w-8 border-t mb-6 ${theme === 'dark' ? 'border-slate-800' : 'border-slate-200'}`} />
 
         <div className="mt-auto flex flex-col gap-2">
-          <button onClick={() => setIsPresentationMode(true)} className={iconClass(isPresentationMode, 'text-purple-500')}>
-            <Play size={20} />
-            <Tooltip text="Presentation Mode" />
-          </button>
-          <button onClick={() => calculateAutoLayout()} className={iconClass(false)}>
-            <LayoutTemplate size={20} />
-            <Tooltip text="Auto Layout" />
+          <button onClick={() => (window as any).__modscapeAutoLayout?.()} className={iconClass(false, 'text-orange-400')}>
+            <Workflow size={20} />
+            <Tooltip text="Auto Layout (left → right)" />
           </button>
           <button onClick={() => setShowHelp(true)} className={iconClass(showHelp)}>
             <CircleHelp size={20} />
             <Tooltip text="Shortcut Guide" />
-          </button>
-          <button onClick={toggleTheme} className={iconClass(false)}>
-            {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-            <Tooltip text={theme === 'dark' ? "Light Mode" : "Dark Mode"} />
           </button>
         </div>
       </div>

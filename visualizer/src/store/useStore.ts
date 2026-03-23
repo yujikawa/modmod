@@ -1,6 +1,5 @@
 import { create } from 'zustand'
 import yaml from 'js-yaml'
-import dagre from 'dagre'
 import type { Schema, Table, Relationship, Domain, Annotation } from '../types/schema'
 import { parseYAML, normalizeSchema } from '../lib/parser'
 
@@ -48,7 +47,8 @@ interface AppState {
   showER: boolean;
   showLineage: boolean;
   showAnnotations: boolean;
-  connectionStartHandle: { nodeId: string; handleId: string | null; handleType: string | null } | null;
+  isCompactMode: boolean;
+  connectMode: 'lineage' | 'er' | null;
   theme: 'dark' | 'light';
   isDetailPanelSuppressed: boolean;
   isDetailPanelMinimized: boolean;
@@ -67,6 +67,8 @@ interface AppState {
   setShowER: (show: boolean) => void;
   setShowLineage: (show: boolean) => void;
   setShowAnnotations: (show: boolean) => void;
+  setIsCompactMode: (v: boolean) => void;
+  setConnectMode: (mode: 'lineage' | 'er' | null) => void;
   setIsPresentationMode: (enabled: boolean) => void;
   setIsAutoSaveEnabled: (enabled: boolean) => void;
   setLastUpdateSource: (source: 'user' | 'visual' | 'undo') => void;
@@ -84,15 +86,15 @@ interface AppState {
   bulkAddRelationship: (source: { table: string, column?: string }, targetPattern: string, type: Relationship['type'] | 'lineage') => void;
   addLineage: (source: string, target: string) => void;
   updateRelationship: (index: number, updates: Partial<Relationship>) => void;
-  removeEdge: (sourceId: string, targetId: string) => void;
+  removeEdge: (sourceId: string, targetId: string, kind?: 'er' | 'lineage') => void;
   removeNode: (id: string) => void;
   bulkRemoveTables: (ids: string[]) => void;
   updateTable: (id: string, updates: Partial<Table>) => void;
   updateDomain: (id: string, updates: Partial<Domain>) => void;
-  toggleDomainLock: (id: string) => void;
   assignTableToDomain: (tableId: string, domainId?: string | null) => void;
   bulkAssignTablesToDomain: (tableIds: string[], domainId: string | null) => void;
   distributeSelectedTables: (direction: 'horizontal' | 'vertical') => void;
+  applyLayout: (newLayout: Record<string, any>) => void;
   executePipeline: (input: string, previewOnly?: boolean) => { stages: any[], outputIds: string[] };
   toggleTableSelection: (id: string) => void;
   toggleEdgeSelection: (id: string) => void;
@@ -116,14 +118,12 @@ interface AppState {
   setActiveRightPanelTab: (tab: 'tables' | 'path' | 'notes') => void;
   setPathFinderResult: (result: { nodeIds: string[], edgeIds: string[] } | null) => void;
   setFocusNodeId: (id: string | null) => void;
-  setConnectionStartHandle: (handle: { nodeId: string; handleId: string | null; handleType: string | null } | null) => void;
   toggleTheme: () => void;
-  calculateAutoLayout: () => void;
   
   // Computed (helpers)
   getSelectedTable: () => Table | null;
   getSelectedDomain: () => Domain | null;
-  getSelectedRelationship: () => { relationship: Relationship; index: number } | null;
+  getSelectedRelationship: () => { relationship: Relationship; index: number; kind: 'er' | 'lineage' } | null;
   getSelectedAnnotation: () => Annotation | null;
 }
 
@@ -176,7 +176,8 @@ export const useStore = create<AppState>((set, get) => ({
   showER: true,
   showLineage: true,
   showAnnotations: true,
-  connectionStartHandle: null,
+  isCompactMode: false,
+  connectMode: null,
   theme: 'dark',
   isDetailPanelSuppressed: false,
   isDetailPanelMinimized: true,
@@ -239,24 +240,25 @@ export const useStore = create<AppState>((set, get) => ({
   setLastUpdateSource: (source) => set({ lastUpdateSource: source }),
   setPathFinderResult: (result) => set({ pathFinderResult: result }),
   setFocusNodeId: (id) => set({ focusNodeId: id }),
-  setConnectionStartHandle: (handle) => set({ connectionStartHandle: handle }),
-  
+
   toggleTheme: () => set((state) => ({ theme: state.theme === 'dark' ? 'light' : 'dark' })),
 
   setShowER: (show) => set({ showER: show }),
   setShowLineage: (show) => set({ showLineage: show }),
   setShowAnnotations: (show) => set({ showAnnotations: show }),
+  setIsCompactMode: (v: boolean) => set({ isCompactMode: v }),
+  setConnectMode: (mode) => set({ connectMode: mode }),
 
   updateNodePosition: (id, x, y, parentId) => {
     const { schema } = get();
     if (!schema) return;
-    const existing = schema.layout?.[id] || {};
+    const currentLayout = schema.layout || {};
+    const existing = currentLayout[id] || {};
     const newLayout = {
-      ...(schema.layout || {}),
-      // width/height を保持しながら x/y だけ更新する
-      [id]: { ...existing, x, y, ...(parentId ? { parentId } : {}) }
+      ...currentLayout,
+      [id]: { ...existing, x: Math.round(x), y: Math.round(y), ...(parentId ? { parentId } : {}) }
     };
-    set({ schema: { ...schema, layout: newLayout } });
+    set({ schema: { ...schema, layout: newLayout }, lastUpdateSource: 'visual' });
     get().syncToYamlInput();
     get().saveSchema();
   },
@@ -264,13 +266,13 @@ export const useStore = create<AppState>((set, get) => ({
   updateNodesPosition: (updates) => {
     const { schema } = get();
     if (!schema) return;
-    const newLayout = { ...(schema.layout || {}) };
+    const currentLayout = schema.layout || {};
+    const newLayout = { ...currentLayout };
     updates.forEach(({ id, x, y, parentId }) => {
       const existing = newLayout[id] || {};
-      // width/height を保持しながら x/y だけ更新する
-      newLayout[id] = { ...existing, x, y, ...(parentId ? { parentId } : {}) };
+      newLayout[id] = { ...existing, x: Math.round(x), y: Math.round(y), ...(parentId ? { parentId } : {}) };
     });
-    set({ schema: { ...schema, layout: newLayout } });
+    set({ schema: { ...schema, layout: newLayout }, lastUpdateSource: 'visual' });
     get().syncToYamlInput();
     get().saveSchema();
   },
@@ -400,14 +402,22 @@ export const useStore = create<AppState>((set, get) => ({
     if (!schema) return;
     const regex = new RegExp('^' + targetPattern.replace(/\*/g, '.*') + '$', 'i');
     const matchedTables = schema.tables.filter(t => regex.test(t.id) || (t.columns || []).some(c => regex.test(`${t.id}.${c.id}`)));
-    
-    const newRels = matchedTables.map(t => {
+
+    if (type === 'lineage') {
+      const existing = schema.lineage ?? [];
+      const newEdges = matchedTables
+        .filter(t => !existing.some(e => e.from === source.table && e.to === t.id))
+        .map(t => ({ from: source.table, to: t.id }));
+      set({ schema: { ...schema, lineage: [...existing, ...newEdges] } });
+    } else {
+      const newRels = matchedTables.map(t => {
         let targetCol = undefined;
         if (targetPattern.includes('.')) targetCol = targetPattern.split('.')[1];
         return { from: source, to: { table: t.id, column: targetCol }, type };
-    });
+      });
+      set({ schema: { ...schema, relationships: [...(schema.relationships || []), ...newRels] } });
+    }
 
-    set({ schema: { ...schema, relationships: [...(schema.relationships || []), ...newRels] } });
     get().syncToYamlInput();
     get().saveSchema();
   },
@@ -415,8 +425,9 @@ export const useStore = create<AppState>((set, get) => ({
   addLineage: (source, target) => {
     const { schema } = get();
     if (!schema) return;
-    const newRel: Relationship = { from: { table: source }, to: { table: target }, type: 'lineage' as any };
-    set({ schema: { ...schema, relationships: [...(schema.relationships || []), newRel] } });
+    const existing = schema.lineage ?? [];
+    if (existing.some(e => e.from === source && e.to === target)) return; // already exists
+    set({ schema: { ...schema, lineage: [...existing, { from: source, to: target }] } });
     get().syncToYamlInput();
     get().saveSchema();
   },
@@ -431,11 +442,16 @@ export const useStore = create<AppState>((set, get) => ({
     get().saveSchema();
   },
 
-  removeEdge: (sourceId, targetId) => {
+  removeEdge: (sourceId, targetId, kind) => {
     const { schema } = get();
     if (!schema) return;
-    const newRels = schema.relationships.filter(r => !(r.from.table === sourceId && r.to.table === targetId));
-    set({ schema: { ...schema, relationships: newRels }, selectedEdgeId: null });
+    const newRels = (kind === 'lineage')
+      ? schema.relationships
+      : schema.relationships.filter(r => !(r.from.table === sourceId && r.to.table === targetId));
+    const newLineage = (kind === 'er')
+      ? (schema.lineage ?? [])
+      : (schema.lineage ?? []).filter(e => !(e.from === sourceId && e.to === targetId));
+    set({ schema: { ...schema, relationships: newRels, lineage: newLineage }, selectedEdgeId: null });
     get().syncToYamlInput();
     get().saveSchema();
   },
@@ -447,6 +463,7 @@ export const useStore = create<AppState>((set, get) => ({
     const newTables = schema.tables.filter(t => t.id !== id);
     const newDomains = (schema.domains || []).filter(d => d.id !== id).map(d => ({ ...d, tables: d.tables.filter(tid => tid !== id) }));
     const newRelationships = schema.relationships.filter(r => r.from.table !== id && r.to.table !== id);
+    const newLineage = (schema.lineage ?? []).filter(e => e.from !== id && e.to !== id);
     const newLayout = { ...(schema.layout || {}) };
     delete newLayout[id];
 
@@ -459,7 +476,7 @@ export const useStore = create<AppState>((set, get) => ({
       });
     }
 
-    set({ schema: { ...schema, tables: newTables, domains: newDomains, relationships: newRelationships, layout: newLayout }, selectedTableId: null });
+    set({ schema: { ...schema, tables: newTables, domains: newDomains, relationships: newRelationships, lineage: newLineage, layout: newLayout }, selectedTableId: null });
     get().syncToYamlInput();
     get().saveSchema();
   },
@@ -471,8 +488,9 @@ export const useStore = create<AppState>((set, get) => ({
     const newLayout = { ...(schema.layout || {}) };
     ids.forEach(id => delete newLayout[id]);
     const newRelationships = (schema.relationships || []).filter(r => !ids.includes(r.from.table) && !ids.includes(r.to.table));
+    const newLineage = (schema.lineage ?? []).filter(e => !ids.includes(e.from) && !ids.includes(e.to));
     const newDomains = (schema.domains || []).map(d => ({ ...d, tables: d.tables.filter(tid => !ids.includes(tid)) }));
-    set({ schema: { ...schema, tables: newTables, relationships: newRelationships, domains: newDomains, layout: newLayout }, selectedTableIds: [] });
+    set({ schema: { ...schema, tables: newTables, relationships: newRelationships, lineage: newLineage, domains: newDomains, layout: newLayout }, selectedTableIds: [] });
     get().syncToYamlInput();
     get().saveSchema();
   },
@@ -492,18 +510,6 @@ export const useStore = create<AppState>((set, get) => ({
     const newDomains = (schema.domains || []).map(d => d.id === id ? { ...d, ...updates } : d);
     set({ schema: { ...schema, domains: newDomains } });
     get().syncToYamlInput();
-    get().saveSchema();
-  },
-
-  toggleDomainLock: (id) => {
-    const { schema } = get();
-    if (!schema || !schema.layout) return;
-    const current = schema.layout[id] || { x: 0, y: 0 };
-    const newLayout = { 
-      ...schema.layout, 
-      [id]: { ...current, isLocked: !current.isLocked } 
-    };
-    set({ schema: { ...schema, layout: newLayout } });
     get().saveSchema();
   },
 
@@ -558,6 +564,14 @@ export const useStore = create<AppState>((set, get) => ({
         y: direction === 'vertical' ? basePos.y + (index * 320) : basePos.y
       };
     });
+    set({ schema: { ...schema, layout: newLayout } });
+    get().syncToYamlInput();
+    get().saveSchema();
+  },
+
+  applyLayout: (newLayout) => {
+    const { schema } = get();
+    if (!schema) return;
     set({ schema: { ...schema, layout: newLayout } });
     get().syncToYamlInput();
     get().saveSchema();
@@ -647,6 +661,7 @@ export const useStore = create<AppState>((set, get) => ({
           
           tempSchema.tables = tempSchema.tables.filter((t: any) => !tableIdsToDelete.includes(t.id));
           tempSchema.domains = (tempSchema.domains || []).filter((d: any) => !domainIdsToDelete.includes(d.id));
+          tempSchema.lineage = (tempSchema.lineage ?? []).filter((e: any) => !tableIdsToDelete.includes(e.from) && !tableIdsToDelete.includes(e.to));
           
           // CRITICAL: Cleanup parentId references if domains were deleted
           if (domainIdsToDelete.length > 0 && tempSchema.layout) {
@@ -830,14 +845,18 @@ export const useStore = create<AppState>((set, get) => ({
     const { schema, selectedEdgeId } = get();
     if (!schema || !selectedEdgeId) return null;
     if (selectedEdgeId.startsWith('lin-')) {
-      const parts = selectedEdgeId.split('-');
-      return { relationship: { from: { table: parts[1] }, to: { table: parts[2] }, type: 'lineage' as any }, index: -1 };
+      // lin-{from}-{to}-{index} — find the actual lineage edge by index
+      const lastDash = selectedEdgeId.lastIndexOf('-');
+      const idx = parseInt(selectedEdgeId.slice(lastDash + 1));
+      const edge = schema.lineage?.[idx];
+      if (!edge) return null;
+      return { relationship: { from: { table: edge.from }, to: { table: edge.to }, type: 'lineage' as any }, index: idx, kind: 'lineage' as const };
     }
-    if (!selectedEdgeId.startsWith('e-')) return null;
+    if (!selectedEdgeId.startsWith('er-')) return null;
     const index = parseInt(selectedEdgeId.split('-')[1]);
-    const relationship = schema.relationships[index];
+    const relationship = schema.relationships?.[index];
     if (!relationship) return null;
-    return { relationship, index };
+    return { relationship, index, kind: 'er' as const };
   },
 
   getSelectedAnnotation: () => {
@@ -846,33 +865,4 @@ export const useStore = create<AppState>((set, get) => ({
     return schema.annotations.find(a => a.id === selectedAnnotationId) || null;
   },
 
-  calculateAutoLayout: () => {
-    const { schema } = get();
-    if (!schema) return;
-    const g = new dagre.graphlib.Graph({ compound: true });
-    g.setGraph({ rankdir: 'LR', nodesep: 80, ranksep: 120, marginx: 40, marginy: 40 });
-    g.setDefaultEdgeLabel(() => ({}));
-    (schema.domains || []).forEach(d => { g.setNode(d.id, { label: d.name, width: 600, height: 400 }); });
-    schema.tables.forEach(t => {
-      const domain = (schema.domains || []).find(d => d.tables.includes(t.id));
-      g.setNode(t.id, { width: 220, height: 300 });
-      if (domain) g.setParent(t.id, domain.id);
-    });
-    (schema.relationships || []).forEach(r => { g.setEdge(r.from.table, r.to.table); });
-    dagre.layout(g);
-    const newLayout: Record<string, any> = {};
-    g.nodes().forEach(v => {
-      const node = g.node(v);
-      const parent = g.parent(v);
-      if (parent) {
-        const pNode = g.node(parent);
-        newLayout[v] = { x: node.x - node.width/2 - (pNode.x - pNode.width/2), y: node.y - node.height/2 - (pNode.y - pNode.height/2), parentId: parent };
-      } else {
-        newLayout[v] = { x: node.x - node.width/2, y: node.y - node.height/2 };
-      }
-    });
-    set({ schema: { ...schema, layout: newLayout } });
-    get().syncToYamlInput();
-    get().saveSchema();
-  }
 }));

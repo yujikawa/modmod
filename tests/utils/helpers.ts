@@ -9,7 +9,7 @@ export async function waitForLiveSync(page: Page) {
   await expect(liveBadge).toBeVisible({ timeout: 25000 });
   
   // 2. Wait for at least one node to be present on canvas
-  const anyNode = page.locator('.react-flow__node').first();
+  const anyNode = page.locator('[data-testid="table-node"]').first();
   await expect(anyNode).toBeVisible({ timeout: 25000 });
 
   // 3. Small buffer for animations/socket stability
@@ -20,8 +20,7 @@ export async function waitForLiveSync(page: Page) {
  * Wait for a table on canvas.
  */
 export async function expectTable(page: Page, tableName: string) {
-  // Specifically look for the table name inside a React Flow node
-  const node = page.locator('.react-flow__node').filter({ hasText: tableName }).first();
+  const node = page.locator('[data-testid="table-node"]').filter({ hasText: tableName }).first();
   await expect(node).toBeVisible({ timeout: 25000 });
 }
 
@@ -29,7 +28,7 @@ export async function expectTable(page: Page, tableName: string) {
  * Perform a "human-like" click on a node to ensure React Flow triggers events.
  */
 export async function clickNode(page: Page, label: string) {
-  const node = page.locator('.react-flow__node-table').filter({ hasText: label }).first();
+  const node = page.locator('[data-testid="table-node"]').filter({ hasText: label }).first();
   await node.scrollIntoViewIfNeeded();
   
   const box = await node.boundingBox();

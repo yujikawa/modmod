@@ -11,9 +11,38 @@ export function normalizeSchema(data: any): Schema {
   const schema: Schema = {
     tables: Array.isArray(data.tables) ? data.tables : [],
     relationships: Array.isArray(data.relationships) ? data.relationships : [],
+    lineage: Array.isArray(data.lineage) ? data.lineage : [],
     domains: Array.isArray(data.domains) ? data.domains : [],
     annotations: Array.isArray(data.annotations) ? data.annotations : [],
     layout: data.layout || {}
+  }
+
+  // Auto-repair: Sync layout.parentId with domain.tables membership
+  if (schema.domains && schema.layout) {
+    schema.domains.forEach(domain => {
+      domain.tables.forEach(tableId => {
+        if (schema.layout![tableId]) {
+          schema.layout![tableId].parentId = domain.id;
+        } else {
+          // If no layout exists for this table, create a placeholder so it has a parent
+          schema.layout![tableId] = { x: 0, y: 0, parentId: domain.id };
+        }
+      });
+    });
+  }
+
+  // Migrate legacy format: table.lineage.upstream[] → schema.lineage[]
+  const legacyLineage: { from: string; to: string }[] = []
+  schema.tables.forEach((table: any) => {
+    if (table.lineage?.upstream && Array.isArray(table.lineage.upstream)) {
+      table.lineage.upstream.forEach((upId: string) => {
+        const already = schema.lineage!.some(e => e.from === upId && e.to === table.id)
+        if (!already) legacyLineage.push({ from: upId, to: table.id })
+      })
+    }
+  })
+  if (legacyLineage.length > 0) {
+    schema.lineage = [...(schema.lineage ?? []), ...legacyLineage]
   }
 
   // Further normalization for each table
@@ -57,7 +86,6 @@ export function normalizeSchema(data: any): Schema {
       logical_name: table.logical_name,
       physical_name: table.physical_name,
       appearance,
-      lineage: table.lineage ? { ...table.lineage } : undefined,
       implementation: table.implementation ? {
         ...table.implementation,
         // Normalize unique_key: YAML may have a single string or an array

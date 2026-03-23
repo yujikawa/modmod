@@ -78,7 +78,7 @@ npm run test:update       # build-ui + スナップショット更新
 
 ## YAML Model Format
 
-ルートレベルの5セクション（`tables`/`domains` 内に座標を書かないこと）：
+ルートレベルの6セクション（`tables`/`domains` 内に座標を書かないこと）：
 
 ```yaml
 # ── Domains ──────────────────────────────────────────────
@@ -107,8 +107,6 @@ tables:
       tags: [WHAT, HOW_MUCH]   # BEAM* タグ: WHO|WHAT|WHEN|WHERE|HOW|COUNT|HOW_MUCH
       businessDefinitions:
         revenue: "割引後純売上"
-    lineage:           # mart/集計テーブルのみ定義
-      upstream: [fct_sales, dim_dates]
     implementation:    # AIコード生成ヒント（任意）省略時は appearance.type から自動推論
       materialization: incremental          # table|view|incremental|ephemeral
       incremental_strategy: merge          # merge|append|delete+insert
@@ -139,12 +137,17 @@ tables:
       - [order_id, amount]
       - [1001, 150.00]
 
+# ── Lineage ───────────────────────────────────────────────
+lineage:
+  - from: fct_orders      # 上流テーブルのid
+    to: mart_summary      # 下流テーブルのid
+  # ※ relationships に重複記載しないこと
+
 # ── Relationships ─────────────────────────────────────────
 relationships:
   - from: { table: dim_customers, column: customer_id }
     to:   { table: fct_orders,    column: customer_id }
     type: one-to-many   # one-to-one|one-to-many|many-to-one|many-to-many
-  # ※ lineage.upstream で定義した接続を relationships に重複記載しないこと
 
 # ── Annotations ──────────────────────────────────────────
 annotations:

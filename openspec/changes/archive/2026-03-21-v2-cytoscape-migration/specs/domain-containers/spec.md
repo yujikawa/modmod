@@ -1,4 +1,4 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Domain Visualization
 The system SHALL render a domain container as a visual background region with a label and semi-transparent fill color. Domain backgrounds SHALL be implemented as absolutely positioned `<div>` elements in an overlay container synchronized to the Cytoscape viewport transform on each `render` event. Domain backgrounds SHALL NOT use Cytoscape compound nodes.

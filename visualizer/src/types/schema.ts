@@ -1,13 +1,19 @@
+export interface LineageEdge {
+  from: string; // source table id
+  to: string;   // target table id
+}
+
 export interface Schema {
   tables: Table[];
   relationships: Relationship[];
+  lineage?: LineageEdge[]; // Data lineage edges (top-level, separate from ER relationships)
   domains?: Domain[]; // Optional
   annotations?: Annotation[]; // Optional visual notes
-  layout?: Record<string, { 
-    x: number; 
-    y: number; 
-    width?: number; 
-    height?: number; 
+  layout?: Record<string, {
+    x: number;
+    y: number;
+    width?: number;
+    height?: number;
     isLocked?: boolean;
     parentId?: string;
   }>;
@@ -66,9 +72,6 @@ export interface Table {
     description?: string;
     tags?: string[]; // BEAM* tags (WHO, WHAT, WHEN, etc.)
     businessDefinitions?: Record<string, string>;
-  };
-  lineage?: {
-    upstream?: string[]; // IDs of upstream tables
   };
   physical?: { // Optional Table-level physical info
     name?: string;

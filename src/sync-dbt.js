@@ -59,15 +59,6 @@ export async function syncDbt(projectDir, options) {
         }
       }
 
-      const lineageUpstream = [];
-      if (node.depends_on?.nodes) {
-        for (const upstreamId of node.depends_on.nodes) {
-          if (allNodes[upstreamId]) {
-            lineageUpstream.push(upstreamId);
-          }
-        }
-      }
-
       latestTablesMap.set(tableId, {
         id: tableId,
         name: node.name,
@@ -76,7 +67,6 @@ export async function syncDbt(projectDir, options) {
         appearance: { type: 'table' },
         conceptual: { description: node.description || '' },
         columns,
-        lineage: { upstream: lineageUpstream }
       });
     }
 
@@ -112,11 +102,24 @@ export async function syncDbt(projectDir, options) {
           physical_name: latest.physical_name,
           conceptual: latest.conceptual,
           columns: latest.columns,
-          lineage: latest.lineage
         };
       });
 
-      const updated = { ...existing, tables: newTables };
+      // Rebuild lineage from manifest for tables in this file
+      const fileTableIds = new Set(newTables.map(t => t.id));
+      const newLineage = [];
+      for (const [, node] of Object.entries(allNodes)) {
+        if (!fileTableIds.has(node.unique_id)) continue;
+        if (node.depends_on?.nodes) {
+          for (const upstreamId of node.depends_on.nodes) {
+            if (allNodes[upstreamId]) {
+              newLineage.push({ from: upstreamId, to: node.unique_id });
+            }
+          }
+        }
+      }
+
+      const updated = { ...existing, tables: newTables, lineage: newLineage };
       fs.writeFileSync(yamlPath, yaml.dump(updated), 'utf8');
       console.log(`  📄 Updated: ${yamlPath}`);
     }

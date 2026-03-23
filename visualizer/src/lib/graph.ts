@@ -31,16 +31,12 @@ export const buildAdjacencyList = (schema: Schema) => {
 
   // 1. Add ER Relationships
   schema.relationships?.forEach((rel, index) => {
-    addEdge(rel.from.table, rel.to.table, 'er', `e-${index}`, rel)
+    addEdge(rel.from.table, rel.to.table, 'er', `er-${index}`, rel)
   })
 
   // 2. Add Lineage Relationships
-  schema.tables.forEach(table => {
-    if (table.lineage?.upstream) {
-      table.lineage.upstream.forEach((upId, index) => {
-        addEdge(upId, table.id, 'lineage', `lin-${upId}-${table.id}-${index}`, { direction: 'upstream' })
-      })
-    }
+  schema.lineage?.forEach((edge, index) => {
+    addEdge(edge.from, edge.to, 'lineage', `lin-${edge.from}-${edge.to}-${index}`, { direction: 'upstream' })
   })
 
   return adj

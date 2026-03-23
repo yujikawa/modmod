@@ -331,6 +331,48 @@ const DetailPanel = memo(() => {
   }
 
   // --- Relationship Editor Rendering ---
+  if (relationshipData && relationshipData.kind === 'lineage') {
+    const { relationship } = relationshipData;
+    return (
+      <div
+        className="shadow-2xl z-50 flex flex-col sidebar-content"
+        onClick={stopPropagation}
+        onMouseDown={stopPropagation}
+        onPointerDown={stopPropagation}
+        style={panelStyle}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 20px', borderBottom: '1px solid var(--border-main)', backgroundColor: 'var(--header-bg)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+            <LinkIcon size={18} style={{ color: '#3b82f6' }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Lineage</span>
+                <span style={{ fontSize: '9px', fontWeight: 800, padding: '1px 5px', borderRadius: '3px', backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.2)', textTransform: 'uppercase' }}>
+                  UPSTREAM
+                </span>
+              </div>
+              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0 }}>
+                {relationship.from.table} → {relationship.to.table}
+              </p>
+            </div>
+          </div>
+          <button onClick={() => setIsDetailPanelMinimized(true)} className={`p-1.5 rounded-full transition-colors ${theme === 'dark' ? 'hover:bg-slate-800 text-slate-500' : 'hover:bg-slate-200 text-slate-400'}`}>
+            <ChevronDown size={18} />
+          </button>
+        </div>
+        <div style={{ flex: 1, padding: '20px', color: 'var(--text-secondary)', fontSize: '13px' }}>
+          <p>This edge represents a <strong>lineage dependency</strong>.</p>
+          <p style={{ marginTop: '8px' }}>
+            <strong>{relationship.to.table}</strong> depends on <strong>{relationship.from.table}</strong> as an upstream source.
+          </p>
+          <p style={{ marginTop: '8px', fontSize: '11px', opacity: 0.6 }}>
+            To edit lineage, update the <code>lineage.upstream</code> field in the table definition.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   if (relationshipData) {
     const { relationship, index } = relationshipData;
     return (

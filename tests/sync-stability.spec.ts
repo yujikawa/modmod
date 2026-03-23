@@ -52,7 +52,7 @@ test.beforeEach(async ({ page }) => {
     await page.waitForTimeout(1500);
     
     // 4. Verify that 'EXTERNAL_CHANGE' is NOT on the canvas
-    const externalNode = page.locator('.react-flow__node').filter({ hasText: 'EXTERNAL_CHANGE' });
+    const externalNode = page.locator('[data-testid="table-node"]').filter({ hasText: 'EXTERNAL_CHANGE' });
     await expect(externalNode).not.toBeVisible();
     
     // Original node should still be there
@@ -70,6 +70,6 @@ test.beforeEach(async ({ page }) => {
     fs.writeFileSync(RUNTIME_PATH, externalContent, 'utf8');
     
     // 3. Verify that the UI DOES refresh to AI_AGENT_CHANGE
-    await expect(page.locator('.react-flow__node-table').filter({ hasText: 'AI_AGENT_CHANGE' })).toBeVisible({ timeout: 20000 });
+    await expect(page.locator('[data-testid="table-node"]').filter({ hasText: 'AI_AGENT_CHANGE' })).toBeVisible({ timeout: 20000 });
   });
 });
