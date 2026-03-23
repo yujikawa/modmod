@@ -95,6 +95,7 @@ Modscape uses a schema designed for data analysis contexts. The full YAML struct
 domains      – visual containers grouping related tables
 tables       – entity definitions with tri-layer metadata
 relationships – ER cardinality between tables
+lineage      – data flow / transformation paths
 annotations  – sticky notes / callouts on the canvas
 layout       – ALL coordinate data (never put x/y inside tables or domains)
 ```
@@ -107,7 +108,7 @@ domains:
     name: "Core Sales"
     description: "Transactional data for the sales team."  # optional
     color: "rgba(59, 130, 246, 0.1)"  # background fill
-    tables: [orders, dim_customers]
+    tables: [orders, dim_customers]   # logical membership
     isLocked: false  # prevent accidental drag when true
 ```
 
@@ -132,11 +133,6 @@ tables:
       tags: [WHO, WHAT, WHEN]  # BEAM* tags
       businessDefinitions:
         revenue: "Net revenue after discounts"
-
-    lineage:  # for mart/aggregated tables only
-      upstream:
-        - fct_sales
-        - dim_dates
 
     implementation:  # optional – hints for AI code generation
       materialization: incremental  # table | view | incremental | ephemeral
@@ -168,10 +164,21 @@ tables:
           type: "BIGINT"
           constraints: [NOT NULL]
 
-    sampleData:  # 2D array; first row = column IDs
-      - [order_id, amount, status]
+    sampleData:  # 2D array of realistic values
       - [1001, 50.0, "COMPLETED"]
       - [1002, 120.5, "PENDING"]
+```
+
+### Data Lineage
+
+Top-level `lineage` section declares data flow between tables (which source tables feed which derived tables). This is rendered as dashed arrows in **Lineage Mode**.
+
+```yaml
+lineage:
+  - from: fct_orders    # source table ID
+    to: mart_revenue    # derived table ID
+  - from: dim_dates
+    to: mart_revenue
 ```
 
 ### Relationships
@@ -187,7 +194,7 @@ relationships:
     type: one-to-many  # one-to-one | one-to-many | many-to-one | many-to-many
 ```
 
-> **Data Lineage** connections are driven by `lineage.upstream` and rendered as animated arrows in Lineage Mode. Do **not** duplicate them as `relationships` entries.
+> **ER Relationships** vs **Lineage**: Use `relationships` for structural joins (FKs) and `lineage` for data flow (transformations). Do not duplicate them.
 
 ### Annotations
 

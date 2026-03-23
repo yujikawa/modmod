@@ -92,6 +92,7 @@ YAMLのルートレベル構造は以下の通りです：
 domains      – 関連テーブルをまとめるビジュアルコンテナ
 tables       – 3階層メタデータを持つエンティティ定義
 relationships – テーブル間のERカーディナリティ
+lineage      – データの流れ / 変換パス
 annotations  – キャンバス上のスティッキーノート・吹き出し
 layout       – 全座標データ（tables/domains の中に x/y を書いてはいけない）
 ```
@@ -104,7 +105,7 @@ domains:
     name: "主要売上"
     description: "営業チームのトランザクションデータ。"  # 任意
     color: "rgba(59, 130, 246, 0.1)"  # 背景色
-    tables: [orders, dim_customers]
+    tables: [orders, dim_customers]   # 論理的な所属リスト
     isLocked: false  # true にするとキャンバスでの誤ドラッグを防止
 ```
 
@@ -129,11 +130,6 @@ tables:
       tags: [WHO, WHAT, WHEN]  # BEAM* タグ
       businessDefinitions:
         revenue: "割引・返品後の純売上"
-
-    lineage:  # mart/集計テーブルのみに定義
-      upstream:
-        - fct_sales
-        - dim_dates
 
     implementation:  # 任意 – AIコード生成へのヒント
       materialization: incremental  # table | view | incremental | ephemeral
@@ -165,23 +161,22 @@ tables:
           type: "BIGINT"
           constraints: [NOT NULL]
 
-    sampleData:  # 2次元配列。先頭行 = カラムID
-      - [order_id, amount, status]
+    sampleData:  # 実数値の2次元配列
       - [1001, 50.0, "COMPLETED"]
       - [1002, 120.5, "PENDING"]
 ```
 
-**テーブルタイプと `appearance.type` の使い分け：**
+### Data Lineage（データリネージ）
 
-| type | 用途 |
-|------|------|
-| `fact` | 取引・イベント・測定値 |
-| `dimension` | エンティティ・マスタ・参照リスト |
-| `mart` | 集計・消費者向けテーブル（`lineage.upstream` を必ず定義） |
-| `hub` | Data Vault のビジネスキー |
-| `link` | Data Vault のハブ間結合・トランザクション |
-| `satellite` | Data Vault のハブに紐づく履歴属性 |
-| `table` | 汎用 |
+ルートレベルの `lineage` セクションでテーブル間のデータの流れ（どのソースからどの集計テーブルが作られるか）を定義します。リネージモードではアニメーション付きの点線矢印として表示されます。
+
+```yaml
+lineage:
+  - from: fct_orders    # ソーステーブル ID
+    to: mart_revenue    # 派生テーブル ID
+  - from: dim_dates
+    to: mart_revenue
+```
 
 ### Relationships（リレーションシップ）
 
@@ -196,7 +191,7 @@ relationships:
     type: one-to-many  # one-to-one | one-to-many | many-to-one | many-to-many
 ```
 
-> **データリネージ**は `lineage.upstream` で定義し、リネージモードでアニメーション矢印として表示されます。`relationships` に重複して記載しないでください。
+> **ER関係** vs **リネージ**: 構造的な結合（外部キーなど）には `relationships` を、データの加工・変換の流れには `lineage` を使用してください。両方に同じ接続を記述しないでください。
 
 ### Annotations（アノテーション）
 
