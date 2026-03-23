@@ -729,6 +729,15 @@ export default function CytoscapeCanvas({
       // Pre-render nodes slightly outside the viewport so they appear instantly on pan
       const PAD = 400
 
+      // Pre-compute connected nodes for the selected node (for dimming)
+      const selectedId = selectedIdRef.current
+      const connectedToSelected = new Set<string>()
+      if (selectedId) {
+        cy.$(`#${selectedId}`).connectedEdges().connectedNodes().forEach((n: CyInstance) => {
+          connectedToSelected.add(n.id())
+        })
+      }
+
       cy.nodes().forEach((node: CyInstance) => {
         const table = node.data('table')
         if (!table) return
@@ -748,8 +757,8 @@ export default function CytoscapeCanvas({
         const isHovered = hoveredNodeIdRef.current === id
         const isHighlighted = highlightedIdsRef.current.includes(id)
         const isAnythingHighlighted =
-          highlightedIdsRef.current.length > 0 || presentationModeRef.current
-        const isDimmed = isAnythingHighlighted && !isSelected && !isHighlighted && !isHovered
+          highlightedIdsRef.current.length > 0 || presentationModeRef.current || !!selectedId
+        const isDimmed = isAnythingHighlighted && !isSelected && !isHighlighted && !isHovered && !connectedToSelected.has(id)
         const currentConnectMode = useStore.getState().connectMode
         const isPendingSource = connectPendingSourceRef.current === id
         const isConnectMode = !!currentConnectMode
@@ -940,21 +949,7 @@ export default function CytoscapeCanvas({
       updateNodePosition(evt.target.id(), pos.x, pos.y)
     })
 
-    // Hover: highlight hovered node and connected nodes/edges
-    cy.on('mouseover', 'node', (evt: CyInstance) => {
-      if (useStore.getState().connectMode) return
-      const node = evt.target
-      hoveredNodeIdRef.current = node.id()
-      const connectedEdges = node.connectedEdges()
-      const connectedNodes = connectedEdges.connectedNodes().not(node)
-      const highlightIds: string[] = connectedNodes.map((n: CyInstance) => n.id())
-      useStore.getState().setHighlightedNodeIds(highlightIds)
-    })
-    cy.on('mouseout', 'node', () => {
-      if (useStore.getState().connectMode) return
-      hoveredNodeIdRef.current = null
-      useStore.getState().setHighlightedNodeIds([])
-    })
+    // Hover: no effects
 
     // Box / lasso selection → sync to store
     // Debounced: lasso over 1000 nodes fires boxselect 1000 times; batch into one update.
@@ -1349,15 +1344,20 @@ export default function CytoscapeCanvas({
       })
     } else {
       cy.edges().forEach((edge: CyInstance) => {
-        edge.removeClass('path-highlighted dimmed')
+        edge.removeClass('path-highlighted')
         if (selectedTableId) {
           const connected =
             edge.source().id() === selectedTableId ||
             edge.target().id() === selectedTableId
-          if (connected) edge.addClass('highlighted')
-          else edge.removeClass('highlighted')
+          if (connected) {
+            edge.addClass('highlighted')
+            edge.removeClass('dimmed')
+          } else {
+            edge.removeClass('highlighted')
+            edge.addClass('dimmed')
+          }
         } else {
-          edge.removeClass('highlighted')
+          edge.removeClass('highlighted dimmed')
         }
       })
     }
