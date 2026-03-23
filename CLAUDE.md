@@ -1,17 +1,22 @@
 # CLAUDE.md
 
+## Communication Rules
+
+- **Always respond to the user in Japanese**, regardless of the language used in this file.
+- Internal reasoning and thinking can be in English.
+
 ## Project Overview
 
-**Modscape** — YAMLドリブンのデータモデリングビジュアライザー。Modern Data Stack向けに、Star Schema・Data Vault・Data Martを視覚的にモデリングするCLIツール。
+**Modscape** — A YAML-driven data modeling visualizer. A CLI tool for visually modeling Star Schema, Data Vault, and Data Mart for the Modern Data Stack.
 
 ## Technology Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React, React Flow, CodeMirror 6, Zustand |
-| Layout | Dagre |
+| Frontend | React, Cytoscape.js, CodeMirror 6, Zustand |
+| Styling | Tailwind CSS, ShadCN UI |
 | YAML | js-yaml |
-| CLI | Node.js, Commander |
+| CLI | Node.js (ESM), Commander |
 | Test | Playwright (E2E) |
 | Build | Vite (visualizer), ESM (CLI) |
 
@@ -19,129 +24,148 @@
 
 ```
 modscape/
-├── src/               # CLI (Node.js ESM)
-│   ├── index.js       # エントリーポイント
-│   ├── dev.js         # dev サーバー
-│   ├── build.js       # ビルド
-│   ├── init.js        # init コマンド
-│   ├── export.js      # export コマンド
-│   └── import-dbt.js  # dbt import コマンド
+├── src/                   # CLI (Node.js ESM)
+│   ├── index.js           # Entry point
+│   ├── dev.js             # Dev server
+│   ├── build.js           # Build command
+│   ├── init.js            # init command
+│   ├── create.js          # create command
+│   ├── export.js          # export command
+│   ├── import-dbt.js      # dbt import command
+│   ├── sync-dbt.js        # dbt sync command
+│   ├── merge.js           # merge command
+│   └── templates/         # Templates for init/create
 ├── visualizer/
 │   └── src/
 │       ├── App.tsx
-│       ├── components/ # Reactコンポーネント
-│       ├── store/      # Zustand ストア
-│       ├── lib/        # ユーティリティ
-│       └── types/      # TypeScript型定義
-├── tests/             # Playwright E2Eテスト
-├── openspec/          # OpenSpec仕様管理
-│   ├── config.yaml    # プロジェクトルール
-│   ├── specs/         # アクティブな機能仕様 (38件)
-│   └── changes/archive/ # アーカイブ済みチェンジ (77件)
-└── samples/           # サンプルmodel.yaml
+│       ├── components/
+│       │   ├── CytoscapeCanvas.tsx   # Main graph canvas
+│       │   ├── DetailPanel.tsx       # Entity detail panel
+│       │   ├── CommandPalette.tsx
+│       │   ├── PresentationOverlay.tsx
+│       │   ├── SelectionToolbar.tsx
+│       │   ├── SampleDataGrid.tsx
+│       │   ├── TableCard.tsx
+│       │   ├── RightPanel/           # Right sidebar (TablesTab, PathFinderTab, NoteSearchTab)
+│       │   ├── Sidebar/              # Left sidebar (EntitiesTab, EditorTab, QuickConnectTab, FileSelector)
+│       │   └── ui/                   # ShadCN UI components
+│       ├── store/
+│       │   └── useStore.ts           # Zustand store
+│       ├── lib/
+│       │   ├── parser.ts             # YAML parser
+│       │   ├── cytoscapeElements.ts  # Cytoscape graph builder
+│       │   ├── graph.ts              # Graph utilities
+│       │   └── utils.ts
+│       └── types/
+│           └── schema.ts             # YAML model type definitions
+├── tests/                 # Playwright E2E tests
+│   ├── comprehensive.spec.ts
+│   ├── import-dbt.spec.ts
+│   ├── sync-stability.spec.ts
+│   └── fixtures/
+├── visualizer-dist/       # Built visualizer (committed to repo)
+├── openspec/              # OpenSpec spec management
+│   ├── config.yaml
+│   ├── specs/             # Active feature specs (~41)
+│   └── changes/archive/   # Archived changes (~339)
+└── samples/               # Sample model.yaml files
 ```
 
 ## Key Commands
 
 ```bash
-# ビルド
-npm run build-ui          # visualizer をビルドして visualizer-dist/ に配置
+# Build
+npm run build-ui          # Build visualizer into visualizer-dist/
 
-# 開発
-npm run dev               # ローカル dev サーバー起動
+# Development
+npm run dev               # Start local dev server
 
-# テスト
-npm run test:e2e          # E2Eテスト実行
-npm run test:cli          # CLIテスト (dbt import)
+# Testing
+npm run test:e2e          # Run E2E tests
+npm run test:cli          # Run CLI tests (dbt import/sync)
 npm run test:all          # build-ui + test:cli
 
-# スナップショット更新 (UIに変更を加えた場合は必須)
-npm run test:e2e -- --update-snapshots
-# または
-npm run test:update       # build-ui + スナップショット更新
+# Update snapshots (required after visual UI changes)
+npm run test:update       # build-ui + update snapshots
 ```
 
 ## Development Rules
 
-### 実装時の注意
-- UI変更後は **必ず** `npm run build-ui` でビルドが通ることを確認
-- UIに視覚的変更がある場合は `npm run test:e2e -- --update-snapshots` でスナップショットを更新してコミット
-- タスクは小さなインクリメンタルなステップに分割する
-- 大規模な書き直しより反復的なUI改善を優先する
-
-### 設計方針
-- YAMLスキーマはできる限り安定を保つ
-- ビジュアルエディタとYAMLの同期を維持する
-- シンプルなアーキテクチャを優先し、重い抽象化を避ける
-- データベース固有の前提を持ち込まない
-- Star Schema と Data Vault のモデリングとの互換性を維持する
+- After UI changes, always verify `npm run build-ui` succeeds.
+- After visual UI changes, run `npm run test:update` to update snapshots before committing.
+- Keep the YAML schema as stable as possible.
+- Maintain sync between the visual editor and YAML.
+- Prefer simple architecture; avoid heavy abstractions.
+- Do not introduce database-specific assumptions.
+- Maintain compatibility with Star Schema and Data Vault modeling patterns.
+- UI text (labels, placeholders, descriptions, options) must be written in **English**.
 
 ## YAML Model Format
 
-ルートレベルの6セクション（`tables`/`domains` 内に座標を書かないこと）：
+Six root-level sections. Do not write coordinates inside `tables` or `domains`.
 
 ```yaml
 # ── Domains ──────────────────────────────────────────────
 domains:
   - id: sales_ops
     name: "Sales Operations"
-    description: "営業系テーブルのグループ。"    # 任意
+    description: "Group of sales-related tables."  # optional
     color: "rgba(59, 130, 246, 0.1)"
     tables: [fct_orders, dim_customers]
-    isLocked: false                             # 任意: ドラッグ防止
+    isLocked: false                                 # optional: prevent drag
 
 # ── Tables ───────────────────────────────────────────────
 tables:
   - id: fct_orders
-    name: Orders                               # 概念名
-    logical_name: "Order Transactions"         # 論理名（任意）
-    physical_name: "fct_retail_sales"          # 物理テーブル名（任意）
+    name: Orders                               # conceptual name
+    logical_name: "Order Transactions"         # optional
+    physical_name: "fct_retail_sales"          # optional
     appearance:
       type: fact       # fact|dimension|mart|hub|link|satellite|table
-      sub_type: transaction  # 任意サブ分類
-      scd: type2       # ディメンション用 SCD (type0〜type6)
+      sub_type: transaction  # optional sub-classification
+      scd: type2       # SCD for dimensions (type0–type6)
       icon: "💰"
-      color: "#e0f2fe" # 任意ヘッダーカラー
-    conceptual:        # AIエージェント向けビジネスコンテキスト（任意）
-      description: "1行 = 1注文明細。"
-      tags: [WHAT, HOW_MUCH]   # BEAM* タグ: WHO|WHAT|WHEN|WHERE|HOW|COUNT|HOW_MUCH
+      color: "#e0f2fe" # optional header color
+    conceptual:        # Business context for AI agents (optional)
+      description: "One row = one order line item."
+      tags: [WHAT, HOW_MUCH]   # BEAM* tags: WHO|WHAT|WHEN|WHERE|HOW|COUNT|HOW_MUCH
       businessDefinitions:
-        revenue: "割引後純売上"
-    implementation:    # AIコード生成ヒント（任意）省略時は appearance.type から自動推論
+        revenue: "Net sales after discount"
+    implementation:    # AI codegen hints (optional); inferred from appearance.type if omitted
       materialization: incremental          # table|view|incremental|ephemeral
       incremental_strategy: merge          # merge|append|delete+insert
       unique_key: order_id
       partition_by: { field: event_date, granularity: day }  # day|month|year|hour
       cluster_by: [customer_id]
-      grain: [month_key]                   # GROUP BY (mart のみ)
-      measures:                            # 集計定義 (mart のみ)
+      grain: [month_key]                   # GROUP BY (mart only)
+      measures:                            # Aggregation definitions (mart only)
         - column: total_revenue
           agg: sum                         # sum|count|count_distinct|avg|min|max
-          source_column: fct_sales.amount  # 上流カラム (<table_id>.<col_id> で修飾可)
+          source_column: fct_sales.amount  # upstream column (<table_id>.<col_id>)
     columns:
       - id: order_id
         logical:
           name: "Order ID"
           type: Int
-          description: "サロゲートキー。"
+          description: "Surrogate key."
           isPrimaryKey: true
           isForeignKey: false
           isPartitionKey: false
-          isMetadata: false    # 監査カラムは true
+          isMetadata: false    # true for audit columns
           additivity: fully    # fully|semi|non
-        physical:              # 物理定義の上書き（任意）
+        physical:              # Override physical definition (optional)
           name: order_id
           type: "BIGINT"
           constraints: [NOT NULL]
-    sampleData:                # 2D配列。先頭行 = カラムID
+    sampleData:                # 2D array; first row = column IDs
       - [order_id, amount]
       - [1001, 150.00]
 
 # ── Lineage ───────────────────────────────────────────────
 lineage:
-  - from: fct_orders      # 上流テーブルのid
-    to: mart_summary      # 下流テーブルのid
-  # ※ relationships に重複記載しないこと
+  - from: fct_orders      # upstream table id
+    to: mart_summary      # downstream table id
+  # Do not duplicate entries in relationships
 
 # ── Relationships ─────────────────────────────────────────
 relationships:
@@ -153,42 +177,42 @@ relationships:
 annotations:
   - id: note_001
     type: sticky             # sticky|callout
-    text: "Grain: 1行 = 1注文明細"
-    color: "#fef9c3"         # 任意背景色
-    targetId: fct_orders     # 貼付先ID（任意）
+    text: "Grain: one row = one order line item"
+    color: "#fef9c3"         # optional background color
+    targetId: fct_orders     # attachment target ID (optional)
     targetType: table        # table|domain|relationship|column
-    offset: { x: 100, y: -80 }  # 対象左上からのオフセット（未指定時は絶対座標）
+    offset: { x: 100, y: -80 }  # offset from target top-left (absolute coord if omitted)
 
 # ── Layout ───────────────────────────────────────────────
 layout:
-  sales_ops:                  # ドメイン: width/height 必須
+  sales_ops:                  # Domain: width/height required
     x: 0
     y: 0
     width: 880
     height: 480
     isLocked: false
-  fct_orders:                 # ドメイン内テーブル: 座標はドメイン原点からの相対値
+  fct_orders:                 # Table inside domain: coords relative to domain origin
     x: 280
     y: 200
-    parentId: sales_ops       # ドメイン所属の宣言
-  mart_summary:               # スタンドアロンテーブル: キャンバス絶対座標
+    parentId: sales_ops       # Declares domain membership
+  mart_summary:               # Standalone table: absolute canvas coordinates
     x: 1060
     y: 200
 ```
 
 ## OpenSpec Workflow
 
-このプロジェクトは **OpenSpec** による仕様駆動開発を採用。
+This project uses **OpenSpec** for spec-driven development.
 
 ```
-探索 (explore) → 提案 (propose) → 実装 (apply) → アーカイブ (archive)
+explore → propose → apply → archive
 ```
 
-| コマンド | 用途 |
-|---------|------|
-| `/opsx:explore` | アイデア探索・要件の整理 |
-| `/opsx:propose` | 新しいチェンジの提案・設計・タスク生成 |
-| `/opsx:apply`   | タスクの実装 |
-| `/opsx:archive` | 完了チェンジのアーカイブ |
+| Command | Purpose |
+|---------|---------|
+| `/opsx:explore` | Explore ideas and clarify requirements |
+| `/opsx:propose` | Propose a new change with design and tasks |
+| `/opsx:apply`   | Implement tasks |
+| `/opsx:archive` | Archive a completed change |
 
-アクティブな仕様は `openspec/specs/` 配下の各 `spec.md` を参照。
+Active specs are in `openspec/specs/` — see each `spec.md` for details.
