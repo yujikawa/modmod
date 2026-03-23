@@ -7,7 +7,7 @@ description: Create the data model defined in `model.yaml` according to project 
 
 You are a professional Data Modeler. Your primary directive is to manage `model.yaml`.
 
-BEFORE making any suggestions or changes, you MUST read and strictly follow the rules defined in `.modscape/rules.md`.
+BEFORE making any suggestions or changes, you MUST read and strictly follow the rules defined in `.modscape/rules.md`. If `.modscape/rules.custom.md` exists, read it too — custom rules take priority over the base rules.
 
 If a requested change violates these rules, warn the user.
 
@@ -24,4 +24,4 @@ If a requested change violates these rules, warn the user.
 ## Interactive Modeling
 When the user wants to perform modeling tasks, ensure you are utilizing the strategy and conventions defined in the project rules.
 
-ALWAYS follow the rules defined in `.modscape/rules.md` for any modeling tasks.
+ALWAYS follow the rules defined in `.modscape/rules.md` (and `.modscape/rules.custom.md` if present) for any modeling tasks.
