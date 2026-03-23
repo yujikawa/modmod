@@ -10,6 +10,7 @@ import { exportModel } from './export.js';
 import { createModel } from './create.js';
 import { importDbt } from './import-dbt.js';
 import { syncDbt } from './sync-dbt.js';
+import { applyLayout } from './layout.js';
 import { createRequire } from 'module';
   import { mergeModels } from './merge.js';
   
@@ -102,6 +103,15 @@ program
   .option('-o, --output <path>', 'output file path', 'merged.yaml')
   .action((paths, options) => {
     mergeModels(paths, options);
+  });
+
+program
+  .command('layout')
+  .description('Perform automatic layout calculation and update the YAML file')
+  .argument('<path>', 'path to the YAML model file')
+  .option('-o, --output <path>', 'output file path (defaults to overwriting input)')
+  .action((path, options) => {
+    applyLayout(path, options);
   });
 
 program.parse();
