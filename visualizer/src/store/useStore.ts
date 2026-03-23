@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import yaml from 'js-yaml'
 import type { Schema, Table, Relationship, Domain, Annotation } from '../types/schema'
 import { parseYAML, normalizeSchema } from '../lib/parser'
@@ -129,7 +130,8 @@ interface AppState {
 
 let saveTimeout: any = null;
 
-export const useStore = create<AppState>((set, get) => ({
+export const useStore = create<AppState>()(persist(
+  (set, get) => ({
   schema: null,
   selectedTableId: null,
   selectedTableIds: [],
@@ -865,4 +867,16 @@ export const useStore = create<AppState>((set, get) => ({
     return schema.annotations.find(a => a.id === selectedAnnotationId) || null;
   },
 
-}));
+  }),
+  {
+    name: 'modscape-ui-settings',
+    storage: createJSONStorage(() => localStorage),
+    partialize: (state) => ({
+      theme: state.theme,
+      showER: state.showER,
+      showLineage: state.showLineage,
+      showAnnotations: state.showAnnotations,
+      isCompactMode: state.isCompactMode,
+    }),
+  }
+));
