@@ -611,6 +611,17 @@ Use the built-in mutation commands to **add, update, or remove individual entiti
 
 ### 13-2. Recommended AI Agent Flow
 
+When inspecting a model's current state, **prefer using the list/get commands** over reading the YAML file directly.
+They return validated, structured JSON output that is easier to process.
+
+```bash
+# Inspect current state before making changes
+modscape table list model.yaml --json
+modscape domain list model.yaml --json
+modscape relationship list model.yaml --json
+modscape lineage list model.yaml --json
+```
+
 Before `add` or `update`, check existence with `get` or `list`:
 
 ```bash
