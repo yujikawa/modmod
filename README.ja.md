@@ -62,6 +62,8 @@ npm install -g modscape
     ```
     `.modscape/rules.md`（YAMLスキーマのルール）と `.modscape/codegen-rules.md`（実装コード生成のルール）、および各エージェント用のコマンドファイルが生成されます。
 
+    > **ルールの更新**: Modscape をアップグレードした後は、`modscape init` を再実行することで `.modscape/rules.md` と `.modscape/codegen-rules.md` を最新版に上書きできます。
+
 2.  **起動**: ビジュアライザーを起動します。
     ```bash
     modscape dev model.yaml
@@ -73,10 +75,12 @@ npm install -g modscape
 4.  **実装コードの生成** — `/modscape:codegen` でYAMLをdbt / SQLMesh / Spark SQLに変換します。
     > *".modscape/codegen-rules.md に従って、model.yaml からdbtモデルを生成して。"*
 
-    エージェントは `lineage.upstream` を元に依存関係の順でモデルを生成し、YAMLで定義しきれない箇所には `-- TODO:` コメントを残します。
+    エージェントは `lineage` セクションを元に依存関係の順でモデルを生成し、YAMLで定義しきれない箇所には `-- TODO:` コメントを残します。
 
 ### B: 手動モデリング
-1.  **YAML作成**: `model.yaml` ファイルを作成します。
+アーキテクチャを直接コントロールしたい場合に最適です。
+
+1.  **YAML作成**: `model.yaml` ファイルを作成します（[YAMLリファレンス](#モデルの定義-yaml) を参照）。
 2.  **起動**: ビジュアライザーを起動します。
     ```bash
     modscape dev model.yaml
