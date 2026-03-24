@@ -371,15 +371,12 @@ function renderDomainHandles(
       sw = (lw + PAD * 2) * zoom
     } else {
       const bb = getDomainBB(memberNodes, zoom, schema)
-      const lw = layoutEntry?.width ?? 0
-      const finalW = Math.max(bb.w, lw)
       const cx = bb.x1 + bb.w / 2
       const cyCenter = bb.y1 + bb.h / 2
-      const finalH = Math.max(bb.h, (layoutEntry?.height ?? 0))
 
-      sx = (cx - finalW / 2 - PAD) * zoom + pan.x
-      sy = (cyCenter - finalH / 2 - TOP_PAD) * zoom + pan.y
-      sw = (finalW + PAD * 2) * zoom
+      sx = (cx - bb.w / 2 - PAD) * zoom + pan.x
+      sy = (cyCenter - bb.h / 2 - TOP_PAD) * zoom + pan.y
+      sw = (bb.w + PAD * 2) * zoom
     }
 
     const existingHandle = existing.get(domain.id)
