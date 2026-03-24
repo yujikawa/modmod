@@ -16,7 +16,7 @@ COORDINATES    ONLY in `layout`. NEVER inside tables or domains.
 LINEAGE        Use top-level `lineage` section (not relationships, not table.lineage.upstream).
 parentId       Declare a table's domain membership inside layout, not inside domains.
 IDs            Every object (table, domain, annotation) needs a unique `id`.
-sampleData     First row = column IDs. At least 3 realistic data rows.
+sampleData     At least 3 realistic data rows. No header row.
 Grid           All x/y values must be multiples of 40.
 ```
 
@@ -45,13 +45,12 @@ layout:        # (object) ALL coordinates — REQUIRED if any objects exist
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `id` | **REQUIRED** | Unique identifier used as a key in `layout`, `domains.tables`, `lineage.upstream`, etc. Use snake_case. |
+| `id` | **REQUIRED** | Unique identifier used as a key in `layout`, `domains.tables`, `lineage`, etc. Use snake_case. |
 | `name` | **REQUIRED** | Conceptual (business) name shown large on the canvas. |
 | `logical_name` | optional | Formal business name shown medium. Omit if same as `name`. |
 | `physical_name` | optional | Actual database table name shown small. |
 | `appearance` | optional | Visual type, icon, color. |
 | `conceptual` | optional | AI-friendly business context metadata. |
-| `lineage` | optional | Upstream table IDs. Only for `mart` / aggregated tables. |
 | `columns` | optional | Column definitions. |
 | `sampleData` | optional | 2D array of sample rows. Strongly recommended. |
 
@@ -72,7 +71,7 @@ appearance:
 |------|-------------|
 | `fact` | Events, transactions, measurements. Has measures (numbers) and FK columns. |
 | `dimension` | Entities, master data, reference lists. Descriptive attributes. |
-| `mart` | Aggregated or consumer-facing output. **Always add `lineage.upstream`.** |
+| `mart` | Aggregated or consumer-facing output. **Always add a top-level `lineage` entry.** |
 | `hub` | Data Vault: stores a single unique business key. |
 | `link` | Data Vault: joins two or more hubs (transaction or relationship). |
 | `satellite` | Data Vault: descriptive attributes of a hub, tracked over time. |
@@ -96,7 +95,7 @@ Each column has an `id` plus optional `logical` and `physical` blocks.
 
 ```yaml
 columns:
-  - id: order_id           # REQUIRED. Unique within the table. Used in sampleData header.
+  - id: order_id           # REQUIRED. Unique within the table.
     logical:
       name: "Order ID"     # Display name
       type: Int            # Int | String | Decimal | Date | Timestamp | Boolean | ...
@@ -138,7 +137,7 @@ relationships:
 | `many-to-one` | Fact → Dimension *(inverse notation of above)* |
 | `many-to-many` | Via a bridge / link table |
 
-**MUST NOT** use `relationships` to express data lineage (use `lineage.upstream` instead).
+**MUST NOT** use `relationships` to express data lineage (use the top-level `lineage` section instead).
 
 ---
 
@@ -497,7 +496,7 @@ The command reads `target/manifest.json` and produces YAML with:
 | `physical_name` | `node.alias` | Falls back to `node.name` |
 | `conceptual.description` | `node.description` | From dbt docs |
 | `columns[].logical.name/type/description` | `node.columns` | From dbt schema.yml |
-| `lineage.upstream` | `node.depends_on.nodes` | Auto-populated |
+| `lineage` (top-level) | `node.depends_on.nodes` | Auto-populated as `{from, to}` entries |
 | `appearance.type` | — | **Always `table`. Must be reclassified.** |
 | `sampleData` | — | **Not generated. Must be added.** |
 | `layout` | — | **Not generated. Must be added.** |
@@ -517,7 +516,7 @@ After running `modscape dbt import`, the generated YAML needs enrichment. AI age
 
 3. **Add `sampleData`** — The import does not generate sample data. Add at least 3 realistic rows per table.
 
-4. **Do NOT re-generate `lineage.upstream`** — It is already correctly populated from `depends_on.nodes`.
+4. **Do NOT re-generate `lineage` entries** — Top-level `lineage` is already correctly populated from `depends_on.nodes`.
 
 ### 11-4. `dbt sync` — Incremental updates
 
@@ -527,7 +526,7 @@ Use `modscape dbt sync` when the dbt project has changed (new models, updated co
 - `name`, `logical_name`, `physical_name`
 - `conceptual.description`
 - `columns` (all)
-- `lineage.upstream`
+- `lineage` (top-level)
 
 **What `sync` preserves (safe to edit manually):**
 - `appearance` (type, icon, color, scd)
@@ -549,14 +548,15 @@ id: "model.my_project.fct_orders"
 id: "source.my_project.raw.orders"
 id: "seed.my_project.product_categories"
 
-# lineage.upstream also uses unique_id format
+# top-level lineage also uses unique_id format
 lineage:
-  upstream:
-    - "model.my_project.stg_orders"
-    - "source.my_project.raw.customers"
+  - from: "model.my_project.stg_orders"
+    to: "model.my_project.fct_orders"
+  - from: "source.my_project.raw.customers"
+    to: "model.my_project.fct_orders"
 ```
 
-**MUST NOT** shorten these IDs. They are the join keys between `tables`, `domains.tables`, `lineage.upstream`, and `layout`.
+**MUST NOT** shorten these IDs. They are the join keys between `tables`, `domains.tables`, `lineage`, and `layout`.
 
 ---
 
