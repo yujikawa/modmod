@@ -12,8 +12,14 @@ import { importDbt } from './import-dbt.js';
 import { syncDbt } from './sync-dbt.js';
 import { applyLayout } from './layout.js';
 import { createRequire } from 'module';
-  import { mergeModels } from './merge.js';
-  
+import { mergeModels } from './merge.js';
+import { extractModels } from './extract.js';
+import { tableCommand } from './table.js';
+import { columnCommand } from './column.js';
+import { relationshipCommand } from './relationship.js';
+import { lineageCommand } from './lineage.js';
+import { domainCommand } from './domain.js';
+
 const require = createRequire(import.meta.url);
 const pkg = require('../package.json');
 
@@ -104,6 +110,22 @@ program
   .action((paths, options) => {
     mergeModels(paths, options);
   });
+
+program
+  .command('extract')
+  .description('Extract specific tables from YAML models by ID')
+  .argument('<paths...>', 'YAML files or directories to extract from')
+  .option('-t, --tables <ids>', 'comma-separated table IDs to extract')
+  .option('-o, --output <path>', 'output file path', 'extracted.yaml')
+  .action((paths, options) => {
+    extractModels(paths, options);
+  });
+
+program.addCommand(tableCommand());
+program.addCommand(columnCommand());
+program.addCommand(relationshipCommand());
+program.addCommand(lineageCommand());
+program.addCommand(domainCommand());
 
 program
   .command('layout')
