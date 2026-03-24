@@ -462,27 +462,6 @@ tables:
           type: Int
           additivity: fully
     sampleData: []
-lineage:
-  - from: stg_customers
-    to: dim_customers
-  - from: stg_products
-    to: dim_products
-  - from: stg_orders
-    to: fct_orders
-  - from: stg_order_items
-    to: fct_orders
-  - from: fct_orders
-    to: mart_daily_revenue
-  - from: dim_dates
-    to: mart_daily_revenue
-  - from: fct_orders
-    to: mart_customer_ltv
-  - from: dim_customers
-    to: mart_customer_ltv
-  - from: fct_orders
-    to: mart_product_performance
-  - from: dim_products
-    to: mart_product_performance
 relationships:
   - from:
       table: stg_orders
@@ -512,6 +491,27 @@ relationships:
       table: fct_orders
       column: order_date_key
     type: one-to-many
+lineage:
+  - from: stg_customers
+    to: dim_customers
+  - from: stg_products
+    to: dim_products
+  - from: stg_orders
+    to: fct_orders
+  - from: stg_order_items
+    to: fct_orders
+  - from: fct_orders
+    to: mart_daily_revenue
+  - from: dim_dates
+    to: mart_daily_revenue
+  - from: fct_orders
+    to: mart_customer_ltv
+  - from: dim_customers
+    to: mart_customer_ltv
+  - from: fct_orders
+    to: mart_product_performance
+  - from: dim_products
+    to: mart_product_performance
 domains:
   - id: staging
     name: Staging
@@ -544,42 +544,53 @@ layout:
   stg_products:
     x: 447.56888972114405
     'y': -284.2111593745741
+    parentId: staging
   analytics_mart:
-    x: 2079.350520128063
-    'y': -420.6331403281348
+    x: 1883
+    'y': -245
   mart_daily_revenue:
-    x: 2719.350520128063
-    'y': 59.36685967186519
+    x: 1993
+    'y': -91
+    parentId: analytics_mart
   mart_customer_ltv:
-    x: 2079.350520128063
-    'y': 299.3668596718652
+    x: 2018
+    'y': 721
+    parentId: analytics_mart
   mart_product_performance:
-    x: 2399.3505201280627
-    'y': 299.3668596718652
+    x: 1997
+    'y': 290
+    parentId: analytics_mart
   core_dwh:
     x: 1001.181842057429
     'y': -539.0789981384597
   dim_customers:
     x: 1262.6815503935165
     'y': -71.3457198753697
+    parentId: core_dwh
   dim_products:
     x: 1599.3959194403487
     'y': -50.45275856682929
+    parentId: core_dwh
   dim_dates:
     x: 896.7170355147272
     'y': -40.27533296077337
+    parentId: core_dwh
   fct_orders:
     x: 1344.5968180579346
     'y': 659.6284216856628
+    parentId: core_dwh
   staging:
     x: -3241.096547432612
     'y': 100.0216817070687
   stg_customers:
     x: 497.02844380345783
     'y': 959.5286690961346
+    parentId: staging
   stg_orders:
     x: 439.7386461687896
     'y': 528.0595683587331
+    parentId: staging
   stg_order_items:
     x: 418.8270104572181
     'y': 114.68567001758255
+    parentId: staging

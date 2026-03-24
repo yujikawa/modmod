@@ -242,10 +242,8 @@ function renderDomainBackgrounds(
       sh = (lh + PAD + TOP_PAD) * zoom
     } else {
       const bb = getDomainBB(memberNodes, zoom, schema)
-      const lw = layoutEntry?.width ?? 0
-      const lh = layoutEntry?.height ?? 0
-      const finalW = Math.max(bb.w, lw)
-      const finalH = Math.max(bb.h, lh)
+      const finalW = bb.w
+      const finalH = bb.h
       const cx = bb.x1 + bb.w / 2
       const cyCenter = bb.y1 + bb.h / 2
       
