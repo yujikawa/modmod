@@ -1,10 +1,11 @@
-import { X, Database, Layout, GitGraph, Tag, AlignVerticalJustifyCenter, AlignHorizontalJustifyCenter, Layers } from 'lucide-react'
+import { X, Database, Layout, GitGraph, Tag, AlignVerticalJustifyCenter, AlignHorizontalJustifyCenter, Layers, FileChartColumnIncreasing } from 'lucide-react'
 import { useStore } from '../store/useStore'
 
 const SelectionToolbar = () => {
-  const { 
-    getSelectedTable, 
-    getSelectedDomain, 
+  const {
+    getSelectedTable,
+    getSelectedDomain,
+    getSelectedConsumer,
     getSelectedRelationship,
     selectedTableIds,
     setSelectedTableIds,
@@ -17,10 +18,11 @@ const SelectionToolbar = () => {
 
   const table = getSelectedTable()
   const domain = getSelectedDomain()
+  const consumer = getSelectedConsumer()
   const relationshipData = getSelectedRelationship()
   const isMultiSelect = selectedTableIds.length > 1
 
-  if (!table && !domain && !relationshipData && !isMultiSelect) return null
+  if (!table && !domain && !consumer && !relationshipData && !isMultiSelect) return null
 
   const handleClearSelection = () => {
     setSelectedTableId(null)
@@ -41,8 +43,9 @@ const SelectionToolbar = () => {
           <>
             {table && <Database size={16} className="text-emerald-500" />}
             {domain && <Layout size={16} className="text-blue-500" />}
+            {consumer && <FileChartColumnIncreasing size={16} className="text-violet-400" />}
             {relationshipData && (
-              ((relationshipData.relationship.type as any) === 'lineage') 
+              ((relationshipData.relationship.type as any) === 'lineage')
                 ? <GitGraph size={16} className="text-blue-400" />
                 : <Tag size={16} className="text-amber-500" />
             )}
@@ -51,10 +54,10 @@ const SelectionToolbar = () => {
         
         <div className="flex flex-col leading-tight">
           <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
-            {isMultiSelect ? 'Multi-Selection' : `Selected ${table ? 'Table' : domain ? 'Domain' : (((relationshipData?.relationship.type as any) === 'lineage') ? 'Lineage' : 'Relation')}`}
+            {isMultiSelect ? 'Multi-Selection' : `Selected ${table ? 'Table' : domain ? 'Domain' : consumer ? 'Consumer' : (((relationshipData?.relationship.type as any) === 'lineage') ? 'Lineage' : 'Relation')}`}
           </span>
           <span className={`text-xs font-semibold truncate max-w-[180px] ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>
-            {isMultiSelect ? `${selectedTableIds.length} tables selected` : (table ? table.name : domain ? domain.name : relationshipData ? `${relationshipData.relationship.from.table} → ${relationshipData.relationship.to.table}` : '')}
+            {isMultiSelect ? `${selectedTableIds.length} tables selected` : (table ? table.name : domain ? domain.name : consumer ? consumer.name : relationshipData ? `${relationshipData.relationship.from.table} → ${relationshipData.relationship.to.table}` : '')}
           </span>
         </div>
       </div>

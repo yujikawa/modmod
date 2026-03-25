@@ -6,7 +6,8 @@ import {
   ChevronRight,
   ChevronDown,
   ArrowUpRight,
-  HelpCircle
+  HelpCircle,
+  FileChartColumnIncreasing
 } from 'lucide-react'
 import type { Table } from '../../types/schema'
 
@@ -54,7 +55,7 @@ const TablesTab = memo(() => {
   }
 
   const groupedData = useMemo(() => {
-    if (!schema) return { domains: [], unassigned: [] }
+    if (!schema) return { domains: [], unassigned: [], consumers: [] }
 
     const domainMap: Record<string, Table[]> = {}
     const assignedTableIds = new Set<string>()
@@ -62,7 +63,7 @@ const TablesTab = memo(() => {
     schema.domains?.forEach(d => { domainMap[d.id] = [] })
 
     schema.tables.forEach(table => {
-      const parentDomain = schema.domains?.find(d => d.tables.includes(table.id))
+      const parentDomain = schema.domains?.find(d => d.members.includes(table.id))
       const matchesSearch = table.name.toLowerCase().includes(search.toLowerCase()) || 
                            table.id.toLowerCase().includes(search.toLowerCase())
 
@@ -85,12 +86,17 @@ const TablesTab = memo(() => {
     }))
 
     const unassignedTables = schema.tables.filter(t => {
-      const isMatch = t.name.toLowerCase().includes(search.toLowerCase()) || 
+      const isMatch = t.name.toLowerCase().includes(search.toLowerCase()) ||
                      t.id.toLowerCase().includes(search.toLowerCase())
-      return isMatch && !assignedTableIds.has(t.id) && !schema.domains?.some(d => d.tables.includes(t.id))
+      return isMatch && !assignedTableIds.has(t.id) && !schema.domains?.some(d => d.members.includes(t.id))
     })
 
-    return { domains: filteredDomains, unassigned: unassignedTables }
+    const filteredConsumers = (schema.consumers || []).filter(u =>
+      u.name.toLowerCase().includes(search.toLowerCase()) ||
+      u.id.toLowerCase().includes(search.toLowerCase())
+    )
+
+    return { domains: filteredDomains, unassigned: unassignedTables, consumers: filteredConsumers }
   }, [schema, search])
 
   return (
@@ -124,13 +130,13 @@ const TablesTab = memo(() => {
                   {isCollapsed ? <ChevronRight size={12} className="text-slate-500" /> : <ChevronDown size={12} className="text-slate-500" />}
                   <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: d.color || '#3b82f6' }} />
                   <h3 className={`text-[10px] font-bold uppercase tracking-wider truncate ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>{d.name}</h3>
-                  <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${theme === 'dark' ? 'text-slate-600 bg-slate-800/50' : 'text-slate-400 bg-slate-100'}`}>{d.tables.length}</span>
+                  <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${theme === 'dark' ? 'text-slate-600 bg-slate-800/50' : 'text-slate-400 bg-slate-100'}`}>{(d as any).tables.length}</span>
                 </div>
                 <button onClick={(e) => { e.stopPropagation(); handleFocus(d.id); }} className="opacity-0 group-hover:opacity-100 p-1 hover:text-blue-500 text-slate-500 transition-all"><ArrowUpRight size={12} /></button>
               </div>
               {!isCollapsed && (
                 <div className={`ml-4 mt-1 space-y-0.5 border-l pl-2 ${theme === 'dark' ? 'border-slate-800' : 'border-slate-100'}`}>
-                  {d.tables.map(t => (
+                  {(d as any).tables.map((t: Table) => (
                     <button key={t.id} onClick={() => handleFocus(t.id)} className={`w-full flex items-center justify-between group p-1.5 text-xs rounded border border-transparent transition-all text-left ${theme === 'dark' ? 'hover:bg-slate-800/50 text-slate-400 hover:text-slate-200' : 'hover:bg-blue-50 text-slate-500 hover:text-blue-600'}`}>
                       <span className="flex flex-col min-w-0">
                         <span className="truncate">{t.name}</span>
@@ -139,7 +145,7 @@ const TablesTab = memo(() => {
                       <ArrowUpRight size={10} className="opacity-0 group-hover:opacity-100 shrink-0" />
                     </button>
                   ))}
-                  {d.tables.length === 0 && <div className="p-2 text-[10px] text-slate-500 italic">No tables</div>}
+                  {(d as any).tables.length === 0 && <div className="p-2 text-[10px] text-slate-500 italic">No tables</div>}
                 </div>
               )}
             </section>
@@ -168,6 +174,36 @@ const TablesTab = memo(() => {
                     <span className="flex flex-col min-w-0">
                       <span className="truncate">{t.name}</span>
                       {t.name !== t.id && <span className="truncate font-mono text-[9px] opacity-50">{t.id}</span>}
+                    </span>
+                    <ArrowUpRight size={10} className="opacity-0 group-hover:opacity-100 shrink-0" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+        {groupedData.consumers.length > 0 && (
+          <section className="flex flex-col">
+            <div
+              className={`flex items-center justify-between group px-1 py-1.5 cursor-pointer rounded transition-colors ${
+                theme === 'dark' ? 'hover:bg-slate-800/30' : 'hover:bg-slate-100'
+              }`}
+              onClick={() => toggleDomain('consumers')}
+            >
+              <div className="flex items-center gap-2 overflow-hidden">
+                {collapsedDomains.has('consumers') ? <ChevronRight size={12} className="text-slate-500" /> : <ChevronDown size={12} className="text-slate-500" />}
+                <FileChartColumnIncreasing size={12} className="text-violet-400 shrink-0" />
+                <h3 className={`text-[10px] font-bold uppercase tracking-wider truncate ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>Consumers</h3>
+                <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${theme === 'dark' ? 'text-slate-600 bg-slate-800/50' : 'text-slate-400 bg-slate-100'}`}>{groupedData.consumers.length}</span>
+              </div>
+            </div>
+            {!collapsedDomains.has('consumers') && (
+              <div className={`ml-4 mt-1 space-y-0.5 border-l pl-2 ${theme === 'dark' ? 'border-slate-800' : 'border-slate-100'}`}>
+                {groupedData.consumers.map(u => (
+                  <button key={u.id} onClick={() => handleFocus(u.id)} className={`w-full flex items-center justify-between group p-1.5 text-xs rounded border border-transparent transition-all text-left ${theme === 'dark' ? 'hover:bg-slate-800/50 text-slate-400 hover:text-slate-200' : 'hover:bg-violet-50 text-slate-500 hover:text-violet-600'}`}>
+                    <span className="flex flex-col min-w-0">
+                      <span className="truncate">{u.name}</span>
+                      {u.name !== u.id && <span className="truncate font-mono text-[9px] opacity-50">{u.id}</span>}
                     </span>
                     <ArrowUpRight size={10} className="opacity-0 group-hover:opacity-100 shrink-0" />
                   </button>

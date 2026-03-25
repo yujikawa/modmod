@@ -100,6 +100,7 @@ relationships – ER cardinality between tables
 lineage      – data flow / transformation paths
 annotations  – sticky notes / callouts on the canvas
 layout       – ALL coordinate data (never put x/y inside tables or domains)
+consumers    – downstream consumers (BI dashboards, ML models, applications)
 ```
 
 ### Domains
@@ -110,8 +111,7 @@ domains:
     name: "Core Sales"
     description: "Transactional data for the sales team."  # optional
     color: "rgba(59, 130, 246, 0.1)"  # background fill
-    tables: [orders, dim_customers]   # logical membership
-    isLocked: false  # prevent accidental drag when true
+    members: [orders, dim_customers]   # logical membership
 ```
 
 ### Tables
@@ -198,6 +198,31 @@ relationships:
 
 > **ER Relationships** vs **Lineage**: Use `relationships` for structural joins (FKs) and `lineage` for data flow (transformations). Do not duplicate them.
 
+### Consumers
+
+Consumers represent the downstream users of your data model — BI dashboards, ML models, applications, or any other system that consumes the data. They appear as distinct nodes on the canvas and can receive lineage edges.
+
+```yaml
+consumers:
+  - id: revenue_dashboard       # unique ID — used in lineage and layout
+    name: "Revenue Dashboard"   # display name
+    description: "Monthly KPI dashboard for the finance team."  # optional
+    appearance:
+      icon: "📊"                # optional (defaults to 📊)
+      color: "#e0f2fe"          # optional accent color
+    url: "https://bi.example.com/revenue"  # optional link
+```
+
+Connect a consumer with lineage by using its `id` as the `to` field:
+
+```yaml
+lineage:
+  - from: mart_monthly_revenue
+    to: revenue_dashboard   # consumer ID
+```
+
+Consumers can also be added to domain `members` lists just like tables.
+
 ### Annotations
 
 ```yaml
@@ -225,7 +250,6 @@ layout:
     y: 0
     width: 880
     height: 480
-    isLocked: false  # prevent drag in canvas
 
   # Table inside a domain – coordinates are relative to domain origin
   orders:
@@ -264,6 +288,162 @@ modscape build ./models -o docs-site
 ### Export Mode (Markdown)
 ```bash
 modscape export ./models -o docs/ARCHITECTURE.md
+```
+
+---
+
+## dbt Integration
+
+Modscape can import your existing dbt project directly from its compiled `manifest.json`.
+
+### Prerequisites
+
+Run `dbt parse` (or any dbt command that produces `target/manifest.json`) in your dbt project before using these commands.
+
+### Import dbt Project
+
+```bash
+modscape dbt import [project-dir] [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `-o, --output <dir>` | Output directory (default: `modscape-<project-name>`) |
+| `--split-by <key>` | Split output files by `schema`, `tag`, or `folder` |
+
+**Examples:**
+
+```bash
+# Import from current directory, output to modscape-my_project/
+modscape dbt import
+
+# Import from a specific dbt project path
+modscape dbt import ./my_dbt_project
+
+# Split into separate YAML files by schema
+modscape dbt import --split-by schema
+
+# Split by dbt tag, with custom output directory
+modscape dbt import --split-by tag -o ./modscape-models
+```
+
+After import, visualize with:
+```bash
+modscape dev modscape-my_project
+```
+
+> **What gets imported:** All `model`, `seed`, `snapshot`, and `source` nodes from `manifest.json`, including columns, descriptions, and lineage (`depends_on`).
+> **Split mode:** When `--split-by` is used, each group is written to a separate YAML file. A self-containment score is shown — files below 80% have cross-file lineage edges that won't render in isolation.
+
+### Sync dbt Changes
+
+After modifying your dbt project, sync the changes into existing Modscape YAML files without losing any manual edits (layout, appearance, annotations, relationships):
+
+```bash
+modscape dbt sync [project-dir] [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `-o, --output <dir>` | Target directory containing existing Modscape YAML files (default: `modscape-<project-name>`) |
+
+```bash
+# Sync changes from current dbt project
+modscape dbt sync
+
+# Sync from a specific path
+modscape dbt sync ./my_dbt_project -o ./modscape-models
+```
+
+> **sync vs import:** `import` creates YAML files from scratch; `sync` updates existing files, preserving your manual enrichments (table types, business definitions, sample data, etc.).
+
+---
+
+## Model File Operations
+
+### Merge YAML Files
+
+Combine multiple YAML models into one. Duplicate table/domain IDs are resolved with first-wins semantics.
+
+```bash
+modscape merge model-a.yaml model-b.yaml -o merged.yaml
+
+# Merge all YAMLs in a directory
+modscape merge ./models -o merged.yaml
+```
+
+### Extract Tables
+
+Extract a subset of tables (and their relationships/lineage) into a new YAML file.
+
+```bash
+modscape extract model.yaml --tables orders,dim_customers -o subset.yaml
+
+# Extract from multiple files
+modscape extract ./models --tables fct_sales,dim_dates -o extracted.yaml
+```
+
+### Auto-Layout
+
+Automatically calculate and write layout coordinates based on table relationships.
+
+```bash
+modscape layout model.yaml
+
+# Write to a separate output file
+modscape layout model.yaml -o model-with-layout.yaml
+```
+
+---
+
+## Atomic Model Mutation Commands
+
+These commands let AI agents (or scripts) make precise, targeted changes to a YAML model file. All commands support `--json` for machine-readable output.
+
+### Table Commands
+
+```bash
+modscape table list <file>               # List all table IDs
+modscape table get <file> --id <id>      # Get a single table as JSON
+modscape table add <file> --data <json>  # Add a new table
+modscape table update <file> --id <id> --data <json>  # Update a table
+modscape table remove <file> --id <id>  # Remove a table
+```
+
+### Column Commands
+
+```bash
+modscape column add <file> --table <id> --data <json>
+modscape column update <file> --table <id> --id <col-id> --data <json>
+modscape column remove <file> --table <id> --id <col-id>
+```
+
+### Relationship Commands
+
+```bash
+modscape relationship list <file>
+modscape relationship add <file> --data <json>
+modscape relationship remove <file> --index <n>
+```
+
+### Lineage Commands
+
+```bash
+modscape lineage list <file>
+modscape lineage add <file> --from <table-id> --to <table-id>
+modscape lineage remove <file> --from <table-id> --to <table-id>
+```
+
+### Domain Commands
+
+```bash
+modscape domain list <file>
+modscape domain get <file> --id <id>
+modscape domain add <file> --data <json>
+modscape domain update <file> --id <id> --data <json>
+modscape domain remove <file> --id <id>
+modscape domain member add <file> --domain <id> --table <table-id>
+modscape domain member remove <file> --domain <id> --table <table-id>
 ```
 
 ## Credits

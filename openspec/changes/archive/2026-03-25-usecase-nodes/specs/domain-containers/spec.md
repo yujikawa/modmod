@@ -1,10 +1,10 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Domain Visualization
 The system SHALL render a domain container as a visual background region with a label and semi-transparent fill color. Domain backgrounds SHALL be implemented as absolutely positioned `<div>` elements in an overlay container synchronized to the Cytoscape viewport transform on each `render` event. Domain backgrounds SHALL NOT use Cytoscape compound nodes.
 
 #### Scenario: Domain with members
-- **WHEN** a domain is defined in YAML with a `members` list containing table IDs and/or consumer IDs
+- **WHEN** a domain is defined in YAML with a `members` list containing table IDs and/or usecase IDs
 - **THEN** the canvas shows a labeled background region enclosing those nodes, with color derived from `domain.color`
 
 #### Scenario: Domain background updates on pan/zoom
@@ -21,13 +21,3 @@ The system SHALL allow users to move all members within a domain together by dra
 #### Scenario: Drag completes with YAML update
 - **WHEN** the user releases after dragging a domain background
 - **THEN** `store.updateLayout()` SHALL be called for each member node in the domain with its new position
-
-## REMOVED Requirements
-
-### Requirement: Resizable Containers
-**Reason**: React Flow's `NodeResizer` component provided resize handles on the `DomainNode`. Cytoscape does not have a direct equivalent, and domain bounds are now derived from member node bounding boxes rather than stored as explicit width/height. Manual resize of the domain boundary is no longer applicable.
-**Migration**: Domain visual bounds are computed automatically from the bounding box of member table nodes plus padding. Users resize the domain implicitly by moving or adding/removing member tables.
-
-### Requirement: Interactive Cursor Feedback
-**Reason**: The CSS `cursor: grab` was applied via React Flow's node wrapper. Domain backgrounds are now plain `<div>` elements; cursor styling SHALL be applied directly via CSS on the background div.
-**Migration**: Apply `cursor: grab` via inline style or CSS class on the domain background div element. This is an implementation detail, not a system-level requirement.

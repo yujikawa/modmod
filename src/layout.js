@@ -28,7 +28,15 @@ export function applyLayout(inputPath, options = {}) {
     return;
   }
 
-  console.log(`  🏗️  Calculating layout for ${schema.tables.length} tables...`);
+  const consumers = Array.isArray(schema.consumers) ? schema.consumers : [];
+  const totalNodes = schema.tables.length + consumers.length;
+  console.log(`  🏗️  Calculating layout for ${schema.tables.length} tables and ${consumers.length} consumers...`);
+
+  // Normalize domain members: support both `members` (new) and `tables` (legacy)
+  const domains = (schema.domains || []).map(d => ({
+    ...d,
+    members: Array.isArray(d.members) ? d.members : (Array.isArray(d.tables) ? d.tables : []),
+  }));
 
   // Initialize Dagre Graph
   const g = new dagre.graphlib.Graph({ compound: true });
@@ -43,11 +51,15 @@ export function applyLayout(inputPath, options = {}) {
 
   // 1. Add Tables
   schema.tables.forEach((table) => {
-    // Standard table size in canvas units
     g.setNode(table.id, { width: 280, height: 160 });
   });
 
-  // 2. Add Lineage Edges
+  // 2. Add Consumer nodes
+  consumers.forEach((uc) => {
+    g.setNode(uc.id, { width: 160, height: 60 });
+  });
+
+  // 3. Add Lineage Edges (tables and consumers)
   if (schema.lineage) {
     schema.lineage.forEach((edge) => {
       if (g.hasNode(edge.from) && g.hasNode(edge.to)) {
@@ -56,7 +68,7 @@ export function applyLayout(inputPath, options = {}) {
     });
   }
 
-  // 3. Add ER Relationships
+  // 4. Add ER Relationships
   if (schema.relationships) {
     schema.relationships.forEach((rel) => {
       if (g.hasNode(rel.from.table) && g.hasNode(rel.to.table)) {
@@ -65,34 +77,32 @@ export function applyLayout(inputPath, options = {}) {
     });
   }
 
-  // 4. Setup Domains
-  const domainTableMap = new Map();
-  if (schema.domains) {
-    schema.domains.forEach((domain) => {
+  // 5. Setup Domains (members can be tables or consumers)
+  if (domains.length > 0) {
+    domains.forEach((domain) => {
       g.setNode(domain.id, { label: domain.name, cluster: true });
-      domain.tables.forEach((tableId) => {
-        if (g.hasNode(tableId)) {
-          g.setParent(tableId, domain.id);
+      domain.members.forEach((memberId) => {
+        if (g.hasNode(memberId)) {
+          g.setParent(memberId, domain.id);
         }
       });
-      domainTableMap.set(domain.id, domain.tables);
     });
   }
 
   // Execute Layout Calculation
   dagre.layout(g);
 
-  // 5. Post-process: Convert Dagre results to Modscape Layout format
+  // 6. Post-process: Convert Dagre results to Modscape Layout format
   const newLayout = {};
   const PAD = 48;
   const TABLE_W = 280;
-  const TABLE_H = 160; // Default height for layout estimation
+  const TABLE_H = 160;
   const GAP = 40;
 
   // Process Domains (Grid packing)
-  if (schema.domains) {
-    schema.domains.forEach(domain => {
-      const members = domain.tables.filter(tid => g.hasNode(tid));
+  if (domains.length > 0) {
+    domains.forEach(domain => {
+      const members = domain.members.filter(mid => g.hasNode(mid));
       if (members.length === 0) return;
 
       // Sort by dagre rank (left -> right)
@@ -104,18 +114,17 @@ export function applyLayout(inputPath, options = {}) {
       const gridW = cols * (TABLE_W + GAP) - GAP;
       const gridH = rowCount * (TABLE_H + GAP) - GAP;
 
-      // Anchor grid to dagre centroid
-      const cx = members.reduce((s, tid) => s + g.node(tid).x, 0) / members.length;
-      const cy = members.reduce((s, tid) => s + g.node(tid).y, 0) / members.length;
+      const cx = members.reduce((s, mid) => s + g.node(mid).x, 0) / members.length;
+      const cy = members.reduce((s, mid) => s + g.node(mid).y, 0) / members.length;
       const originX = cx - gridW / 2;
       const originY = cy - gridH / 2;
 
-      members.forEach((tid, idx) => {
+      members.forEach((mid, idx) => {
         const col = idx % cols;
         const row = Math.floor(idx / cols);
         const xOff = col * (TABLE_W + GAP) + TABLE_W / 2;
         const yOff = row * (TABLE_H + GAP) + TABLE_H / 2;
-        newLayout[tid] = {
+        newLayout[mid] = {
           x: Math.round(originX + xOff),
           y: Math.round(originY + yOff),
           parentId: domain.id
@@ -134,18 +143,30 @@ export function applyLayout(inputPath, options = {}) {
   }
 
   // Standalone Tables
-  const domainTableIds = new Set(schema.domains?.flatMap(d => d.tables) ?? []);
+  const domainMemberIds = new Set(domains.flatMap(d => d.members));
   schema.tables.forEach(t => {
-    if (!domainTableIds.has(t.id)) {
+    if (!domainMemberIds.has(t.id)) {
       const pos = g.node(t.id);
       newLayout[t.id] = { x: Math.round(pos.x), y: Math.round(pos.y) };
     }
   });
 
-  // 6. Save back to YAML
+  // Standalone Usecases
+  consumers.forEach(uc => {
+    if (!domainMemberIds.has(uc.id)) {
+      const pos = g.node(uc.id);
+      if (pos) newLayout[uc.id] = { x: Math.round(pos.x), y: Math.round(pos.y) };
+    }
+  });
+
+  // 7. Save back to YAML (write members, not tables, for domains)
+  schema.domains = domains.map(d => {
+    const { members, ...rest } = d;
+    return { ...rest, members };
+  });
   schema.layout = newLayout;
   const outputPath = options.output ? path.resolve(process.cwd(), options.output) : absolutePath;
-  
+
   fs.writeFileSync(outputPath, yaml.dump(schema, { indent: 2, lineWidth: -1, noRefs: true }), 'utf8');
   console.log(`  ✅ Layout complete! Saved to: ${path.relative(process.cwd(), outputPath)}`);
 }

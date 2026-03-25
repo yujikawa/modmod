@@ -28,6 +28,7 @@ function Flow() {
     showAnnotations,
     addTable,
     addDomain,
+    addConsumer,
     addAnnotation,
     theme,
     isPresentationMode,
@@ -60,6 +61,7 @@ function Flow() {
     showAnnotations: s.showAnnotations,
     addTable: s.addTable,
     addDomain: s.addDomain,
+    addConsumer: s.addConsumer,
     addAnnotation: s.addAnnotation,
     theme: s.theme,
     isPresentationMode: s.isPresentationMode,
@@ -164,6 +166,7 @@ function Flow() {
       if (e.key === 'Escape') {
         if (isPresentationMode) { setIsPresentationMode(false); return }
         if (useStore.getState().connectMode) { useStore.getState().setConnectMode(null); return }
+        useStore.getState().setPathFinderResult(null)
         setSelectedTableId(null)
         setSelectedEdgeId(null)
         setSelectedAnnotationId(null)
@@ -304,6 +307,10 @@ function Flow() {
     addDomain(x, y)
   }, [addDomain])
 
+  const handleAddConsumer = useCallback((x: number, y: number) => {
+    addConsumer(x, y)
+  }, [addConsumer])
+
   const handleAddAnnotation = useCallback((x: number, y: number) => {
     if (!showAnnotations) useStore.getState().setShowAnnotations(true)
     addAnnotation({ x, y })
@@ -357,6 +364,7 @@ function Flow() {
             onDomainClick={handleDomainClick}
             onAddTableAt={handleAddTable}
             onAddDomainAt={handleAddDomain}
+            onAddConsumerAt={handleAddConsumer}
             onAddAnnotationAt={handleAddAnnotation}
             onFitView={handleFitView}
             onFocusNode={handleFocusNode}

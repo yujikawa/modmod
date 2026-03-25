@@ -11,12 +11,13 @@
 ## QUICK REFERENCE (read this first)
 
 ```
-ROOT KEYS      domains | tables | relationships | lineage | annotations | layout
+ROOT KEYS      domains | tables | relationships | lineage | annotations | layout | consumers
 COORDINATES    ONLY in `layout`. NEVER inside tables or domains.
 LINEAGE        Use top-level `lineage` section (not relationships, not table.lineage.upstream).
+               lineage.to can reference either a table ID or a consumer ID.
 parentId       Declare a table's domain membership inside layout, not inside domains.
-IDs            Every object (table, domain, annotation) needs a unique `id`.
-sampleData     At least 3 realistic data rows. No header row.
+IDs            Every object (table, domain, annotation, consumer) needs a unique `id`.
+sampleData     First row = column IDs. At least 3 realistic data rows.
 Grid           All x/y values must be multiples of 40.
 ```
 
@@ -33,6 +34,7 @@ relationships: # (array) ER cardinality edges — OPTIONAL
 lineage:       # (array) data lineage edges — OPTIONAL
 annotations:   # (array) sticky notes / callouts — OPTIONAL
 layout:        # (object) ALL coordinates — REQUIRED if any objects exist
+consumers:     # (array) downstream consumers (BI dashboards, ML models, apps) — OPTIONAL
 ```
 
 **MUST NOT** add any other top-level keys. They will be ignored or cause errors.
@@ -197,14 +199,49 @@ domains:
     name: "Sales Operations"  # REQUIRED. Display name.
     description: "..."      # optional
     color: "rgba(59, 130, 246, 0.1)"  # optional. rgba recommended.
-    tables:                 # REQUIRED. List of table IDs inside this domain.
+    members:                # REQUIRED. List of table or consumer IDs inside this domain.
       - fct_orders
       - dim_customers
-    isLocked: false         # optional. true = prevent drag on canvas.
 ```
 
-**MUST** list only table IDs that actually exist in `tables`.
+**MUST** list only IDs that actually exist in `tables` or `consumers`.
 **MUST** add a layout entry for the domain with `width` and `height`.
+
+---
+
+## 5b. Consumers
+
+Consumers represent downstream users of your data model — BI dashboards, ML models, applications, etc. They appear as distinct nodes on the canvas and can receive lineage edges.
+
+```yaml
+consumers:
+  - id: revenue_dashboard       # REQUIRED. Unique ID. Used in lineage and layout.
+    name: "Revenue Dashboard"   # REQUIRED. Display name.
+    description: "Monthly KPI dashboard for finance team."  # optional
+    appearance:
+      icon: "📊"                # optional. Defaults to 📊.
+      color: "#e0f2fe"          # optional. Header/accent color.
+    url: "https://..."          # optional. Link to the actual dashboard or service.
+```
+
+**Field rules:**
+- `id` and `name` are **REQUIRED**. All other fields are optional.
+- Add a `layout` entry for each consumer (same as tables — absolute coordinates or relative inside a domain with `parentId`).
+- To connect a consumer with lineage, set `lineage.to` to the consumer's `id`. The `lineage.from` must be a table ID.
+- Consumers can be added to domain `members` lists just like tables.
+
+```yaml
+# Example: lineage from mart to a consumer
+lineage:
+  - from: mart_monthly_revenue
+    to: revenue_dashboard   # consumer ID
+
+# Example: domain containing consumers
+domains:
+  - id: dashboards_domain
+    name: "BI Dashboards"
+    members: [revenue_dashboard, ops_dashboard]
+```
 
 ---
 
@@ -221,7 +258,6 @@ domains:
 | `width` | domains | Total pixel width of the domain container |
 | `height` | domains | Total pixel height of the domain container |
 | `parentId` | tables inside a domain | ID of the containing domain. Makes coordinates relative to domain origin. |
-| `isLocked` | domains or tables | Prevents drag when true |
 
 ### 6-2. Domain Size Formula
 
@@ -423,7 +459,7 @@ lineage:
 # WRONG
 domains:
   - id: sales_ops
-    tables: [fct_orders, dim_customers]   # dim_customers listed here...
+    members: [fct_orders, dim_customers]   # dim_customers listed here...
 
 layout:
   sales_ops: { x: 0, y: 0, width: 880, height: 400 }
@@ -556,7 +592,7 @@ lineage:
     to: "model.my_project.fct_orders"
 ```
 
-**MUST NOT** shorten these IDs. They are the join keys between `tables`, `domains.tables`, `lineage`, and `layout`.
+**MUST NOT** shorten these IDs. They are the join keys between `tables`, `domains.members`, `lineage`, and `layout`.
 
 ---
 
@@ -743,12 +779,26 @@ domains:
     name: "Sales Operations"
     description: "Core transactional data."
     color: "rgba(239, 68, 68, 0.1)"
-    tables: [dim_customers, fct_orders]
+    members: [dim_customers, fct_orders]
 
   - id: analytics_domain
     name: "Analytics & Insights"
     color: "rgba(245, 158, 11, 0.1)"
-    tables: [mart_monthly_revenue]
+    members: [mart_monthly_revenue]
+
+  - id: dashboards_domain
+    name: "BI Dashboards"
+    color: "rgba(139, 92, 246, 0.1)"
+    members: [revenue_dashboard]
+
+consumers:
+  - id: revenue_dashboard
+    name: "Revenue Dashboard"
+    description: "Monthly KPI dashboard for the finance team."
+    appearance:
+      icon: "📊"
+      color: "#e0f2fe"
+    url: "https://bi.example.com/revenue"
 
 tables:
   - id: dim_customers
@@ -828,6 +878,8 @@ lineage:                            # data flow — separate from ER
     to: mart_monthly_revenue
   - from: dim_customers
     to: mart_monthly_revenue
+  - from: mart_monthly_revenue
+    to: revenue_dashboard           # consumer ID — valid lineage target
 
 relationships:                      # ER only — not for lineage
   - from: { table: dim_customers, column: customer_key }
@@ -873,4 +925,16 @@ layout:
     x: 80
     y: 80
     parentId: analytics_domain
+
+  # dashboards_domain: 1 consumer → w:480, h:280
+  dashboards_domain:
+    x: 1560
+    y: 0
+    width: 480
+    height: 280
+
+  revenue_dashboard:
+    x: 80
+    y: 80
+    parentId: dashboards_domain
 ```

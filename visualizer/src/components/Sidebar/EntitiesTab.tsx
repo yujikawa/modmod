@@ -43,7 +43,7 @@ const EntitiesTab = memo(() => {
 
     // Map tables to domains
     schema.tables.forEach(table => {
-      const parentDomain = schema.domains?.find(d => d.tables.includes(table.id))
+      const parentDomain = schema.domains?.find(d => d.members.includes(table.id))
       const matchesSearch = table.name.toLowerCase().includes(search.toLowerCase()) || 
                            table.id.toLowerCase().includes(search.toLowerCase())
 
@@ -68,7 +68,7 @@ const EntitiesTab = memo(() => {
     const unassignedTables = schema.tables.filter(t => {
       const isMatch = t.name.toLowerCase().includes(search.toLowerCase()) || 
                      t.id.toLowerCase().includes(search.toLowerCase())
-      return isMatch && !assignedTableIds.has(t.id) && !schema.domains?.some(d => d.tables.includes(t.id))
+      return isMatch && !assignedTableIds.has(t.id) && !schema.domains?.some(d => d.members.includes(t.id))
     })
 
     return { domains: filteredDomains, unassigned: unassignedTables }
@@ -118,10 +118,10 @@ const EntitiesTab = memo(() => {
                   <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${
                     theme === 'dark' ? 'text-slate-600 bg-slate-800/50' : 'text-slate-400 bg-slate-100'
                   }`}>
-                    {d.tables.length}
+                    {(d as any).tables.length}
                   </span>
                 </div>
-                <button 
+                <button
                   onClick={(e) => { e.stopPropagation(); handleFocus(d.id); }}
                   className="opacity-0 group-hover:opacity-100 p-1 hover:text-blue-500 text-slate-500 transition-all"
                   title="Focus on Domain"
@@ -134,7 +134,7 @@ const EntitiesTab = memo(() => {
                 <div className={`ml-4 mt-1 space-y-0.5 border-l pl-2 ${
                   theme === 'dark' ? 'border-slate-800' : 'border-slate-100'
                 }`}>
-                  {d.tables.map(t => (
+                  {(d as any).tables.map((t: Table) => (
                     <button
                       key={t.id}
                       onClick={() => handleFocus(t.id)}
@@ -146,7 +146,7 @@ const EntitiesTab = memo(() => {
                       <ArrowUpRight size={10} className="opacity-0 group-hover:opacity-100" />
                     </button>
                   ))}
-                  {d.tables.length === 0 && (
+                  {(d as any).tables.length === 0 && (
                     <div className="p-2 text-[10px] text-slate-500 italic">No tables in this domain</div>
                   )}
                 </div>

@@ -99,6 +99,7 @@ relationships – テーブル間のERカーディナリティ
 lineage      – データの流れ / 変換パス
 annotations  – キャンバス上のスティッキーノート・吹き出し
 layout       – 全座標データ（tables/domains の中に x/y を書いてはいけない）
+consumers    – データの下流消費者（BIダッシュボード・MLモデル・アプリケーション等）
 ```
 
 ### Domains（ドメイン）
@@ -109,8 +110,7 @@ domains:
     name: "主要売上"
     description: "営業チームのトランザクションデータ。"  # 任意
     color: "rgba(59, 130, 246, 0.1)"  # 背景色
-    tables: [orders, dim_customers]   # 論理的な所属リスト
-    isLocked: false  # true にするとキャンバスでの誤ドラッグを防止
+    members: [orders, dim_customers]   # 論理的な所属リスト
 ```
 
 ### Tables（テーブル）
@@ -197,6 +197,31 @@ relationships:
 
 > **ER関係** vs **リネージ**: 構造的な結合（外部キーなど）には `relationships` を、データの加工・変換の流れには `lineage` を使用してください。両方に同じ接続を記述しないでください。
 
+### Consumers（コンシューマー）
+
+コンシューマーはデータモデルの下流消費者を表します。BIダッシュボード、MLモデル、アプリケーションなど、データを利用するあらゆるシステムを定義できます。キャンバス上に独自のノードとして表示され、リネージ矢印で接続されます。
+
+```yaml
+consumers:
+  - id: revenue_dashboard       # 一意のID — lineageやlayoutで使用
+    name: "Revenue Dashboard"   # 表示名
+    description: "財務チーム向け月次KPIダッシュボード"  # 任意
+    appearance:
+      icon: "📊"                # 任意（デフォルト: 📊）
+      color: "#e0f2fe"          # 任意のアクセントカラー
+    url: "https://bi.example.com/revenue"  # 任意のリンク
+```
+
+コンシューマーへのリネージは `lineage.to` にコンシューマーIDを指定します：
+
+```yaml
+lineage:
+  - from: mart_monthly_revenue
+    to: revenue_dashboard   # コンシューマーID
+```
+
+テーブルと同様に、ドメインの `members` リストにも追加できます。
+
 ### Annotations（アノテーション）
 
 ```yaml
@@ -224,7 +249,6 @@ layout:
     y: 0
     width: 880
     height: 480
-    isLocked: false  # true でキャンバスのドラッグを防止
 
   # ドメイン内のテーブル – 座標はドメインの原点からの相対値
   orders:
@@ -263,6 +287,162 @@ modscape build ./models -o docs-site
 ### エクスポートモード (Markdown)
 ```bash
 modscape export ./models -o docs/ARCHITECTURE.md
+```
+
+---
+
+## dbt連携
+
+既存のdbtプロジェクトを `manifest.json` から直接インポートできます。
+
+### 事前準備
+
+コマンドを実行する前に、dbtプロジェクトで `dbt parse`（または `target/manifest.json` を生成する任意のdbtコマンド）を実行してください。
+
+### dbtプロジェクトのインポート
+
+```bash
+modscape dbt import [project-dir] [オプション]
+```
+
+| オプション | 説明 |
+|-----------|------|
+| `-o, --output <dir>` | 出力ディレクトリ（デフォルト: `modscape-<プロジェクト名>`） |
+| `--split-by <key>` | `schema`、`tag`、`folder` のいずれかでYAMLファイルを分割 |
+
+**使用例:**
+
+```bash
+# カレントディレクトリからインポート
+modscape dbt import
+
+# 特定のdbtプロジェクトパスを指定
+modscape dbt import ./my_dbt_project
+
+# スキーマ別にYAMLファイルを分割して出力
+modscape dbt import --split-by schema
+
+# dbtタグ別に分割し、出力先ディレクトリを指定
+modscape dbt import --split-by tag -o ./modscape-models
+```
+
+インポート後は以下でビジュアライザーを起動できます：
+```bash
+modscape dev modscape-my_project
+```
+
+> **インポートされる内容:** `manifest.json` 内の `model`、`seed`、`snapshot`、`source` ノード（カラム、説明文、`depends_on` によるリネージ含む）。
+> **分割モード:** `--split-by` 指定時はグループごとに別YAMLファイルへ出力されます。自己完結率（self-contained rate）が80%未満のファイルは、クロスファイルのリネージ参照が単体では表示されないため注意してください。
+
+### dbt変更の同期
+
+dbtプロジェクトを更新した後、既存のModscape YAMLファイルへ差分を反映できます。手動で追加したレイアウト・外観・アノテーション・リレーションシップは保持されます。
+
+```bash
+modscape dbt sync [project-dir] [オプション]
+```
+
+| オプション | 説明 |
+|-----------|------|
+| `-o, --output <dir>` | 同期対象のModscape YAMLが置かれたディレクトリ（デフォルト: `modscape-<プロジェクト名>`） |
+
+```bash
+# カレントディレクトリのdbtプロジェクトを同期
+modscape dbt sync
+
+# パスを指定して同期
+modscape dbt sync ./my_dbt_project -o ./modscape-models
+```
+
+> **sync と import の違い:** `import` はYAMLをゼロから生成します。`sync` は既存ファイルを更新するため、手動で加えたテーブル種別・ビジネス定義・サンプルデータなどの情報が失われません。
+
+---
+
+## モデルファイル操作
+
+### YAMLファイルのマージ
+
+複数のYAMLモデルを1ファイルに統合します。テーブル/ドメインIDが重複した場合は先勝ちで処理されます。
+
+```bash
+modscape merge model-a.yaml model-b.yaml -o merged.yaml
+
+# ディレクトリ内のすべてのYAMLをマージ
+modscape merge ./models -o merged.yaml
+```
+
+### テーブルの抽出
+
+特定のテーブル（関連するリレーションシップ・リネージも含む）を新しいYAMLファイルへ切り出します。
+
+```bash
+modscape extract model.yaml --tables orders,dim_customers -o subset.yaml
+
+# 複数ファイルから抽出
+modscape extract ./models --tables fct_sales,dim_dates -o extracted.yaml
+```
+
+### 自動レイアウト
+
+テーブルのリレーションシップをもとに、座標を自動計算してYAMLに書き込みます。
+
+```bash
+modscape layout model.yaml
+
+# 別ファイルに出力
+modscape layout model.yaml -o model-with-layout.yaml
+```
+
+---
+
+## アトミックモデル操作コマンド
+
+AIエージェントやスクリプトから、YAMLモデルファイルに対して精確な変更を加えるためのコマンドです。すべてのコマンドで `--json` オプションによる機械可読な出力が利用できます。
+
+### テーブルコマンド
+
+```bash
+modscape table list <file>               # テーブルID一覧を表示
+modscape table get <file> --id <id>      # 指定テーブルをJSONで取得
+modscape table add <file> --data <json>  # テーブルを追加
+modscape table update <file> --id <id> --data <json>  # テーブルを更新
+modscape table remove <file> --id <id>  # テーブルを削除
+```
+
+### カラムコマンド
+
+```bash
+modscape column add <file> --table <id> --data <json>
+modscape column update <file> --table <id> --id <col-id> --data <json>
+modscape column remove <file> --table <id> --id <col-id>
+```
+
+### リレーションシップコマンド
+
+```bash
+modscape relationship list <file>
+modscape relationship add <file> --data <json>
+modscape relationship remove <file> --index <n>
+```
+
+### リネージコマンド
+
+```bash
+modscape lineage list <file>
+modscape lineage add <file> --from <table-id> --to <table-id>
+modscape lineage remove <file> --from <table-id> --to <table-id>
+```
+
+### ドメインコマンド
+
+```bash
+modscape domain list <file>
+modscape domain get <file> --id <id>
+modscape domain add <file> --data <json>
+modscape domain update <file> --id <id> --data <json>
+modscape domain remove <file> --id <id>
+modscape domain member add <file> --domain <id> --table <table-id>
+modscape domain member remove <file> --domain <id> --table <table-id>
 ```
 
 ## クレジット

@@ -13,6 +13,7 @@ import {
   Spline,
   AlignJustify,
   Workflow,
+  FileChartColumnIncreasing,
 } from 'lucide-react'
 import logo from '/favicon.svg?url'
 
@@ -32,6 +33,7 @@ const ActivityBar = () => {
     setIsCompactMode,
     addTable,
     addDomain,
+    addConsumer,
     addAnnotation,
     theme,
     getSelectedTable,
@@ -62,6 +64,11 @@ const ActivityBar = () => {
   const handleAddTable = () => {
     const center = screenToCanvasCenter()
     addTable(center.x - 160, center.y - 125)
+  }
+
+  const handleAddConsumer = () => {
+    const center = screenToCanvasCenter()
+    addConsumer(center.x - 80, center.y - 30)
   }
 
   const handleAddAnnotation = () => {
@@ -164,12 +171,19 @@ const ActivityBar = () => {
               <Layout size={20} />
               <Tooltip text="Add Domain (D)" />
             </button>
-            <button 
-              onClick={handleAddTable} 
+            <button
+              onClick={handleAddTable}
               className={iconClass(false, 'text-emerald-400')}
             >
               <Grid size={20} />
               <Tooltip text="Add Table (T)" />
+            </button>
+            <button
+              onClick={handleAddConsumer}
+              className={iconClass(false, 'text-violet-400')}
+            >
+              <FileChartColumnIncreasing size={20} />
+              <Tooltip text="Add Consumer (U)" />
             </button>
             <button onClick={handleAddAnnotation} className={iconClass(false, 'text-amber-400')}>
               <div className="relative">
@@ -235,6 +249,7 @@ const ActivityBar = () => {
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Quick Create</h3>
                 <ShortcutRow label="New Table" keys={['T']} />
                 <ShortcutRow label="New Domain" keys={['D']} />
+                <ShortcutRow label="New Consumer" keys={['U']} />
                 <ShortcutRow label="New Sticky Note" keys={['S']} />
               </section>
 
