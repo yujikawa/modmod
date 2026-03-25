@@ -93,6 +93,7 @@ npm install -g modscape
 YAMLのルートレベル構造は以下の通りです：
 
 ```
+imports      – 他のYAMLファイルからテーブルを参照（dev/build時に解決）
 domains      – 関連テーブルをまとめるビジュアルコンテナ
 tables       – 3階層メタデータを持つエンティティ定義
 relationships – テーブル間のERカーディナリティ
@@ -196,6 +197,20 @@ relationships:
 ```
 
 > **ER関係** vs **リネージ**: 構造的な結合（外部キーなど）には `relationships` を、データの加工・変換の流れには `lineage` を使用してください。両方に同じ接続を記述しないでください。
+
+### Imports（インポート）
+
+他のYAMLファイルで定義されたテーブルを、コピーなしで参照できます。複数のモデルにまたがる**コンフォームドディメンション**の管理に最適です。
+
+```yaml
+imports:
+  - from: ./shared/conformed-dims.yaml   # このファイルからの相対パス
+    ids: [dim_dates, dim_customers]      # 任意: 省略すると全テーブルをimport
+```
+
+`modscape dev` または `modscape build` 実行時に自動解決されます。importされたテーブルはキャンバス上に読み取り専用ノードとして表示されます。編集する場合はソースファイルを直接更新してください。
+
+importされたテーブルのIDは、`domains.members`・`relationships`・`lineage` でローカルテーブルと同様に使用できます。
 
 ### Consumers（コンシューマー）
 

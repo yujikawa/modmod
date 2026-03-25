@@ -94,6 +94,7 @@ Best for direct architectural control.
 Modscape uses a schema designed for data analysis contexts. The full YAML structure is:
 
 ```
+imports      – cross-file table references (resolved at dev/build time)
 domains      – visual containers grouping related tables
 tables       – entity definitions with tri-layer metadata
 relationships – ER cardinality between tables
@@ -197,6 +198,20 @@ relationships:
 ```
 
 > **ER Relationships** vs **Lineage**: Use `relationships` for structural joins (FKs) and `lineage` for data flow (transformations). Do not duplicate them.
+
+### Imports
+
+Reference table definitions from another YAML file without copying them. Useful for **conformed dimensions** shared across multiple models.
+
+```yaml
+imports:
+  - from: ./shared/conformed-dims.yaml   # relative path from this file
+    ids: [dim_dates, dim_customers]      # optional: omit to import all tables
+```
+
+Imported tables are resolved automatically when running `modscape dev` or `modscape build`. They appear on the canvas as read-only nodes. To edit them, update the source file directly.
+
+Imported table IDs work in `domains.members`, `relationships`, and `lineage` entries just like local tables.
 
 ### Consumers
 

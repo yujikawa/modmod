@@ -177,6 +177,7 @@ const DetailPanel = memo(() => {
   }
 
   const handleUpdateTable = (updates: Partial<Table>) => {
+    if (table?.isImported) return; // Imported tables are read-only
     updateTable(table!.id, updates);
   };
 
@@ -928,12 +929,21 @@ const DetailPanel = memo(() => {
             )}
           </div>
 
+          {/* Imported badge */}
+          {table!.isImported && (
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginBottom: '6px', padding: '3px 8px', borderRadius: '4px', backgroundColor: theme === 'dark' ? 'rgba(99,102,241,0.15)' : 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.3)' }}>
+              <LinkIcon size={11} style={{ color: '#818cf8' }} />
+              <span style={{ fontSize: '10px', color: '#818cf8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Imported — read only</span>
+            </div>
+          )}
+
           {/* Primary Row: Editable Conceptual Name */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <input 
+            <input
               value={table!.name ?? ''}
               onChange={(e) => handleUpdateTable({ name: e.target.value })}
               onBlur={(e) => { if (!e.target.value) handleUpdateTable({ name: 'UNNAMED_TABLE' }) }}
+              readOnly={!!table!.isImported}
               title="Conceptual Table Name"
               style={{ 
                 fontSize: '18px', 

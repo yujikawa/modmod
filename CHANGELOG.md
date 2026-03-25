@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.1] - 2026-03-26
+
+### Added
+- **Cross-file YAML imports** — New top-level `imports:` section lets a model reference table definitions from another YAML file without copying them. Ideal for conformed dimensions shared across multiple models.
+- **Imported node read-only indicator** — Imported tables appear on the canvas as normal nodes but show an "Imported — read only" badge in the Detail Panel; edits are blocked to prevent accidental write-back.
+- **Import hot-reload** — `modscape dev` watches import source files and reloads the canvas automatically when they change.
+
+### Fixed
+- ER edge highlight color in PathFinder now matches the node-click highlight color (`#84cc16`) for visual consistency.
+- Saving a model with imported tables no longer writes imported table definitions into the main YAML file.
+
+### Changed
+- Rebuilt sample files: `retail-analytics.yaml` shows a full pipeline from Raw Vault → Star Schema → Data Mart → Consumers; `conformed-dims.yaml` serves as a shared conformed dimension source.
+
+---
+
 ## [2.1.0] - 2026-03-25
 
 ### Added
