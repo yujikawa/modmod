@@ -261,6 +261,162 @@ modscape build ./models -o docs-site
 modscape export ./models -o docs/ARCHITECTURE.md
 ```
 
+---
+
+## dbt連携
+
+既存のdbtプロジェクトを `manifest.json` から直接インポートできます。
+
+### 事前準備
+
+コマンドを実行する前に、dbtプロジェクトで `dbt parse`（または `target/manifest.json` を生成する任意のdbtコマンド）を実行してください。
+
+### dbtプロジェクトのインポート
+
+```bash
+modscape dbt import [project-dir] [オプション]
+```
+
+| オプション | 説明 |
+|-----------|------|
+| `-o, --output <dir>` | 出力ディレクトリ（デフォルト: `modscape-<プロジェクト名>`） |
+| `--split-by <key>` | `schema`、`tag`、`folder` のいずれかでYAMLファイルを分割 |
+
+**使用例:**
+
+```bash
+# カレントディレクトリからインポート
+modscape dbt import
+
+# 特定のdbtプロジェクトパスを指定
+modscape dbt import ./my_dbt_project
+
+# スキーマ別にYAMLファイルを分割して出力
+modscape dbt import --split-by schema
+
+# dbtタグ別に分割し、出力先ディレクトリを指定
+modscape dbt import --split-by tag -o ./modscape-models
+```
+
+インポート後は以下でビジュアライザーを起動できます：
+```bash
+modscape dev modscape-my_project
+```
+
+> **インポートされる内容:** `manifest.json` 内の `model`、`seed`、`snapshot`、`source` ノード（カラム、説明文、`depends_on` によるリネージ含む）。
+> **分割モード:** `--split-by` 指定時はグループごとに別YAMLファイルへ出力されます。自己完結率（self-contained rate）が80%未満のファイルは、クロスファイルのリネージ参照が単体では表示されないため注意してください。
+
+### dbt変更の同期
+
+dbtプロジェクトを更新した後、既存のModscape YAMLファイルへ差分を反映できます。手動で追加したレイアウト・外観・アノテーション・リレーションシップは保持されます。
+
+```bash
+modscape dbt sync [project-dir] [オプション]
+```
+
+| オプション | 説明 |
+|-----------|------|
+| `-o, --output <dir>` | 同期対象のModscape YAMLが置かれたディレクトリ（デフォルト: `modscape-<プロジェクト名>`） |
+
+```bash
+# カレントディレクトリのdbtプロジェクトを同期
+modscape dbt sync
+
+# パスを指定して同期
+modscape dbt sync ./my_dbt_project -o ./modscape-models
+```
+
+> **sync と import の違い:** `import` はYAMLをゼロから生成します。`sync` は既存ファイルを更新するため、手動で加えたテーブル種別・ビジネス定義・サンプルデータなどの情報が失われません。
+
+---
+
+## モデルファイル操作
+
+### YAMLファイルのマージ
+
+複数のYAMLモデルを1ファイルに統合します。テーブル/ドメインIDが重複した場合は先勝ちで処理されます。
+
+```bash
+modscape merge model-a.yaml model-b.yaml -o merged.yaml
+
+# ディレクトリ内のすべてのYAMLをマージ
+modscape merge ./models -o merged.yaml
+```
+
+### テーブルの抽出
+
+特定のテーブル（関連するリレーションシップ・リネージも含む）を新しいYAMLファイルへ切り出します。
+
+```bash
+modscape extract model.yaml --tables orders,dim_customers -o subset.yaml
+
+# 複数ファイルから抽出
+modscape extract ./models --tables fct_sales,dim_dates -o extracted.yaml
+```
+
+### 自動レイアウト
+
+テーブルのリレーションシップをもとに、座標を自動計算してYAMLに書き込みます。
+
+```bash
+modscape layout model.yaml
+
+# 別ファイルに出力
+modscape layout model.yaml -o model-with-layout.yaml
+```
+
+---
+
+## アトミックモデル操作コマンド
+
+AIエージェントやスクリプトから、YAMLモデルファイルに対して精確な変更を加えるためのコマンドです。すべてのコマンドで `--json` オプションによる機械可読な出力が利用できます。
+
+### テーブルコマンド
+
+```bash
+modscape table list <file>               # テーブルID一覧を表示
+modscape table get <file> --id <id>      # 指定テーブルをJSONで取得
+modscape table add <file> --data <json>  # テーブルを追加
+modscape table update <file> --id <id> --data <json>  # テーブルを更新
+modscape table remove <file> --id <id>  # テーブルを削除
+```
+
+### カラムコマンド
+
+```bash
+modscape column add <file> --table <id> --data <json>
+modscape column update <file> --table <id> --id <col-id> --data <json>
+modscape column remove <file> --table <id> --id <col-id>
+```
+
+### リレーションシップコマンド
+
+```bash
+modscape relationship list <file>
+modscape relationship add <file> --data <json>
+modscape relationship remove <file> --index <n>
+```
+
+### リネージコマンド
+
+```bash
+modscape lineage list <file>
+modscape lineage add <file> --from <table-id> --to <table-id>
+modscape lineage remove <file> --from <table-id> --to <table-id>
+```
+
+### ドメインコマンド
+
+```bash
+modscape domain list <file>
+modscape domain get <file> --id <id>
+modscape domain add <file> --data <json>
+modscape domain update <file> --id <id> --data <json>
+modscape domain remove <file> --id <id>
+modscape domain member add <file> --domain <id> --table <table-id>
+modscape domain member remove <file> --domain <id> --table <table-id>
+```
+
 ## クレジット
 
 Modscape は以下の素晴らしいオープンソースプロジェクトによって支えられています：
