@@ -120,8 +120,11 @@ function buildCytoscapeStyle(theme: 'dark' | 'light', lowZoom = false) {
     {
       selector: 'edge.er-edge.path-highlighted',
       style: {
-        'line-color': '#3b82f6',
+        'line-color': '#84cc16',
         width: 6,
+        'overlay-color': '#84cc16',
+        'overlay-opacity': 0.15,
+        'overlay-padding': 4,
       },
     },
     {
@@ -167,6 +170,10 @@ function buildCytoscapeStyle(theme: 'dark' | 'light', lowZoom = false) {
     {
       selector: 'edge.dimmed',
       style: { opacity: 0.1 },
+    },
+    {
+      selector: 'node.dimmed',
+      style: { opacity: 0.15 },
     },
     // Consumer nodes (DOM overlay, transparent at normal zoom like table nodes)
     {
@@ -718,6 +725,7 @@ export default function CytoscapeCanvas({
   const highlightedIdsRef = useRef<string[]>([])
   const hoveredNodeIdRef = useRef<string | null>(null)
   const connectPendingSourceRef = useRef<string | null>(null)
+  const pathFinderResultRef = useRef<{ nodeIds: string[], edgeIds: string[] } | null>(null)
   const presentationModeRef = useRef<boolean>(false)
   const themeRef = useRef<'dark' | 'light'>(theme)
   const hoveredColumnIdRef = useRef<string | null>(null)
@@ -783,9 +791,14 @@ export default function CytoscapeCanvas({
           selectedIdRef.current === id || selectedIdsRef.current.includes(id)
         const isHovered = hoveredNodeIdRef.current === id
         const isHighlighted = highlightedIdsRef.current.includes(id)
+        const pathFinderNodeSet = pathFinderResultRef.current
+          ? new Set(pathFinderResultRef.current.nodeIds)
+          : null
         const isAnythingHighlighted =
-          highlightedIdsRef.current.length > 0 || presentationModeRef.current || !!selectedId
-        const isDimmed = isAnythingHighlighted && !isSelected && !isHighlighted && !isHovered && !connectedToSelected.has(id)
+          !!pathFinderNodeSet || highlightedIdsRef.current.length > 0 || presentationModeRef.current || !!selectedId
+        const isDimmed = pathFinderNodeSet
+          ? !pathFinderNodeSet.has(id)
+          : isAnythingHighlighted && !isSelected && !isHighlighted && !isHovered && !connectedToSelected.has(id)
         const currentConnectMode = useStore.getState().connectMode
         const isPendingSource = connectPendingSourceRef.current === id
         const isConnectMode = !!currentConnectMode
@@ -1370,8 +1383,11 @@ export default function CytoscapeCanvas({
     const cy = cyRef.current
     if (!cy) return
 
+    pathFinderResultRef.current = pathFinderResult
+
     if (pathFinderResult) {
       const pathEdgeSet = new Set(pathFinderResult.edgeIds)
+      const pathNodeSet = new Set(pathFinderResult.nodeIds)
       cy.edges().forEach((edge: CyInstance) => {
         if (pathEdgeSet.has(edge.id())) {
           edge.addClass('path-highlighted')
@@ -1381,7 +1397,17 @@ export default function CytoscapeCanvas({
           edge.removeClass('path-highlighted highlighted')
         }
       })
+      cy.nodes().forEach((node: CyInstance) => {
+        if (pathNodeSet.has(node.id())) {
+          node.removeClass('dimmed')
+        } else {
+          node.addClass('dimmed')
+        }
+      })
     } else {
+      cy.nodes().forEach((node: CyInstance) => {
+        node.removeClass('dimmed')
+      })
       cy.edges().forEach((edge: CyInstance) => {
         edge.removeClass('path-highlighted')
         if (selectedTableId) {

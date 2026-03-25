@@ -14,45 +14,155 @@ export interface PathStep {
   edge: GraphEdge;
 }
 
+export type EdgeTypeFilter = 'er' | 'lineage' | 'both'
+
 /**
- * Builds an adjacency list from schema including ER and Lineage relationships
+ * Builds an adjacency list filtered by edge type (undirected, for path discovery)
  */
-export const buildAdjacencyList = (schema: Schema) => {
+const buildFilteredAdj = (schema: Schema, filter: EdgeTypeFilter): Record<string, GraphEdge[]> => {
   const adj: Record<string, GraphEdge[]> = {}
 
   const addEdge = (from: string, to: string, type: 'er' | 'lineage', id: string, metadata?: any) => {
     if (!adj[from]) adj[from] = []
     adj[from].push({ from, to, type, id, metadata })
-    
-    // Treat as undirected for path discovery
     if (!adj[to]) adj[to] = []
     adj[to].push({ from: to, to: from, type, id, metadata })
   }
 
-  // 1. Add ER Relationships
-  schema.relationships?.forEach((rel, index) => {
-    addEdge(rel.from.table, rel.to.table, 'er', `er-${index}`, rel)
-  })
+  if (filter === 'er' || filter === 'both') {
+    schema.relationships?.forEach((rel, index) => {
+      addEdge(rel.from.table, rel.to.table, 'er', `er-${index}`, rel)
+    })
+  }
 
-  // 2. Add Lineage Relationships
-  schema.lineage?.forEach((edge, index) => {
-    addEdge(edge.from, edge.to, 'lineage', `lin-${edge.from}-${edge.to}-${index}`, { direction: 'upstream' })
-  })
+  if (filter === 'lineage' || filter === 'both') {
+    schema.lineage?.forEach((edge, index) => {
+      addEdge(edge.from, edge.to, 'lineage', `lin-${edge.from}-${edge.to}-${index}`, { direction: 'upstream' })
+    })
+  }
 
   return adj
 }
 
 /**
- * Finds the shortest path between two nodes using BFS
+ * Builds an adjacency list from schema including ER and Lineage relationships
+ */
+export const buildAdjacencyList = (schema: Schema) => buildFilteredAdj(schema, 'both')
+
+/**
+ * Returns the direct neighbors (1 hop) of a node for the given edge type filter.
+ * Result includes the start node itself.
+ */
+export const getDirectNeighbors = (
+  schema: Schema,
+  nodeId: string,
+  filter: EdgeTypeFilter
+): { nodeIds: Set<string>, edgeIds: Set<string> } => {
+  const nodeIds = new Set<string>([nodeId])
+  const edgeIds = new Set<string>()
+  const adj = buildFilteredAdj(schema, filter)
+
+  ;(adj[nodeId] || []).forEach(edge => {
+    nodeIds.add(edge.to)
+    edgeIds.add(edge.id)
+  })
+
+  return { nodeIds, edgeIds }
+}
+
+/**
+ * Returns all nodes and edges reachable from a node.
+ * - Lineage: directed traversal (downstream forward + upstream backward separately)
+ *   so that A→B←C starting from A only yields {A,B}, not C.
+ * - ER: undirected traversal (joins are symmetric).
+ * Result includes the start node itself.
+ */
+export const getAllReachable = (
+  schema: Schema,
+  nodeId: string,
+  filter: EdgeTypeFilter
+): { nodeIds: Set<string>, edgeIds: Set<string> } => {
+  const nodeIds = new Set<string>([nodeId])
+  const edgeIds = new Set<string>()
+
+  // Lineage: separate directed BFS for downstream and upstream
+  if (filter === 'lineage' || filter === 'both') {
+    // Downstream: follow edges forward (from → to)
+    const downVisited = new Set<string>([nodeId])
+    const downQueue = [nodeId]
+    while (downQueue.length > 0) {
+      const current = downQueue.shift()!
+      schema.lineage?.forEach((edge, index) => {
+        if (edge.from === current) {
+          const id = `lin-${edge.from}-${edge.to}-${index}`
+          edgeIds.add(id)
+          if (!downVisited.has(edge.to)) {
+            downVisited.add(edge.to)
+            nodeIds.add(edge.to)
+            downQueue.push(edge.to)
+          }
+        }
+      })
+    }
+
+    // Upstream: follow edges backward (to → from)
+    const upVisited = new Set<string>([nodeId])
+    const upQueue = [nodeId]
+    while (upQueue.length > 0) {
+      const current = upQueue.shift()!
+      schema.lineage?.forEach((edge, index) => {
+        if (edge.to === current) {
+          const id = `lin-${edge.from}-${edge.to}-${index}`
+          edgeIds.add(id)
+          if (!upVisited.has(edge.from)) {
+            upVisited.add(edge.from)
+            nodeIds.add(edge.from)
+            upQueue.push(edge.from)
+          }
+        }
+      })
+    }
+  }
+
+  // ER: undirected BFS (joins are symmetric)
+  if (filter === 'er' || filter === 'both') {
+    const erVisited = new Set<string>([nodeId])
+    const erQueue = [nodeId]
+    while (erQueue.length > 0) {
+      const current = erQueue.shift()!
+      schema.relationships?.forEach((rel, index) => {
+        const id = `er-${index}`
+        let neighbor: string | null = null
+        if (rel.from.table === current) neighbor = rel.to.table
+        else if (rel.to.table === current) neighbor = rel.from.table
+        if (neighbor) {
+          edgeIds.add(id)
+          if (!erVisited.has(neighbor)) {
+            erVisited.add(neighbor)
+            nodeIds.add(neighbor)
+            erQueue.push(neighbor)
+          }
+        }
+      })
+    }
+  }
+
+  return { nodeIds, edgeIds }
+}
+
+/**
+ * Finds the shortest path between two nodes using BFS.
+ * Optionally filter by edge type (default: 'both').
  */
 export const findShortestPath = (
-  schema: Schema, 
-  startId: string, 
-  targetId: string
+  schema: Schema,
+  startId: string,
+  targetId: string,
+  filter: EdgeTypeFilter = 'both'
 ): PathStep[] | null => {
   if (startId === targetId) return []
 
-  const adj = buildAdjacencyList(schema)
+  const adj = buildFilteredAdj(schema, filter)
   const queue: string[] = [startId]
   const visited = new Set<string>([startId])
   const parent: Record<string, PathStep> = {}

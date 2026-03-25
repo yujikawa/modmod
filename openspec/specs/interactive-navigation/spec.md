@@ -19,19 +19,23 @@ Clicking an entity in the sidebar SHALL automatically center and zoom the diagra
 - **THEN** diagram smoothly pans and zooms to the selected domain node
 
 ### Requirement: Distinct Relationship Path Visualization
-The Path Finder results SHALL visualize relationship steps using type-aware styling to distinguish between ER and Lineage relationships.
+PathFinderの経路結果はエッジ種別（ER・リネージ）を視覚的に区別して表示しなければならない。エッジ種別フィルターが「両方」のときは両種別を色分けして表示する。
 
-#### Scenario: Visual Distinction of ER Relationship
-- **WHEN** a path result includes an ER relationship step in light mode
-- **THEN** the relationship badge SHALL display with an emerald-themed color scheme (bg-emerald-50, text-emerald-700) and a subtle border.
+#### Scenario: ERエッジの視覚的区別
+- **WHEN** PathFinder結果にERエッジのステップが含まれる
+- **THEN** ER関係のバッジはエメラルド系の配色（bg-emerald-50, text-emerald-700）で表示される
 
-#### Scenario: Visual Distinction of Lineage Relationship
-- **WHEN** a path result includes a Lineage relationship step in light mode
-- **THEN** the relationship badge SHALL display with a blue-themed color scheme (bg-blue-50, text-blue-700) and a subtle border.
+#### Scenario: リネージエッジの視覚的区別
+- **WHEN** PathFinder結果にリネージエッジのステップが含まれる
+- **THEN** リネージ関係のバッジはブルー系の配色（bg-blue-50, text-blue-700）で表示される
 
-#### Scenario: High Contrast in Light Mode
-- **WHEN** the application is in light mode
-- **THEN** relationship badges in the Path Finder results MUST have high contrast against the white panel background, using borders to define their boundaries.
+#### Scenario: エッジ種別フィルター「リネージのみ」での表示
+- **WHEN** エッジ種別フィルターが「リネージ」でPathFinder結果が表示される
+- **THEN** 結果にはリネージエッジのみが含まれ、ERバッジは表示されない
+
+#### Scenario: エッジ種別フィルター「ERのみ」での表示
+- **WHEN** エッジ種別フィルターが「ER」でPathFinder結果が表示される
+- **THEN** 結果にはERエッジのみが含まれ、リネージバッジは表示されない
 
 ### Requirement: Node Creation Availability
 The system SHALL allow adding new tables and domains regardless of which view modes (ER, Lineage, Annotations) are active.

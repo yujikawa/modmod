@@ -166,6 +166,7 @@ function Flow() {
       if (e.key === 'Escape') {
         if (isPresentationMode) { setIsPresentationMode(false); return }
         if (useStore.getState().connectMode) { useStore.getState().setConnectMode(null); return }
+        useStore.getState().setPathFinderResult(null)
         setSelectedTableId(null)
         setSelectedEdgeId(null)
         setSelectedAnnotationId(null)
