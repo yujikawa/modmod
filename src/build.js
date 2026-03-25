@@ -2,6 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import yaml from 'js-yaml';
 import { fileURLToPath } from 'url';
+import { resolveImports } from './model-utils.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -81,7 +82,9 @@ export async function build(paths, visualizerPath, outputDir) {
   for (const [slug, absolutePath] of modelMap.entries()) {
     try {
       const content = fs.readFileSync(absolutePath, 'utf8');
-      const schema = yaml.load(content);
+      const raw = yaml.load(content) || {};
+      const basePath = path.dirname(absolutePath);
+      const { schema } = resolveImports(raw, basePath);
       const name = slug.charAt(0).toUpperCase() + slug.slice(1).replace(/[-_]/g, ' ');
       modelsData.push({ slug, name, schema });
     } catch (e) {

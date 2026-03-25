@@ -11,7 +11,7 @@
 ## QUICK REFERENCE (read this first)
 
 ```
-ROOT KEYS      domains | tables | relationships | lineage | annotations | layout | consumers
+ROOT KEYS      imports | domains | tables | relationships | lineage | annotations | layout | consumers
 COORDINATES    ONLY in `layout`. NEVER inside tables or domains.
 LINEAGE        Use top-level `lineage` section (not relationships, not table.lineage.upstream).
                lineage.to can reference either a table ID or a consumer ID.
@@ -28,6 +28,7 @@ Grid           All x/y values must be multiples of 40.
 A valid `model.yaml` has exactly these top-level keys.
 
 ```yaml
+imports:       # (array) cross-file table references — OPTIONAL
 domains:       # (array) visual containers — OPTIONAL but recommended
 tables:        # (array) entity definitions — REQUIRED
 relationships: # (array) ER cardinality edges — OPTIONAL
@@ -206,6 +207,46 @@ domains:
 
 **MUST** list only IDs that actually exist in `tables` or `consumers`.
 **MUST** add a layout entry for the domain with `width` and `height`.
+
+---
+
+## 5a. Cross-file Imports
+
+Use `imports:` to reference table definitions from another YAML file without copying them.
+Imported tables are resolved at dev/build time and can be used in `domains.members`, `relationships`, and `lineage` just like local tables.
+
+```yaml
+imports:
+  - from: ./conformed-dims.yaml        # relative path from this file
+    ids: [dim_dates, dim_customers]    # optional: specific table IDs to import
+                                       # omit ids to import all tables from the file
+```
+
+**Rules:**
+- `from` is **REQUIRED**. Path is relative to the YAML file containing the `imports:` entry.
+- `ids` is optional. When omitted, all tables from the referenced file are imported.
+- Local table definitions take precedence — if the same ID exists locally and in an imported file, the local definition wins.
+- Imported tables appear on the canvas as read-only nodes. To edit them, update the source file.
+- Imported table IDs work in `domains.members`, `relationships`, and `lineage` entries.
+
+**Example: importing a conformed date dimension**
+
+```yaml
+# model.yaml
+imports:
+  - from: ./shared/conformed-dims.yaml
+    ids: [dim_dates]
+
+domains:
+  - id: core
+    name: Core Layer
+    members: [fct_orders, dim_dates]   # dim_dates comes from import
+
+relationships:
+  - from: { table: fct_orders, column: date_key }
+    to:   { table: dim_dates, column: date_key }   # imported table referenced normally
+    type: many-to-one
+```
 
 ---
 

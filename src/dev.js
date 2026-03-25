@@ -7,6 +7,7 @@ import open from 'open';
 import { fileURLToPath } from 'url';
 import { WebSocketServer } from 'ws';
 import http from 'http';
+import { resolveImports } from './model-utils.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -46,6 +47,9 @@ export async function startDevServer(paths) {
     wss.clients.forEach(c => { if (c.readyState === 1) c.send(data); });
   };
 
+  // Track import-source paths for file watching
+  const importWatchedPaths = new Set();
+
   app.get('/api/files', (req, res) => {
     modelMap = scanFiles(inputPaths);
     res.json(Array.from(modelMap.entries()).map(([slug, fullPath]) => ({
@@ -56,12 +60,37 @@ export async function startDevServer(paths) {
   app.get('/api/model', (req, res) => {
     const p = getModelPath(req.query.model);
     if (!p) return res.status(404).json({ error: 'Not found' });
-    try { res.json(yaml.load(fs.readFileSync(p, 'utf8'))); } catch (e) { res.status(500).send(e.message); }
+    try {
+      const raw = yaml.load(fs.readFileSync(p, 'utf8')) || {};
+      const basePath = path.dirname(p);
+      const { schema, importedPaths } = resolveImports(raw, basePath);
+      // Register newly discovered import sources with chokidar
+      for (const ip of importedPaths) {
+        if (!importWatchedPaths.has(ip)) {
+          importWatchedPaths.add(ip);
+          watcher.add(ip);
+        }
+      }
+      res.json(schema);
+    } catch (e) { res.status(500).send(e.message); }
   });
 
   app.post('/api/save', (req, res) => {
     const p = getModelPath(req.query.model);
-    try { fs.writeFileSync(p, req.body.yaml, 'utf8'); res.json({ success: true }); } catch (e) { res.status(500).send(e.message); }
+    try {
+      // Strip imported tables before saving — they belong to the source YAML, not this file
+      const incoming = yaml.load(req.body.yaml) || {};
+      if (Array.isArray(incoming.tables)) {
+        incoming.tables = incoming.tables.filter(t => !t.isImported);
+      }
+      // Preserve the imports: section from the original file
+      const original = yaml.load(fs.readFileSync(p, 'utf8')) || {};
+      if (Array.isArray(original.imports)) {
+        incoming.imports = original.imports;
+      }
+      fs.writeFileSync(p, yaml.dump(incoming, { lineWidth: -1 }), 'utf8');
+      res.json({ success: true });
+    } catch (e) { res.status(500).send(e.message); }
   });
 
   app.use(express.static(distPath, { index: false }));
@@ -82,9 +111,9 @@ export async function startDevServer(paths) {
     open('http://localhost:5173');
   });
 
-  // Debounced file watcher
+  // Debounced file watcher (kept in variable so import paths can be added dynamically)
   let watchTimeout = null;
-  chokidar.watch(inputPaths, { 
+  const watcher = chokidar.watch(inputPaths, {
     ignoreInitial: true,
     awaitWriteFinish: { stabilityThreshold: 100, pollInterval: 100 }
   }).on('all', (event, changedPath) => {

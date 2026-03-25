@@ -14,6 +14,11 @@ export interface Consumer {
   url?: string;
 }
 
+export interface ImportEntry {
+  from: string;   // Relative path to the source YAML file
+  ids?: string[]; // Optional: specific table IDs to import (all tables if omitted)
+}
+
 export interface Schema {
   tables: Table[];
   relationships: Relationship[];
@@ -21,6 +26,7 @@ export interface Schema {
   domains?: Domain[]; // Optional
   consumers?: Consumer[]; // Optional downstream consumers
   annotations?: Annotation[]; // Optional visual notes
+  imports?: ImportEntry[]; // Optional cross-file table imports (resolved server-side)
   layout?: Record<string, {
     x: number;
     y: number;
@@ -69,6 +75,7 @@ export interface Implementation {
 export interface Table {
   id: string; // Internal name/key
   name: string; // Display name (Conceptual name)
+  isImported?: boolean; // True when resolved from an imports: entry (read-only)
   logical_name?: string; // Formal logical name
   physical_name?: string; // Actual database table name
   appearance?: {
