@@ -1,6 +1,8 @@
 schema: spec-driven
 
 context: |
+  言語: 日本語
+  すべてのコミュニケーションは日本語で行われます。また成果物のドキュメントも日本語で作成されます。プログラムのソースコード上のコメントは英語にしてください。
   This repository develops Modscape, a YAML-driven data modeling visualizer
   designed for Modern Data Stack architectures.
 
