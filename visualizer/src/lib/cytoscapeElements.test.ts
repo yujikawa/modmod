@@ -50,7 +50,7 @@ describe('yamlToElements', () => {
   it('treats layout coordinates as absolute even when parentId is present', () => {
     const schema = makeSchema({
       tables: [{ id: 'tbl_a', name: 'A', appearance: { type: 'fact' }, columns: [] }],
-      domains: [{ id: 'dom1', name: 'Domain 1', color: '#fff', tables: ['tbl_a'] }],
+      domains: [{ id: 'dom1', name: 'Domain 1', color: '#fff', members: ['tbl_a'] }],
       layout: {
         dom1: { x: 500, y: 300 },
         tbl_a: { x: 60, y: 60, parentId: 'dom1' },
@@ -124,7 +124,7 @@ describe('yamlToElements', () => {
         { id: 'tbl_a', name: 'A', appearance: { type: 'fact' }, columns: [] },
         { id: 'tbl_b', name: 'B', appearance: { type: 'table' }, columns: [] },
       ],
-      domains: [{ id: 'dom1', name: 'Domain 1', color: '#fff', tables: ['tbl_a'] }],
+      domains: [{ id: 'dom1', name: 'Domain 1', color: '#fff', members: ['tbl_a'] }],
     })
     const elements = yamlToElements(schema)
     const nodeA = elements.find(e => e.data.id === 'tbl_a')!

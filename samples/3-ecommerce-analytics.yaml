@@ -462,27 +462,6 @@ tables:
           type: Int
           additivity: fully
     sampleData: []
-lineage:
-  - from: stg_customers
-    to: dim_customers
-  - from: stg_products
-    to: dim_products
-  - from: stg_orders
-    to: fct_orders
-  - from: stg_order_items
-    to: fct_orders
-  - from: fct_orders
-    to: mart_daily_revenue
-  - from: dim_dates
-    to: mart_daily_revenue
-  - from: fct_orders
-    to: mart_customer_ltv
-  - from: dim_customers
-    to: mart_customer_ltv
-  - from: fct_orders
-    to: mart_product_performance
-  - from: dim_products
-    to: mart_product_performance
 relationships:
   - from:
       table: stg_orders
@@ -512,12 +491,45 @@ relationships:
       table: fct_orders
       column: order_date_key
     type: one-to-many
+lineage:
+  - from: stg_customers
+    to: dim_customers
+  - from: stg_products
+    to: dim_products
+  - from: stg_orders
+    to: fct_orders
+  - from: stg_order_items
+    to: fct_orders
+  - from: fct_orders
+    to: mart_daily_revenue
+  - from: dim_dates
+    to: mart_daily_revenue
+  - from: fct_orders
+    to: mart_customer_ltv
+  - from: dim_customers
+    to: mart_customer_ltv
+  - from: fct_orders
+    to: mart_product_performance
+  - from: dim_products
+    to: mart_product_performance
+  - from: mart_daily_revenue
+    to: dashboard_revenue
+  - from: mart_customer_ltv
+    to: dashboard_customer
+  - from: mart_product_performance
+    to: dashboard_product
+  - from: mart_customer_ltv
+    to: dashboard_executive
+  - from: mart_daily_revenue
+    to: dashboard_executive
+  - from: mart_product_performance
+    to: dashboard_executive
 domains:
   - id: staging
     name: Staging
     description: Raw data from source systems
     color: rgba(100, 116, 139, 0.12)
-    tables:
+    members:
       - stg_customers
       - stg_products
       - stg_orders
@@ -526,7 +538,7 @@ domains:
     name: Core DWH
     description: Conformed dimensions and incremental fact table
     color: rgba(59, 130, 246, 0.1)
-    tables:
+    members:
       - dim_customers
       - dim_products
       - dim_dates
@@ -535,51 +547,117 @@ domains:
     name: Analytics Mart
     description: Business-facing aggregated summaries
     color: rgba(245, 158, 11, 0.1)
-    tables:
+    members:
       - mart_daily_revenue
       - mart_customer_ltv
       - mart_product_performance
+  - id: dashboards
+    name: Dashboards & Consumers
+    description: Downstream dashboards and business applications consuming the data
+    color: rgba(139, 92, 246, 0.08)
+    members:
+      - dashboard_executive
+      - dashboard_revenue
+      - dashboard_customer
+      - dashboard_product
+consumers:
+  - id: dashboard_revenue
+    name: Revenue Dashboard
+    description: Daily and monthly revenue KPI tracking
+    appearance:
+      icon: 📊
+      color: '#f59e0b'
+  - id: dashboard_customer
+    name: Customer Analytics
+    description: Customer LTV and segmentation analysis
+    appearance:
+      icon: 👤
+      color: '#3b82f6'
+  - id: dashboard_product
+    name: Product Performance
+    description: Sales ranking and category performance
+    appearance:
+      icon: 📦
+      color: '#10b981'
+  - id: dashboard_executive
+    name: Executive Summary
+    description: Cross-functional KPI overview for leadership
+    appearance:
+      icon: 📈
+      color: '#8b5cf6'
 annotations: []
 layout:
   stg_products:
     x: 447.56888972114405
     'y': -284.2111593745741
+    parentId: staging
   analytics_mart:
     x: 2079.350520128063
     'y': -420.6331403281348
   mart_daily_revenue:
     x: 2719.350520128063
     'y': 59.36685967186519
+    parentId: analytics_mart
   mart_customer_ltv:
     x: 2079.350520128063
     'y': 299.3668596718652
+    parentId: analytics_mart
   mart_product_performance:
     x: 2399.3505201280627
     'y': 299.3668596718652
+    parentId: analytics_mart
   core_dwh:
     x: 1001.181842057429
     'y': -539.0789981384597
   dim_customers:
     x: 1262.6815503935165
     'y': -71.3457198753697
+    parentId: core_dwh
   dim_products:
     x: 1599.3959194403487
     'y': -50.45275856682929
+    parentId: core_dwh
   dim_dates:
     x: 896.7170355147272
     'y': -40.27533296077337
+    parentId: core_dwh
   fct_orders:
     x: 1344.5968180579346
     'y': 659.6284216856628
+    parentId: core_dwh
   staging:
     x: -3241.096547432612
     'y': 100.0216817070687
   stg_customers:
     x: 497.02844380345783
     'y': 959.5286690961346
+    parentId: staging
   stg_orders:
     x: 439.7386461687896
     'y': 528.0595683587331
+    parentId: staging
   stg_order_items:
     x: 418.8270104572181
     'y': 114.68567001758255
+    parentId: staging
+  dashboards:
+    x: 3003
+    'y': -176
+    width: 360
+    height: 880
+  dashboard_executive:
+    x: 3183
+    'y': -6
+    parentId: dashboards
+  dashboard_revenue:
+    x: 3183
+    'y': 134
+    parentId: dashboards
+  dashboard_customer:
+    x: 3183
+    'y': 334
+    parentId: dashboards
+  dashboard_product:
+    x: 3183
+    'y': 534
+    parentId: dashboards

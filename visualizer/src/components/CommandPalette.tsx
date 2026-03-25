@@ -58,6 +58,7 @@ const CommandPalette = memo(() => {
         { id: 'search', label: 'Find table...', icon: <Search size={14} />, desc: 'Jump to entity', action: () => setInput('search ') },
         { id: 'add-table', label: 'Add table...', icon: <Plus size={14} />, desc: 'Create a new table node', action: () => setInput('add table ') },
         { id: 'add-domain', label: 'Add domain...', icon: <Plus size={14} />, desc: 'Create a new domain container', action: () => setInput('add domain ') },
+        { id: 'add-consumer', label: 'Add consumer...', icon: <Plus size={14} />, desc: 'Create a downstream consumer node', action: () => setInput('add consumer ') },
         { id: 'fit', label: 'Fit View', icon: <Maximize size={14} />, desc: 'Show entire model', action: () => handleExecute('fit') },
         { id: 'theme', label: 'Switch Theme', icon: <Sun size={14} />, desc: 'Toggle dark/light mode', action: () => setInput('theme ') },
       ]

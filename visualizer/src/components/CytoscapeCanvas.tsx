@@ -14,6 +14,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { useStore } from '../store/useStore'
 import { useShallow } from 'zustand/react/shallow'
 import TableCard from './TableCard'
+import ConsumerCard from './ConsumerCard'
 import { yamlToElements } from '../lib/cytoscapeElements'
 import type { Schema } from '../types/schema'
 
@@ -167,6 +168,29 @@ function buildCytoscapeStyle(theme: 'dark' | 'light', lowZoom = false) {
       selector: 'edge.dimmed',
       style: { opacity: 0.1 },
     },
+    // Consumer nodes (DOM overlay, transparent at normal zoom like table nodes)
+    {
+      selector: 'node.consumer-node',
+      style: {
+        shape: 'round-rectangle',
+        'background-opacity': lowZoom ? 0.85 : 0,
+        'background-color': lowZoom ? 'data(typeColor)' : '#000',
+        'border-width': lowZoom ? 2 : 0,
+        'border-color': lowZoom ? 'data(typeColor)' : '#000',
+        width: 220,
+        height: 70,
+        ...(lowZoom ? {
+          label: 'data(label)',
+          'text-valign': 'center',
+          'text-halign': 'center',
+          color: '#ffffff',
+          'font-size': 11,
+          'font-weight': 'bold',
+          'text-wrap': 'ellipsis',
+          'text-max-width': '200px',
+        } : {}),
+      },
+    },
   ]
 }
 
@@ -225,7 +249,7 @@ function renderDomainBackgrounds(
 
     schema.domains.forEach((domain) => {
     active.add(domain.id)
-    const memberNodes = cy.nodes().filter((n: CyInstance) => domain.tables.includes(n.id()))
+    const memberNodes = cy.nodes().filter((n: CyInstance) => domain.members.includes(n.id()))
     const layoutEntry = schema.layout?.[domain.id]
     const headerH = Math.max(24, 32 * zoom)
     const TOP_PAD = PAD + (headerH / zoom)
@@ -358,7 +382,7 @@ function renderDomainHandles(
 
   schema.domains.forEach((domain) => {
     active.add(domain.id)
-    const memberNodes = cy.nodes().filter((n: CyInstance) => domain.tables.includes(n.id()))
+    const memberNodes = cy.nodes().filter((n: CyInstance) => domain.members.includes(n.id()))
     const layoutEntry = schema.layout?.[domain.id]
     const headerH = Math.max(24, 32 * zoom)
     const TOP_PAD = PAD + (headerH / zoom)
@@ -424,7 +448,7 @@ function renderDomainHandles(
       if (!latestDomain) return
 
       // Read memberNodes fresh at interaction time
-      const currentMemberNodes = cy.nodes().filter((n: CyInstance) => latestDomain.tables.includes(n.id()))
+      const currentMemberNodes = cy.nodes().filter((n: CyInstance) => latestDomain.members.includes(n.id()))
       const initialPositions = new Map<string, { x: number; y: number }>()
       currentMemberNodes.forEach((n: CyInstance) => {
         const pos: { x: number; y: number } = n.position()
@@ -615,6 +639,7 @@ interface CytoscapeCanvasProps {
   onDomainClick: (id: string) => void
   onAddTableAt: (x: number, y: number) => void
   onAddDomainAt: (x: number, y: number) => void
+  onAddConsumerAt: (x: number, y: number) => void
   onAddAnnotationAt: (x: number, y: number) => void
   onFitView: (fitFn: () => void) => void
   onFocusNode: (focusFn: (id: string) => void) => void
@@ -630,6 +655,7 @@ export default function CytoscapeCanvas({
   onDomainClick,
   onAddTableAt,
   onAddDomainAt,
+  onAddConsumerAt,
   onAddAnnotationAt,
   onFitView,
   onFocusNode,
@@ -740,7 +766,8 @@ export default function CytoscapeCanvas({
 
       cy.nodes().forEach((node: CyInstance) => {
         const table = node.data('table')
-        if (!table) return
+        const consumer = node.data('consumer')
+        if (!table && !consumer) return
         const id: string = node.id()
         const root = rootMapRef.current.get(id)
         if (!root) return
@@ -763,21 +790,32 @@ export default function CytoscapeCanvas({
         const isPendingSource = connectPendingSourceRef.current === id
         const isConnectMode = !!currentConnectMode
 
-        root.render(
-          <TableCard
-            table={table}
-            isSelected={isSelected}
-            isDimmed={isDimmed}
-            isHighlighted={isHighlighted}
-            isHovered={isHovered}
-            isPendingSource={isPendingSource}
-            isConnectMode={isConnectMode}
-            zoom={zoom}
-            theme={themeRef.current}
-            hoveredColumnId={hoveredColumnIdRef.current}
-            isCompact={isCompactModeRef.current}
-          />
-        )
+        if (consumer) {
+          root.render(
+            <ConsumerCard
+              consumer={consumer}
+              isSelected={isSelected}
+              isDimmed={isDimmed}
+              theme={themeRef.current}
+            />
+          )
+        } else {
+          root.render(
+            <TableCard
+              table={table}
+              isSelected={isSelected}
+              isDimmed={isDimmed}
+              isHighlighted={isHighlighted}
+              isHovered={isHovered}
+              isPendingSource={isPendingSource}
+              isConnectMode={isConnectMode}
+              zoom={zoom}
+              theme={themeRef.current}
+              hoveredColumnId={hoveredColumnIdRef.current}
+              isCompact={isCompactModeRef.current}
+            />
+          )
+        }
       })
     })
   }, [])
@@ -813,7 +851,7 @@ export default function CytoscapeCanvas({
       })
 
       // Member nodes: read actual Cytoscape positions after the drag
-      domain.tables.forEach((tableId) => {
+      domain.members.forEach((tableId) => {
         const cyNode = cy.getElementById(tableId)
         if (cyNode && cyNode.length > 0) {
           const pos: { x: number; y: number } = cyNode.position()
@@ -1185,9 +1223,10 @@ export default function CytoscapeCanvas({
         // For table nodes, create DOM container BEFORE cy.add() so that
         // cytoscape-dom-node's 'add' handler finds data.dom already set.
         const isTableNode = !!elDef.data.table
+        const isUsecaseNode = !!elDef.data.consumer
         let domContainer: HTMLDivElement | null = null
         let elToAdd = elDef
-        if (isTableNode) {
+        if (isTableNode || isUsecaseNode) {
           domContainer = document.createElement('div')
           domContainer.style.cssText = 'position:absolute;box-sizing:border-box;min-width:220px;'
 
@@ -1291,7 +1330,7 @@ export default function CytoscapeCanvas({
           elToAdd = { ...elDef, data: { ...elDef.data, dom: domContainer } }
         }
         cy.add(elToAdd)
-        if (isTableNode && domContainer) {
+        if ((isTableNode || isUsecaseNode) && domContainer) {
           const root = createRoot(domContainer)
           rootMapRef.current.set(id, root)
           domContainerMapRef.current.set(id, domContainer)
@@ -1457,7 +1496,7 @@ export default function CytoscapeCanvas({
 
         // Domain members: rearrange into grid preserving dagre rank order
         schema.domains?.forEach(domain => {
-          const members = domain.tables.filter(tid => dagrePos.has(tid))
+          const members = domain.members.filter(tid => dagrePos.has(tid))
           if (members.length === 0) return
 
           // Sort by dagre x (rank = left→right order)
@@ -1500,12 +1539,11 @@ export default function CytoscapeCanvas({
             y: Math.round(originY - PAD - HEADER),
             width: Math.round(gridW + PAD * 2),
             height: Math.round(gridH + PAD * 2 + HEADER),
-            isLocked: schema.layout?.[domain.id]?.isLocked,
           }
         })
 
         // Standalone tables (not in any domain)
-        const domainTableIds = new Set(schema.domains?.flatMap(d => d.tables) ?? [])
+        const domainTableIds = new Set(schema.domains?.flatMap(d => d.members) ?? [])
         schema.tables.forEach(t => {
           if (!domainTableIds.has(t.id) && dagrePos.has(t.id)) {
             const pos = dagrePos.get(t.id)!
@@ -1631,11 +1669,12 @@ export default function CytoscapeCanvas({
         return
       }
 
-      if (key === 't' || key === 'd' || key === 's') {
+      if (key === 't' || key === 'd' || key === 'u' || key === 's') {
         e.preventDefault()
         const center = screenToCanvas(window.innerWidth / 2, window.innerHeight / 2)
         if (key === 't') onAddTableAt(center.x - 160, center.y - 125)
         else if (key === 'd') onAddDomainAt(center.x - 300, center.y - 200)
+        else if (key === 'u') onAddConsumerAt(center.x - 80, center.y - 30)
         else onAddAnnotationAt(center.x - 60, center.y - 40)
         return
       }
@@ -1653,7 +1692,7 @@ export default function CytoscapeCanvas({
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [screenToCanvas, onAddTableAt, onAddDomainAt, onAddAnnotationAt])
+  }, [screenToCanvas, onAddTableAt, onAddDomainAt, onAddConsumerAt, onAddAnnotationAt])
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>

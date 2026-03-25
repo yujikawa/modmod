@@ -98,6 +98,7 @@ relationships – ER cardinality between tables
 lineage      – data flow / transformation paths
 annotations  – sticky notes / callouts on the canvas
 layout       – ALL coordinate data (never put x/y inside tables or domains)
+consumers    – downstream consumers (BI dashboards, ML models, applications)
 ```
 
 ### Domains
@@ -108,8 +109,7 @@ domains:
     name: "Core Sales"
     description: "Transactional data for the sales team."  # optional
     color: "rgba(59, 130, 246, 0.1)"  # background fill
-    tables: [orders, dim_customers]   # logical membership
-    isLocked: false  # prevent accidental drag when true
+    members: [orders, dim_customers]   # logical membership
 ```
 
 ### Tables
@@ -196,6 +196,31 @@ relationships:
 
 > **ER Relationships** vs **Lineage**: Use `relationships` for structural joins (FKs) and `lineage` for data flow (transformations). Do not duplicate them.
 
+### Consumers
+
+Consumers represent the downstream users of your data model — BI dashboards, ML models, applications, or any other system that consumes the data. They appear as distinct nodes on the canvas and can receive lineage edges.
+
+```yaml
+consumers:
+  - id: revenue_dashboard       # unique ID — used in lineage and layout
+    name: "Revenue Dashboard"   # display name
+    description: "Monthly KPI dashboard for the finance team."  # optional
+    appearance:
+      icon: "📊"                # optional (defaults to 📊)
+      color: "#e0f2fe"          # optional accent color
+    url: "https://bi.example.com/revenue"  # optional link
+```
+
+Connect a consumer with lineage by using its `id` as the `to` field:
+
+```yaml
+lineage:
+  - from: mart_monthly_revenue
+    to: revenue_dashboard   # consumer ID
+```
+
+Consumers can also be added to domain `members` lists just like tables.
+
 ### Annotations
 
 ```yaml
@@ -223,7 +248,6 @@ layout:
     y: 0
     width: 880
     height: 480
-    isLocked: false  # prevent drag in canvas
 
   # Table inside a domain – coordinates are relative to domain origin
   orders:

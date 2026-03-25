@@ -95,6 +95,7 @@ relationships – テーブル間のERカーディナリティ
 lineage      – データの流れ / 変換パス
 annotations  – キャンバス上のスティッキーノート・吹き出し
 layout       – 全座標データ（tables/domains の中に x/y を書いてはいけない）
+consumers    – データの下流消費者（BIダッシュボード・MLモデル・アプリケーション等）
 ```
 
 ### Domains（ドメイン）
@@ -105,8 +106,7 @@ domains:
     name: "主要売上"
     description: "営業チームのトランザクションデータ。"  # 任意
     color: "rgba(59, 130, 246, 0.1)"  # 背景色
-    tables: [orders, dim_customers]   # 論理的な所属リスト
-    isLocked: false  # true にするとキャンバスでの誤ドラッグを防止
+    members: [orders, dim_customers]   # 論理的な所属リスト
 ```
 
 ### Tables（テーブル）
@@ -193,6 +193,31 @@ relationships:
 
 > **ER関係** vs **リネージ**: 構造的な結合（外部キーなど）には `relationships` を、データの加工・変換の流れには `lineage` を使用してください。両方に同じ接続を記述しないでください。
 
+### Consumers（コンシューマー）
+
+コンシューマーはデータモデルの下流消費者を表します。BIダッシュボード、MLモデル、アプリケーションなど、データを利用するあらゆるシステムを定義できます。キャンバス上に独自のノードとして表示され、リネージ矢印で接続されます。
+
+```yaml
+consumers:
+  - id: revenue_dashboard       # 一意のID — lineageやlayoutで使用
+    name: "Revenue Dashboard"   # 表示名
+    description: "財務チーム向け月次KPIダッシュボード"  # 任意
+    appearance:
+      icon: "📊"                # 任意（デフォルト: 📊）
+      color: "#e0f2fe"          # 任意のアクセントカラー
+    url: "https://bi.example.com/revenue"  # 任意のリンク
+```
+
+コンシューマーへのリネージは `lineage.to` にコンシューマーIDを指定します：
+
+```yaml
+lineage:
+  - from: mart_monthly_revenue
+    to: revenue_dashboard   # コンシューマーID
+```
+
+テーブルと同様に、ドメインの `members` リストにも追加できます。
+
 ### Annotations（アノテーション）
 
 ```yaml
@@ -220,7 +245,6 @@ layout:
     y: 0
     width: 880
     height: 480
-    isLocked: false  # true でキャンバスのドラッグを防止
 
   # ドメイン内のテーブル – 座標はドメインの原点からの相対値
   orders:

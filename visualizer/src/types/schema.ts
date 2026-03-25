@@ -1,6 +1,17 @@
 export interface LineageEdge {
   from: string; // source table id
-  to: string;   // target table id
+  to: string;   // target table or consumer id
+}
+
+export interface Consumer {
+  id: string;
+  name: string;
+  description?: string;
+  appearance?: {
+    icon?: string;
+    color?: string;
+  };
+  url?: string;
 }
 
 export interface Schema {
@@ -8,13 +19,13 @@ export interface Schema {
   relationships: Relationship[];
   lineage?: LineageEdge[]; // Data lineage edges (top-level, separate from ER relationships)
   domains?: Domain[]; // Optional
+  consumers?: Consumer[]; // Optional downstream consumers
   annotations?: Annotation[]; // Optional visual notes
   layout?: Record<string, {
     x: number;
     y: number;
     width?: number;
     height?: number;
-    isLocked?: boolean;
     parentId?: string;
   }>;
 }
@@ -33,9 +44,8 @@ export interface Domain {
   id: string;
   name: string;
   description?: string;
-  tables: string[]; // List of table IDs
+  members: string[]; // List of table/consumer IDs
   color?: string;
-  isLocked?: boolean;
 }
 
 export interface Measure {

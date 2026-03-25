@@ -17,6 +17,9 @@ export const TYPE_CONFIG: Record<string, { color: string; icon: string; label: s
   table: { color: '#64748b', icon: '📋', label: 'TABLE' },
 }
 
+const CONSUMER_DEFAULT_ICON = '📊'
+const CONSUMER_DEFAULT_COLOR = '#a78bfa'
+
 export function buildTypeLabel(table: Table): string {
   const typeConfig = table.appearance?.type ? TYPE_CONFIG[table.appearance.type] : null
   let typeLabel = typeConfig?.label || ''
@@ -57,17 +60,18 @@ function cardinalityLabel(type: string | undefined): string {
 
 /**
  * Convert a parsed YAML schema to Cytoscape element definitions.
- * Tables → nodes, lineage.upstream[] → lineage edges, relationships[] → ER edges.
+ * Tables → nodes, consumers → consumer-node nodes,
+ * lineage[] → lineage edges, relationships[] → ER edges.
  * Does NOT mutate the schema.
  */
 export function yamlToElements(schema: Schema): CyElementDefinition[] {
   const elements: CyElementDefinition[] = []
 
-  // Build domain membership map for quick lookup
-  const domainByTableId = new Map<string, string>()
+  // Build domain membership map for quick lookup (tables and consumers)
+  const domainByMemberId = new Map<string, string>()
   schema.domains?.forEach(domain => {
-    domain.tables.forEach(tableId => {
-      domainByTableId.set(tableId, domain.id)
+    domain.members.forEach(memberId => {
+      domainByMemberId.set(memberId, domain.id)
     })
   })
 
@@ -94,7 +98,7 @@ export function yamlToElements(schema: Schema): CyElementDefinition[] {
       data: {
         id: table.id,
         table,
-        domainId: domainByTableId.get(table.id) ?? null,
+        domainId: domainByMemberId.get(table.id) ?? null,
         typeColor,
         typeLabel: buildTypeLabel(table),
         typeIcon: table.appearance?.icon || typeConfig?.icon || '',
@@ -103,12 +107,38 @@ export function yamlToElements(schema: Schema): CyElementDefinition[] {
     })
   })
 
-  // Build set of existing table IDs for edge validation
+  // Consumer nodes
+  const usecaseIdSet = new Set((schema.consumers ?? []).map(u => u.id))
+  schema.consumers?.forEach((consumer, index) => {
+    const layout = schema.layout?.[consumer.id]
+    const x = layout?.x ?? (schema.tables.length + index) * (TABLE_WIDTH + 40)
+    const y = layout?.y ?? Math.floor(index / GRID_COLS) * (TABLE_HEIGHT + 40)
+
+    const color = consumer.appearance?.color || CONSUMER_DEFAULT_COLOR
+    const icon = consumer.appearance?.icon || CONSUMER_DEFAULT_ICON
+
+    elements.push({
+      data: {
+        id: consumer.id,
+        consumer,
+        domainId: domainByMemberId.get(consumer.id) ?? null,
+        typeColor: color,
+        typeIcon: icon,
+        label: consumer.name,
+      },
+      position: { x, y },
+      classes: 'consumer-node',
+    })
+  })
+
+  // Build set of all node IDs (tables + consumers) for edge validation
   const tableIdSet = new Set(schema.tables.map(t => t.id))
+  const allNodeIdSet = new Set([...tableIdSet, ...usecaseIdSet])
 
   // Lineage edges (from top-level schema.lineage[])
+  // `to` can reference either a table or a consumer node
   schema.lineage?.forEach((edge, i) => {
-    if (!tableIdSet.has(edge.from) || !tableIdSet.has(edge.to)) return // skip dangling edges
+    if (!allNodeIdSet.has(edge.from) || !allNodeIdSet.has(edge.to)) return // skip dangling edges
     elements.push({
       data: {
         id: `lin-${edge.from}-${edge.to}-${i}`,

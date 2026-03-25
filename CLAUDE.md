@@ -149,8 +149,7 @@ domains:
     name: "Sales Operations"
     description: "Group of sales-related tables."  # optional
     color: "rgba(59, 130, 246, 0.1)"
-    tables: [fct_orders, dim_customers]
-    isLocked: false                                 # optional: prevent drag
+    members: [fct_orders, dim_customers]
 
 # ── Tables ───────────────────────────────────────────────
 tables:
@@ -228,7 +227,6 @@ layout:
     y: 0
     width: 880
     height: 480
-    isLocked: false
   fct_orders:                 # Table inside domain: coords relative to domain origin
     x: 280
     y: 200

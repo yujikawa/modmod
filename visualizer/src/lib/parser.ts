@@ -7,25 +7,37 @@ export function normalizeSchema(data: any): Schema {
     throw new Error('Invalid YAML: Root must be an object')
   }
 
-  // Normalization: Ensure tables, relationships, domains and annotations are always arrays
+  // Normalization: Ensure tables, relationships, domains, consumers and annotations are always arrays
   const schema: Schema = {
     tables: Array.isArray(data.tables) ? data.tables : [],
     relationships: Array.isArray(data.relationships) ? data.relationships : [],
     lineage: Array.isArray(data.lineage) ? data.lineage : [],
     domains: Array.isArray(data.domains) ? data.domains : [],
+    consumers: Array.isArray(data.consumers) ? data.consumers : [],
     annotations: Array.isArray(data.annotations) ? data.annotations : [],
     layout: data.layout || {}
   }
 
-  // Auto-repair: Sync layout.parentId with domain.tables membership
+  // Normalize domains: support both `members` (new) and `tables` (legacy) field names
+  schema.domains = schema.domains!.map((domain: any) => ({
+    ...domain,
+    members: Array.isArray(domain.members)
+      ? domain.members
+      : Array.isArray(domain.tables)
+        ? domain.tables
+        : [],
+    tables: undefined,
+  }))
+
+  // Auto-repair: Sync layout.parentId with domain.members membership
   if (schema.domains && schema.layout) {
     schema.domains.forEach(domain => {
-      domain.tables.forEach(tableId => {
-        if (schema.layout![tableId]) {
-          schema.layout![tableId].parentId = domain.id;
+      domain.members.forEach(memberId => {
+        if (schema.layout![memberId]) {
+          schema.layout![memberId].parentId = domain.id;
         } else {
-          // If no layout exists for this table, create a placeholder so it has a parent
-          schema.layout![tableId] = { x: 0, y: 0, parentId: domain.id };
+          // If no layout exists for this member, create a placeholder so it has a parent
+          schema.layout![memberId] = { x: 0, y: 0, parentId: domain.id };
         }
       });
     });
@@ -34,12 +46,12 @@ export function normalizeSchema(data: any): Schema {
   // Further normalization for each table
   schema.tables = schema.tables.map((table: any) => {
     let sampleData = table.sampleData;
-    
+
     // Migrate legacy format { columns: [...], rows: [[...]] } to new [[...]] format
     if (sampleData && typeof sampleData === 'object' && !Array.isArray(sampleData)) {
       const legacyColumns = Array.isArray(sampleData.columns) ? sampleData.columns : [];
       const legacyRows = Array.isArray(sampleData.rows) ? sampleData.rows : [];
-      
+
       if (legacyColumns.length > 0 && legacyRows.length > 0) {
         // Map legacy columns (ID list) to current table column order
         const currentColumns = Array.isArray(table.columns) ? table.columns : [];

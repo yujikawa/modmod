@@ -1,7 +1,7 @@
 import { memo, useState, useEffect } from 'react'
 import { useStore } from '../store/useStore'
 import { useShallow } from 'zustand/react/shallow'
-import { X, Plus, Trash2, Tag as TagIcon, Table as TableIcon, Database, Link as LinkIcon, Unlink, ChevronUp, ChevronDown, Cpu } from 'lucide-react'
+import { X, Plus, Trash2, Tag as TagIcon, Table as TableIcon, Database, Link as LinkIcon, Unlink, ChevronUp, ChevronDown, Cpu, FileChartColumnIncreasing } from 'lucide-react'
 import type { Table, Column } from '../types/schema'
 
 const TYPE_CONFIG: Record<string, { color: string; icon: string; label: string }> = {
@@ -19,10 +19,12 @@ const DetailPanel = memo(() => {
     schema,
     getSelectedTable,
     getSelectedDomain,
+    getSelectedConsumer,
     getSelectedRelationship,
     getSelectedAnnotation,
     updateTable,
     updateDomain,
+    updateConsumer,
     updateRelationship,
     updateAnnotation,
     assignTableToDomain,
@@ -34,10 +36,12 @@ const DetailPanel = memo(() => {
     schema: s.schema,
     getSelectedTable: s.getSelectedTable,
     getSelectedDomain: s.getSelectedDomain,
+    getSelectedConsumer: s.getSelectedConsumer,
     getSelectedRelationship: s.getSelectedRelationship,
     getSelectedAnnotation: s.getSelectedAnnotation,
     updateTable: s.updateTable,
     updateDomain: s.updateDomain,
+    updateConsumer: s.updateConsumer,
     updateRelationship: s.updateRelationship,
     updateAnnotation: s.updateAnnotation,
     assignTableToDomain: s.assignTableToDomain,
@@ -53,6 +57,7 @@ const DetailPanel = memo(() => {
   
   const table = getSelectedTable()
   const domain = getSelectedDomain()
+  const consumer = getSelectedConsumer()
   const relationshipData = getSelectedRelationship()
   const annotation = getSelectedAnnotation()
   
@@ -115,7 +120,7 @@ const DetailPanel = memo(() => {
 
   // --- Minimized State Rendering ---
   if (isDetailPanelMinimized) {
-    const selectedName = table?.name || domain?.name || (relationshipData ? `${relationshipData.relationship.from.table} → ${relationshipData.relationship.to.table}` : null) || annotation?.text?.substring(0, 20);
+    const selectedName = table?.name || domain?.name || consumer?.name || (relationshipData ? `${relationshipData.relationship.from.table} → ${relationshipData.relationship.to.table}` : null) || annotation?.text?.substring(0, 20);
     const hasSelection = !!selectedName;
 
     // Determine active theme color for border synchronization
@@ -125,6 +130,8 @@ const DetailPanel = memo(() => {
       activeColor = table.appearance?.color || tc?.color || activeColor;
     } else if (domain) {
       activeColor = domain.color || activeColor;
+    } else if (consumer) {
+      activeColor = consumer.appearance?.color || '#a78bfa';
     } else if (annotation) {
       activeColor = annotation.color || '#f59e0b';
     }
@@ -328,6 +335,129 @@ const DetailPanel = memo(() => {
         </div>
       </div>
     );
+  }
+
+  // --- Consumer Editor Rendering ---
+  if (consumer) {
+    const CONSUMER_COLOR = consumer.appearance?.color || '#a78bfa'
+    return (
+      <div
+        className="shadow-2xl z-50 flex flex-col sidebar-content"
+        onClick={stopPropagation}
+        onMouseDown={stopPropagation}
+        onPointerDown={stopPropagation}
+        style={{ ...panelStyle, borderTop: `2px solid ${CONSUMER_COLOR}` }}
+      >
+        {/* Resize Handle */}
+        <div onMouseDown={startResizing} style={{ position: 'absolute', top: '-4px', left: 0, right: 0, height: '8px', cursor: 'ns-resize', zIndex: 60 }} />
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 20px', borderBottom: '1px solid var(--border-main)', backgroundColor: 'var(--header-bg)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+            <FileChartColumnIncreasing size={18} style={{ color: CONSUMER_COLOR }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '14px', fontWeight: 'bold' }}>{consumer.name}</span>
+                <span style={{ fontSize: '9px', fontWeight: 800, padding: '1px 5px', borderRadius: '3px', backgroundColor: 'rgba(124, 58, 237, 0.1)', color: '#a78bfa', border: '1px solid rgba(124, 58, 237, 0.2)', textTransform: 'uppercase' }}>
+                  CONSUMER
+                </span>
+              </div>
+              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0 }}>{consumer.id}</p>
+            </div>
+          </div>
+          <button onClick={() => setIsDetailPanelMinimized(true)} className={`p-1.5 rounded-full transition-colors ${theme === 'dark' ? 'hover:bg-slate-800 text-slate-500' : 'hover:bg-slate-200 text-slate-400'}`}>
+            <ChevronDown size={18} />
+          </button>
+        </div>
+
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Name */}
+            <section>
+              <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Name</h3>
+              <input
+                value={consumer.name}
+                onChange={(e) => updateConsumer(consumer.id, { name: e.target.value })}
+                className={`w-full border rounded text-sm p-2 outline-none ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-900'}`}
+              />
+            </section>
+
+            {/* Description */}
+            <section>
+              <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Description</h3>
+              <textarea
+                value={consumer.description || ''}
+                onChange={(e) => updateConsumer(consumer.id, { description: e.target.value || undefined })}
+                rows={3}
+                placeholder="Purpose of this consumer..."
+                className={`w-full border rounded text-sm p-2 outline-none resize-none ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-900'}`}
+              />
+            </section>
+
+            {/* URL */}
+            <section>
+              <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">URL</h3>
+              <input
+                value={consumer.url || ''}
+                onChange={(e) => updateConsumer(consumer.id, { url: e.target.value || undefined })}
+                placeholder="https://..."
+                className={`w-full border rounded text-sm p-2 outline-none font-mono ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-900'}`}
+              />
+            </section>
+
+            <div className="grid grid-cols-2 gap-6">
+              {/* Icon */}
+              <section>
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Icon</h3>
+                <input
+                  value={consumer.appearance?.icon || ''}
+                  onChange={(e) => updateConsumer(consumer.id, { appearance: { ...consumer.appearance, icon: e.target.value || undefined } })}
+                  placeholder="🔗"
+                  className={`w-full border rounded text-sm p-2 outline-none ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-900'}`}
+                />
+              </section>
+
+              {/* Color */}
+              <section>
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Color</h3>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={consumer.appearance?.color || '#a78bfa'}
+                    onChange={(e) => updateConsumer(consumer.id, { appearance: { ...consumer.appearance, color: e.target.value } })}
+                    className="w-8 h-8 p-0 border-none rounded cursor-pointer bg-transparent"
+                  />
+                  <input
+                    value={consumer.appearance?.color || ''}
+                    onChange={(e) => updateConsumer(consumer.id, { appearance: { ...consumer.appearance, color: e.target.value || undefined } })}
+                    placeholder="#a78bfa"
+                    className={`flex-1 border rounded text-[10px] p-1.5 outline-none font-mono ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-900'}`}
+                  />
+                </div>
+              </section>
+            </div>
+
+            {/* Domain Assignment */}
+            <section>
+              <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Domain Assignment</h3>
+              <select
+                value={schema?.domains?.find(d => d.members.includes(consumer.id))?.id || ''}
+                onChange={(e) => assignTableToDomain(consumer.id, e.target.value || null)}
+                className={`w-full border rounded text-sm p-2 outline-none transition-colors ${
+                  theme === 'dark'
+                    ? 'bg-slate-800 border-slate-700 text-slate-200'
+                    : 'bg-white border-slate-200 text-slate-900 shadow-sm'
+                }`}
+              >
+                <option value="">- No Domain -</option>
+                {schema?.domains?.map(d => (
+                  <option key={d.id} value={d.id}>{d.name} ({d.id})</option>
+                ))}
+              </select>
+            </section>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // --- Relationship Editor Rendering ---
@@ -957,7 +1087,7 @@ const DetailPanel = memo(() => {
             <section>
               <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Domain Assignment</h3>
               <select 
-                value={schema?.domains?.find(d => d.tables.includes(table!.id))?.id || ''}
+                value={schema?.domains?.find(d => d.members.includes(table!.id))?.id || ''}
                 onChange={(e) => assignTableToDomain(table!.id, e.target.value || null)}
                 className={`w-full border rounded text-sm p-2 outline-none transition-colors ${
                   theme === 'dark' 

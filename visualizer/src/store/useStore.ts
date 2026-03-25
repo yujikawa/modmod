@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import yaml from 'js-yaml'
-import type { Schema, Table, Relationship, Domain, Annotation } from '../types/schema'
+import type { Schema, Table, Relationship, Domain, Annotation, Consumer } from '../types/schema'
 import { parseYAML, normalizeSchema } from '../lib/parser'
 
 export interface ModelFile {
@@ -83,6 +83,7 @@ interface AppState {
   // Modeling Actions
   addTable: (x: number, y: number, name?: string) => void;
   addDomain: (x: number, y: number, name?: string) => void;
+  addConsumer: (x: number, y: number, name?: string) => void;
   addRelationship: (source: string, target: string, sourceHandle?: string | null, targetHandle?: string | null) => void;
   bulkAddRelationship: (source: { table: string, column?: string }, targetPattern: string, type: Relationship['type'] | 'lineage') => void;
   addLineage: (source: string, target: string) => void;
@@ -124,8 +125,10 @@ interface AppState {
   // Computed (helpers)
   getSelectedTable: () => Table | null;
   getSelectedDomain: () => Domain | null;
+  getSelectedConsumer: () => Consumer | null;
   getSelectedRelationship: () => { relationship: Relationship; index: number; kind: 'er' | 'lineage' } | null;
   getSelectedAnnotation: () => Annotation | null;
+  updateConsumer: (id: string, updates: Partial<Consumer>) => void;
 }
 
 let saveTimeout: any = null;
@@ -385,6 +388,24 @@ export const useStore = create<AppState>()(persist(
     get().saveSchema();
   },
 
+  addConsumer: (x, y, name) => {
+    const schema = get().schema || { tables: [], relationships: [], layout: {} };
+    const newId = name ? name.toLowerCase().replace(/\s+/g, '_') : `new_usecase_${Date.now()}`;
+    const newUsecase = {
+      id: newId,
+      name: name || 'NEW_CONSUMER',
+      appearance: { icon: '📊' }
+    };
+    const newSchema = {
+      ...schema,
+      consumers: [...(schema.consumers || []), newUsecase],
+      layout: { ...(schema.layout || {}), [newId]: { x: Math.round(x), y: Math.round(y) } }
+    };
+    set({ schema: normalizeSchema(newSchema), selectedTableId: newId });
+    get().syncToYamlInput();
+    get().saveSchema();
+  },
+
   addRelationship: (source, target, sourceHandle, targetHandle) => {
     const { schema } = get();
     if (!schema) return;
@@ -463,7 +484,8 @@ export const useStore = create<AppState>()(persist(
     if (!schema) return;
     const isDomain = (schema.domains || []).some(d => d.id === id);
     const newTables = schema.tables.filter(t => t.id !== id);
-    const newDomains = (schema.domains || []).filter(d => d.id !== id).map(d => ({ ...d, tables: d.tables.filter(tid => tid !== id) }));
+    const newUsecases = (schema.consumers || []).filter(u => u.id !== id);
+    const newDomains = (schema.domains || []).filter(d => d.id !== id).map(d => ({ ...d, members: d.members.filter(tid => tid !== id) }));
     const newRelationships = schema.relationships.filter(r => r.from.table !== id && r.to.table !== id);
     const newLineage = (schema.lineage ?? []).filter(e => e.from !== id && e.to !== id);
     const newLayout = { ...(schema.layout || {}) };
@@ -478,7 +500,7 @@ export const useStore = create<AppState>()(persist(
       });
     }
 
-    set({ schema: { ...schema, tables: newTables, domains: newDomains, relationships: newRelationships, lineage: newLineage, layout: newLayout }, selectedTableId: null });
+    set({ schema: { ...schema, tables: newTables, consumers: newUsecases, domains: newDomains, relationships: newRelationships, lineage: newLineage, layout: newLayout }, selectedTableId: null });
     get().syncToYamlInput();
     get().saveSchema();
   },
@@ -491,7 +513,7 @@ export const useStore = create<AppState>()(persist(
     ids.forEach(id => delete newLayout[id]);
     const newRelationships = (schema.relationships || []).filter(r => !ids.includes(r.from.table) && !ids.includes(r.to.table));
     const newLineage = (schema.lineage ?? []).filter(e => !ids.includes(e.from) && !ids.includes(e.to));
-    const newDomains = (schema.domains || []).map(d => ({ ...d, tables: d.tables.filter(tid => !ids.includes(tid)) }));
+    const newDomains = (schema.domains || []).map(d => ({ ...d, members: d.members.filter(tid => !ids.includes(tid)) }));
     set({ schema: { ...schema, tables: newTables, relationships: newRelationships, lineage: newLineage, domains: newDomains, layout: newLayout }, selectedTableIds: [] });
     get().syncToYamlInput();
     get().saveSchema();
@@ -519,9 +541,9 @@ export const useStore = create<AppState>()(persist(
     const { schema } = get();
     if (!schema) return;
     const newDomains = (schema.domains || []).map(domain => {
-      const filteredTables = domain.tables.filter(id => id !== tableId);
-      if (domain.id === domainId) return { ...domain, tables: Array.from(new Set([...filteredTables, tableId])) };
-      return { ...domain, tables: filteredTables };
+      const filteredTables = domain.members.filter(id => id !== tableId);
+      if (domain.id === domainId) return { ...domain, members: Array.from(new Set([...filteredTables, tableId])) };
+      return { ...domain, members: filteredTables };
     });
     const newLayout = {
       ...(schema.layout || {}),
@@ -537,9 +559,9 @@ export const useStore = create<AppState>()(persist(
     const { schema } = get();
     if (!schema) return;
     const newDomains = (schema.domains || []).map(domain => {
-      const filteredTables = domain.tables.filter(id => !tableIds.includes(id));
-      if (domain.id === domainId) return { ...domain, tables: Array.from(new Set([...filteredTables, ...tableIds])) };
-      return { ...domain, tables: filteredTables };
+      const filteredTables = domain.members.filter(id => !tableIds.includes(id));
+      if (domain.id === domainId) return { ...domain, members: Array.from(new Set([...filteredTables, ...tableIds])) };
+      return { ...domain, members: filteredTables };
     });
     const newLayout = { ...(schema.layout || {}) };
     // 既存の width/height/x/y を保持しつつ parentId を設定する（未設定なら x/y はデフォルト値）
@@ -634,9 +656,9 @@ export const useStore = create<AppState>()(persist(
             if (!domainExists) { status = 'error'; message = `Domain "${domainId}" not found`; }
             else {
               tempSchema.domains = (tempSchema.domains || []).map((d: any) => {
-                const filtered = d.tables.filter((tid: string) => !currentIds.includes(tid));
-                if (d.id === domainId) return { ...d, tables: Array.from(new Set([...filtered, ...currentIds])) };
-                return { ...d, tables: filtered };
+                const filtered = d.members.filter((tid: string) => !currentIds.includes(tid));
+                if (d.id === domainId) return { ...d, members: Array.from(new Set([...filtered, ...currentIds])) };
+                return { ...d, members: filtered };
               });
               currentIds.forEach(id => { if (tempSchema.layout) tempSchema.layout[id] = { x: 20, y: 20 }; });
               message = `Move ${currentIds.length} to ${domainId}`;
@@ -684,7 +706,7 @@ export const useStore = create<AppState>()(persist(
           message = `Deleted ${tableIdsToDelete.length} tables and ${domainIdsToDelete.length} domains`;
           status = 'success';
         } else if (cmd === 'clear') {
-          tempSchema.domains = (tempSchema.domains || []).map((d: any) => ({ ...d, tables: d.tables.filter((tid: string) => !currentIds.includes(tid)) }));
+          tempSchema.domains = (tempSchema.domains || []).map((d: any) => ({ ...d, members: d.members.filter((tid: string) => !currentIds.includes(tid)) }));
           message = `Cleared domain for ${currentIds.length} tables`;
           status = 'success';
         } else if (cmd === 'add') {
@@ -728,6 +750,18 @@ export const useStore = create<AppState>()(persist(
             if (!tempSchema.layout) tempSchema.layout = {};
             tempSchema.layout[newId] = { x: 400, y: 300, width: 600, height: 400 };
             message = `Added domain ${newId}`;
+            status = 'success';
+          } else if (subCmd === 'consumer') {
+            const newId = generateUniqueId(name);
+            if (!tempSchema.consumers) tempSchema.consumers = [];
+            tempSchema.consumers.push({
+              id: newId,
+              name: name || 'NEW_CONSUMER',
+              appearance: { icon: '📊' }
+            });
+            if (!tempSchema.layout) tempSchema.layout = {};
+            tempSchema.layout[newId] = { x: 400, y: 300 };
+            message = `Added consumer ${newId}`;
             status = 'success';
           }
         } else { status = 'error'; message = `Unknown command: ${cmd}`; }
@@ -841,6 +875,21 @@ export const useStore = create<AppState>()(persist(
     const { schema, selectedTableId } = get();
     if (!schema || !selectedTableId || !schema.domains) return null;
     return schema.domains.find(d => d.id === selectedTableId) || null;
+  },
+
+  getSelectedConsumer: () => {
+    const { schema, selectedTableId } = get();
+    if (!schema || !selectedTableId || !schema.consumers) return null;
+    return schema.consumers.find(u => u.id === selectedTableId) || null;
+  },
+
+  updateConsumer: (id, updates) => {
+    const { schema } = get();
+    if (!schema) return;
+    const newUsecases = (schema.consumers || []).map(u => u.id === id ? { ...u, ...updates } : u);
+    set({ schema: { ...schema, consumers: newUsecases } });
+    get().syncToYamlInput();
+    get().saveSchema();
   },
 
   getSelectedRelationship: () => {
