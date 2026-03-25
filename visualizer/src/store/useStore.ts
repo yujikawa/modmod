@@ -42,7 +42,7 @@ interface AppState {
   isCommandPaletteOpen: boolean;
   isPresentationMode: boolean;
   activeTab: 'editor' | 'entities' | 'connect';
-  activeRightPanelTab: 'tables' | 'path' | 'notes';
+  activeRightPanelTab: 'tables' | 'path' | 'notes' | 'information-search';
   focusNodeId: string | null;
   pathFinderResult: { nodeIds: string[], edgeIds: string[] } | null;
   showER: boolean;
@@ -117,7 +117,7 @@ interface AppState {
   setIsQuickConnectBarOpen: (isOpen: boolean) => void;
   setIsCommandPaletteOpen: (isOpen: boolean) => void;
   setActiveTab: (tab: 'editor' | 'entities' | 'connect') => void;
-  setActiveRightPanelTab: (tab: 'tables' | 'path' | 'notes') => void;
+  setActiveRightPanelTab: (tab: 'tables' | 'path' | 'notes' | 'information-search') => void;
   setPathFinderResult: (result: { nodeIds: string[], edgeIds: string[] } | null) => void;
   setFocusNodeId: (id: string | null) => void;
   toggleTheme: () => void;

@@ -10,10 +10,12 @@ import {
   Play,
   Sun,
   Moon,
+  Search,
 } from 'lucide-react'
 import TablesTab from './TablesTab'
 import PathFinderTab from './PathFinderTab'
 import NoteSearchTab from './NoteSearchTab'
+import InformationSearchTab from './InformationSearchTab'
 
 const RightPanel = memo(() => {
   const {
@@ -71,8 +73,16 @@ const RightPanel = memo(() => {
         </button>
 
         <div className="flex flex-col gap-2 mb-6">
-          <button 
-            onClick={() => { setActiveRightPanelTab('tables'); setIsRightPanelOpen(true); }} 
+          <button
+            onClick={() => { setActiveRightPanelTab('information-search'); setIsRightPanelOpen(true); }}
+            className={iconClass(activeRightPanelTab === 'information-search' && isRightPanelOpen)}
+          >
+            <Search size={20} />
+            <Tooltip text="Information Search" />
+          </button>
+
+          <button
+            onClick={() => { setActiveRightPanelTab('tables'); setIsRightPanelOpen(true); }}
             className={iconClass(activeRightPanelTab === 'tables' && isRightPanelOpen)}
           >
             <ListTree size={20} />
@@ -125,6 +135,7 @@ const RightPanel = memo(() => {
           theme === 'dark' ? 'border-slate-800' : 'border-slate-100'
         }`}>
           <h2 className={`text-sm font-bold tracking-tight uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+            {activeRightPanelTab === 'information-search' && 'Information Search'}
             {activeRightPanelTab === 'tables' && 'Tables'}
             {activeRightPanelTab === 'path' && 'Path Finder'}
             {activeRightPanelTab === 'notes' && 'Note Search'}
@@ -132,6 +143,7 @@ const RightPanel = memo(() => {
         </div>
 
         {/* Tab Content */}
+        {activeRightPanelTab === 'information-search' && <InformationSearchTab />}
         {activeRightPanelTab === 'tables' && <TablesTab />}
         {activeRightPanelTab === 'path' && <PathFinderTab />}
         {activeRightPanelTab === 'notes' && <NoteSearchTab />}
