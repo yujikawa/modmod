@@ -17,3 +17,7 @@ settings.json
 
 samples/test_*.yaml
 samples/test_*.yml
+
+# Standalone build output
+dist-standalone/
+gas/

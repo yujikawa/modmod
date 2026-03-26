@@ -1,5 +1,6 @@
+import path from 'path';
 import { Command } from 'commander';
-import { readYaml, writeYaml, findTableById, outputError, outputWarn, outputOk } from './model-utils.js';
+import { readYaml, writeYaml, findTableById, resolveImports, outputError, outputWarn, outputOk } from './model-utils.js';
 
 export function lineageCommand() {
   const cmd = new Command('lineage').description('Manage data lineage in a YAML model');
@@ -36,10 +37,11 @@ export function lineageCommand() {
     .option('--json', 'output as JSON')
     .action((file, opts) => {
       const data = readYaml(file);
-      if (!findTableById(data, opts.from)) {
+      const { schema: resolved } = resolveImports(data, path.dirname(path.resolve(file)));
+      if (!findTableById(resolved, opts.from)) {
         return outputError(opts.json, `Table "${opts.from}" not found`);
       }
-      if (!findTableById(data, opts.to)) {
+      if (!findTableById(resolved, opts.to)) {
         return outputError(opts.json, `Table "${opts.to}" not found`);
       }
       const entries = data.lineage || [];

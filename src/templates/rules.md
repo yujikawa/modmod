@@ -153,6 +153,7 @@ This is rendered as dashed arrows in **Lineage Mode**. It is separate from ER re
 lineage:
   - from: fct_orders    # source table id
     to: mart_revenue    # derived table id
+    description: "Aggregated daily order amounts into monthly buckets."  # optional
   - from: dim_dates
     to: mart_revenue
 ```
@@ -742,7 +743,8 @@ modscape relationship add model.yaml \
 
 **lineage add**
 ```bash
-modscape lineage add model.yaml --from <tableId> --to <tableId> [--json]
+modscape lineage add model.yaml --from <tableId> --to <tableId> [--description <text>] [--json]
+modscape lineage update model.yaml --from <tableId> --to <tableId> [--description <text>] [--json]
 ```
 
 **domain add / update**

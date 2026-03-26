@@ -1,5 +1,6 @@
+import path from 'path';
 import { Command } from 'commander';
-import { readYaml, writeYaml, findTableById, findDomainById, outputError, outputWarn, outputOk } from './model-utils.js';
+import { readYaml, writeYaml, findTableById, findDomainById, resolveImports, outputError, outputWarn, outputOk } from './model-utils.js';
 
 export function domainCommand() {
   const cmd = new Command('domain').description('Manage domains in a YAML model');
@@ -111,9 +112,10 @@ export function domainCommand() {
     .option('--json', 'output as JSON')
     .action((file, opts) => {
       const data = readYaml(file);
+      const { schema: resolved } = resolveImports(data, path.dirname(path.resolve(file)));
       const domain = findDomainById(data, opts.domain);
       if (!domain) return outputError(opts.json, `Domain "${opts.domain}" not found`);
-      if (!findTableById(data, opts.table)) {
+      if (!findTableById(resolved, opts.table)) {
         return outputError(opts.json, `Table "${opts.table}" not found`);
       }
       if (!domain.tables) domain.tables = [];

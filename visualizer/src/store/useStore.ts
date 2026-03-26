@@ -72,6 +72,7 @@ interface AppState {
   setIsAutoSaveEnabled: (enabled: boolean) => void;
   setLastUpdateSource: (source: 'user' | 'visual' | 'undo') => void;
   parseAndSetSchema: (yaml: string) => void;
+  setError: (error: string | null) => void;
   updateNodePosition: (id: string, x: number, y: number, parentId?: string | null) => void;
   updateNodesPosition: (nodes: { id: string, x: number, y: number, parentId?: string | null }[]) => void;
   updateNodeDimensions: (id: string, width: number, height: number) => void;
@@ -195,6 +196,8 @@ export const useStore = create<AppState>()(persist(
     set({ schema: normalized });
     get().syncToYamlInput();
   },
+
+  setError: (error) => set({ error }),
 
   parseAndSetSchema: (yamlStr) => {
     try {
@@ -344,11 +347,16 @@ export const useStore = create<AppState>()(persist(
 
     try {
       const res = await fetch('/api/model' + window.location.search);
+      if (!res.ok) {
+        const msg = await res.text();
+        set({ error: msg, schema: null });
+        return;
+      }
       const data = await res.json();
-      set({ schema: normalizeSchema(data), selectedTableId: null, selectedEdgeId: null, selectedAnnotationId: null });
+      set({ schema: normalizeSchema(data), selectedTableId: null, selectedEdgeId: null, selectedAnnotationId: null, error: null });
       get().syncToYamlInput();
-    } catch (e) {
-      console.error('Failed to refresh data:', e);
+    } catch (e: any) {
+      set({ error: e.message });
     }
   },
 
@@ -869,6 +877,11 @@ export const useStore = create<AppState>()(persist(
         data = model?.schema;
       } else {
         const res = await fetch(`/api/model?model=${slug}`);
+        if (!res.ok) {
+          const msg = await res.text();
+          set({ error: msg, schema: null, isModelLoading: false });
+          return;
+        }
         data = await res.json();
       }
       set({ schema: normalizeSchema(data), currentModelSlug: slug, selectedTableId: null, selectedEdgeId: null, selectedAnnotationId: null, error: null, isModelLoading: false });
@@ -876,7 +889,7 @@ export const useStore = create<AppState>()(persist(
       const searchParams = new URLSearchParams(window.location.search);
       searchParams.set('model', slug);
       window.history.replaceState(null, '', `${window.location.pathname}?${searchParams.toString()}`);
-    } catch (e) { console.error('Failed to set model:', e); set({ isModelLoading: false }); }
+    } catch (e: any) { set({ error: e.message, isModelLoading: false }); }
   },
 
   getSelectedTable: () => {

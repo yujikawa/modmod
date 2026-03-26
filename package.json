@@ -1,6 +1,6 @@
 {
   "name": "modscape",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "Modscape: A YAML-driven data modeling visualizer CLI",
   "repository": {
     "type": "git",
@@ -18,7 +18,7 @@
     "README.md"
   ],
   "scripts": {
-    "build-ui": "cd visualizer && npm run build && rm -rf ../visualizer-dist && mv dist ../visualizer-dist",
+    "build-ui": "cd visualizer && VITE_SINGLE_FILE=1 npm run build && rm -rf ../visualizer-dist && mv dist ../visualizer-dist",
     "dev": "node src/index.js dev",
     "test:cli": "playwright test tests/import-dbt.spec.ts",
     "test:e2e": "cp tests/fixtures/test-model.yaml tests/fixtures/test-model-runtime.yaml && playwright test",

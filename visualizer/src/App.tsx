@@ -12,6 +12,7 @@ import SelectionToolbar from './components/SelectionToolbar'
 function Flow() {
   const {
     schema,
+    error,
     setSelectedTableId,
     selectedTableId,
     selectedEdgeId,
@@ -43,6 +44,7 @@ function Flow() {
     currentModelSlug,
   } = useStore(useShallow(s => ({
     schema: s.schema,
+    error: s.error,
     setSelectedTableId: s.setSelectedTableId,
     selectedTableId: s.selectedTableId,
     selectedEdgeId: s.selectedEdgeId,
@@ -347,7 +349,30 @@ function Flow() {
 
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
-        {schema && (
+        {error && (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10, padding: 32 }}>
+            <div style={{
+              maxWidth: 560, width: '100%', borderRadius: 12, border: `1px solid ${theme === 'dark' ? '#7f1d1d' : '#fecaca'}`,
+              backgroundColor: theme === 'dark' ? '#1c0a0a' : '#fff5f5', padding: 24,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <span style={{ fontSize: 20 }}>⚠️</span>
+                <span style={{ fontWeight: 700, fontSize: 15, color: theme === 'dark' ? '#f87171' : '#dc2626' }}>YAML Parse Error</span>
+              </div>
+              <pre style={{
+                fontSize: 12, lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                color: theme === 'dark' ? '#fca5a5' : '#b91c1c',
+                backgroundColor: theme === 'dark' ? '#2d0f0f' : '#fee2e2',
+                borderRadius: 8, padding: '12px 16px', margin: 0,
+              }}>{error}</pre>
+              <p style={{ marginTop: 12, fontSize: 11, color: theme === 'dark' ? '#6b7280' : '#9ca3af' }}>
+                Fix the YAML file and save — the canvas will reload automatically.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {!error && schema && (
           <CytoscapeCanvas
             onNodeClick={handleNodeClick}
             onEdgeClick={handleEdgeClick}
@@ -379,6 +404,7 @@ function App() {
     fetchAvailableFiles,
     setCurrentModel,
     setSchema,
+    setError,
     theme,
   } = useStore()
 
@@ -390,7 +416,10 @@ function App() {
         const params = new URLSearchParams(window.location.search)
         const modelSlug = params.get('model')
         if (modelSlug) setCurrentModel(modelSlug)
-        else fetch('/api/model').then(res => res.json()).then(data => setSchema(data))
+        else fetch('/api/model').then(async res => {
+          if (!res.ok) { setError(await res.text()); return }
+          setSchema(await res.json())
+        })
       })
       if ((import.meta as any).hot) {
         ;(import.meta as any).hot.on('model-update', (data: any) => setSchema(data))

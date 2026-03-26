@@ -180,6 +180,7 @@ Top-level `lineage` section declares data flow between tables (which source tabl
 lineage:
   - from: fct_orders    # source table ID
     to: mart_revenue    # derived table ID
+    description: "Aggregated daily amounts into monthly buckets."  # optional
   - from: dim_dates
     to: mart_revenue
 ```
@@ -445,7 +446,8 @@ modscape relationship remove <file> --index <n>
 
 ```bash
 modscape lineage list <file>
-modscape lineage add <file> --from <table-id> --to <table-id>
+modscape lineage add <file> --from <table-id> --to <table-id> [--description <text>]
+modscape lineage update <file> --from <table-id> --to <table-id> [--description <text>]
 modscape lineage remove <file> --from <table-id> --to <table-id>
 ```
 
