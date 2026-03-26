@@ -138,6 +138,34 @@ modscape domain member add/remove <file>
 - Maintain compatibility with Star Schema and Data Vault modeling patterns.
 - UI text (labels, placeholders, descriptions, options) must be written in **English**.
 
+## Change Checklists
+
+### When changing or adding to the YAML schema
+
+When adding or modifying fields or sections, verify all of the following:
+
+1. `visualizer/src/types/schema.ts` — Update TypeScript type definitions
+2. `visualizer/src/lib/parser.ts` — Update parser / normalizer
+3. `src/templates/rules.md` — Update AI agent rules (field descriptions, examples, CLI flags)
+4. `README.md` / `README.ja.md` — Update user-facing documentation
+5. `CHANGELOG.md` — Add a changelog entry
+6. CLI mutation commands (`src/domain.js`, etc.) — Verify field names match the schema exactly
+
+### When adding or changing a CLI command
+
+1. `src/index.js` — Verify command is registered
+2. `README.md` / `README.ja.md` — Update CLI reference sections
+3. `src/templates/rules.md` — Update Section 13 (CLI Flag Reference)
+4. `CHANGELOG.md` — Add a changelog entry
+
+### CLI mutation command implementation rules
+
+When reading/writing YAML from CLI commands, field names must exactly match the schema:
+
+- `domains[].members` — domain member list (NOT `tables`)
+- Coordinates (`x`, `y`, `width`, `height`) belong in `layout` only — never inside `tables` or `domains`
+- When validating table IDs in a YAML that may contain `imports:`, always call `resolveImports()` before `findTableById()`
+
 ## YAML Model Format
 
 Six root-level sections. Do not write coordinates inside `tables` or `domains`.

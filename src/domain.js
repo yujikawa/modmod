@@ -55,7 +55,7 @@ export function domainCommand() {
       if (findDomainById(data, opts.id)) {
         return outputError(opts.json, `Domain "${opts.id}" already exists`, 'Use `domain update` instead');
       }
-      const domain = { id: opts.id, name: opts.name, tables: [] };
+      const domain = { id: opts.id, name: opts.name, members: [] };
       if (opts.description) domain.description = opts.description;
       if (opts.color) domain.color = opts.color;
       if (!data.domains) data.domains = [];
@@ -118,11 +118,11 @@ export function domainCommand() {
       if (!findTableById(resolved, opts.table)) {
         return outputError(opts.json, `Table "${opts.table}" not found`);
       }
-      if (!domain.tables) domain.tables = [];
-      if (domain.tables.includes(opts.table)) {
+      if (!domain.members) domain.members = [];
+      if (domain.members.includes(opts.table)) {
         return outputWarn(opts.json, `Table "${opts.table}" is already in domain "${opts.domain}", skipped`);
       }
-      domain.tables.push(opts.table);
+      domain.members.push(opts.table);
       writeYaml(file, data);
       outputOk(opts.json, 'member_add', 'domain', `${opts.domain} ← ${opts.table}`);
     });
@@ -137,9 +137,9 @@ export function domainCommand() {
       const data = readYaml(file);
       const domain = findDomainById(data, opts.domain);
       if (!domain) return outputError(opts.json, `Domain "${opts.domain}" not found`);
-      const before = (domain.tables || []).length;
-      domain.tables = (domain.tables || []).filter(t => t !== opts.table);
-      if (domain.tables.length === before) {
+      const before = (domain.members || []).length;
+      domain.members = (domain.members || []).filter(t => t !== opts.table);
+      if (domain.members.length === before) {
         return outputWarn(opts.json, `Table "${opts.table}" not found in domain "${opts.domain}", nothing removed`);
       }
       writeYaml(file, data);
