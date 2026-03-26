@@ -5,7 +5,8 @@ All notable changes to this project will be documented in this file.
 ## [2.2.1] - 2026-03-26
 
 ### Fixed
-- **YAML parse errors shown on canvas** — When a YAML file fails to parse (syntax error, bad indent, etc.), the canvas now displays a "YAML Parse Error" overlay with the error message instead of going blank. Covers all load paths: initial load, model switch, and hot-reload. Fixing the file and saving automatically clears the error and restores the canvas.
+- **YAML parse errors shown on canvas**
+- **Docs updated for lineage `description` field** — `src/templates/rules.md`, `README.md`, and `README.ja.md` now document the optional `description` field on lineage entries and the `lineage update` command. — When a YAML file fails to parse (syntax error, bad indent, etc.), the canvas now displays a "YAML Parse Error" overlay with the error message instead of going blank. Covers all load paths: initial load, model switch, and hot-reload. Fixing the file and saving automatically clears the error and restores the canvas.
 - **Information Search groups results by table** — Results are now grouped per table instead of one card per column. A `table` badge appears when the table name/description matched; matched columns are listed inline with a `col` badge. Searching by table name no longer floods the panel with one card per column.
 - **ER edge cardinality shown in Detail Panel** — Selecting a relationship edge now shows `1` / `N` badges next to each table name in the Source/Target Details section. The separator was changed from `→` to `—` to reflect that ER relationships are not directional.
 - **CLI mutation commands respect `imports:`** — `relationship add`, `lineage add`, and `domain member add` now resolve imported tables before validating table IDs. Previously, a YAML file containing only an `imports:` section (no local `tables:`) would incorrectly report referenced tables as "not found".

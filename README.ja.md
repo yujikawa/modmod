@@ -179,6 +179,7 @@ tables:
 lineage:
   - from: fct_orders    # ソーステーブル ID
     to: mart_revenue    # 派生テーブル ID
+    description: "日次注文金額を月次バケットに集計"  # 任意。変換内容の説明。
   - from: dim_dates
     to: mart_revenue
 ```
@@ -444,7 +445,8 @@ modscape relationship remove <file> --index <n>
 
 ```bash
 modscape lineage list <file>
-modscape lineage add <file> --from <table-id> --to <table-id>
+modscape lineage add <file> --from <table-id> --to <table-id> [--description <text>]
+modscape lineage update <file> --from <table-id> --to <table-id> [--description <text>]
 modscape lineage remove <file> --from <table-id> --to <table-id>
 ```
 
