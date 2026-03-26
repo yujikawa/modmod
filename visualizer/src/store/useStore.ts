@@ -4,6 +4,9 @@ import yaml from 'js-yaml'
 import type { Schema, Table, Relationship, Domain, Annotation, Consumer } from '../types/schema'
 import { parseYAML, normalizeSchema } from '../lib/parser'
 
+// Debounce timer for syncToYamlInput — avoids yaml.dump on every frame during drag
+let syncTimer: ReturnType<typeof setTimeout> | null = null
+
 export interface ModelFile {
   slug: string;
   name: string;
@@ -161,11 +164,15 @@ export const useStore = create<AppState>()(persist(
     get().saveSchema();
   },
   syncToYamlInput: () => {
-    const { schema } = get();
-    if (schema) {
-      const yamlString = yaml.dump(schema, { indent: 2, lineWidth: -1, noRefs: true });
-      set({ yamlInput: yamlString, lastUpdateSource: 'visual' });
-    }
+    if (syncTimer) clearTimeout(syncTimer);
+    syncTimer = setTimeout(() => {
+      const { schema } = get();
+      if (schema) {
+        const yamlString = yaml.dump(schema, { indent: 2, lineWidth: -1, noRefs: true });
+        set({ yamlInput: yamlString, lastUpdateSource: 'visual' });
+      }
+      syncTimer = null;
+    }, 300);
   },
 
   // Multi-file Defaults
@@ -530,12 +537,13 @@ export const useStore = create<AppState>()(persist(
   bulkRemoveTables: (ids) => {
     const { schema } = get();
     if (!schema) return;
-    const newTables = schema.tables.filter(t => !ids.includes(t.id));
+    const idSet = new Set(ids);
+    const newTables = schema.tables.filter(t => !idSet.has(t.id));
     const newLayout = { ...(schema.layout || {}) };
     ids.forEach(id => delete newLayout[id]);
-    const newRelationships = (schema.relationships || []).filter(r => !ids.includes(r.from.table) && !ids.includes(r.to.table));
-    const newLineage = (schema.lineage ?? []).filter(e => !ids.includes(e.from) && !ids.includes(e.to));
-    const newDomains = (schema.domains || []).map(d => ({ ...d, members: d.members.filter(tid => !ids.includes(tid)) }));
+    const newRelationships = (schema.relationships || []).filter(r => !idSet.has(r.from.table) && !idSet.has(r.to.table));
+    const newLineage = (schema.lineage ?? []).filter(e => !idSet.has(e.from) && !idSet.has(e.to));
+    const newDomains = (schema.domains || []).map(d => ({ ...d, members: d.members.filter(tid => !idSet.has(tid)) }));
     set({ schema: { ...schema, tables: newTables, relationships: newRelationships, lineage: newLineage, domains: newDomains, layout: newLayout }, selectedTableIds: [] });
     get().syncToYamlInput();
     get().saveSchema();

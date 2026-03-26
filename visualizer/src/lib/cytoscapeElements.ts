@@ -1,4 +1,5 @@
 import type { Schema, Table } from '../types/schema'
+import { CONSUMER_DEFAULT_COLOR } from './colors'
 
 // Minimal element definition shape for Cytoscape
 export interface CyElementDefinition {
@@ -18,7 +19,6 @@ export const TYPE_CONFIG: Record<string, { color: string; icon: string; label: s
 }
 
 const CONSUMER_DEFAULT_ICON = '📊'
-const CONSUMER_DEFAULT_COLOR = '#a78bfa'
 
 export function buildTypeLabel(table: Table): string {
   const typeConfig = table.appearance?.type ? TYPE_CONFIG[table.appearance.type] : null

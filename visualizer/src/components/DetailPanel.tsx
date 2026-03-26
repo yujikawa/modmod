@@ -3,16 +3,8 @@ import { useStore } from '../store/useStore'
 import { useShallow } from 'zustand/react/shallow'
 import { X, Plus, Trash2, Tag as TagIcon, Table as TableIcon, Database, Link as LinkIcon, Unlink, ChevronUp, ChevronDown, Cpu, FileChartColumnIncreasing } from 'lucide-react'
 import type { Table, Column } from '../types/schema'
-
-const TYPE_CONFIG: Record<string, { color: string; icon: string; label: string }> = {
-  fact: { color: '#f87171', icon: '📊', label: 'FACT' },
-  dimension: { color: '#60a5fa', icon: '🏷️', label: 'DIM' },
-  hub: { color: '#fbbf24', icon: '🌐', label: 'HUB' },
-  link: { color: '#34d399', icon: '🔗', label: 'LINK' },
-  satellite: { color: '#a78bfa', icon: '🛰️', label: 'SAT' },
-  mart: { color: '#f5700b', icon: '📈', label: 'MART' },
-  table: { color: '#64748b', icon: '📋', label: 'TABLE' }
-};
+import { TYPE_CONFIG } from '../lib/cytoscapeElements'
+import { LINEAGE_BASE, CONSUMER_DEFAULT_COLOR, ANNOTATION_DEFAULT_COLOR } from '../lib/colors'
 
 const DetailPanel = memo(() => {
   const {
@@ -110,7 +102,7 @@ const DetailPanel = memo(() => {
     maxHeight: '90vh',
     minHeight: '150px',
     backgroundColor: 'var(--node-bg)', 
-    borderTop: `2px solid ${theme === 'dark' ? '#3b82f6' : '#60a5fa'}`,
+    borderTop: `2px solid ${theme === 'dark' ? LINEAGE_BASE : '#60a5fa'}`,
     display: 'flex', 
     flexDirection: 'column',
     color: 'var(--text-primary)',
@@ -133,9 +125,9 @@ const DetailPanel = memo(() => {
     } else if (domain) {
       activeColor = domain.color || activeColor;
     } else if (consumer) {
-      activeColor = consumer.appearance?.color || '#a78bfa';
+      activeColor = consumer.appearance?.color || CONSUMER_DEFAULT_COLOR;
     } else if (annotation) {
-      activeColor = annotation.color || '#f59e0b';
+      activeColor = annotation.color || ANNOTATION_DEFAULT_COLOR;
     }
 
     return (
@@ -191,7 +183,7 @@ const DetailPanel = memo(() => {
         onClick={stopPropagation}
         onMouseDown={stopPropagation}
         onPointerDown={stopPropagation}
-        style={{ ...panelStyle, borderTopColor: annotation.color || '#f59e0b' }}
+        style={{ ...panelStyle, borderTopColor: annotation.color || ANNOTATION_DEFAULT_COLOR }}
       >
         {/* Resize Handle */}
         <div 
@@ -208,7 +200,7 @@ const DetailPanel = memo(() => {
         />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 20px', borderBottom: '1px solid var(--border-main)', backgroundColor: 'var(--header-bg)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-            <TagIcon size={18} style={{ color: annotation.color || '#f59e0b' }} />
+            <TagIcon size={18} style={{ color: annotation.color || ANNOTATION_DEFAULT_COLOR }} />
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Annotation</span>
@@ -342,7 +334,7 @@ const DetailPanel = memo(() => {
 
   // --- Consumer Editor Rendering ---
   if (consumer) {
-    const CONSUMER_COLOR = consumer.appearance?.color || '#a78bfa'
+    const CONSUMER_COLOR = consumer.appearance?.color || CONSUMER_DEFAULT_COLOR
     return (
       <div
         className="shadow-2xl z-50 flex flex-col sidebar-content"
@@ -360,7 +352,7 @@ const DetailPanel = memo(() => {
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '14px', fontWeight: 'bold' }}>{consumer.name}</span>
-                <span style={{ fontSize: '9px', fontWeight: 800, padding: '1px 5px', borderRadius: '3px', backgroundColor: 'rgba(124, 58, 237, 0.1)', color: '#a78bfa', border: '1px solid rgba(124, 58, 237, 0.2)', textTransform: 'uppercase' }}>
+                <span style={{ fontSize: '9px', fontWeight: 800, padding: '1px 5px', borderRadius: '3px', backgroundColor: 'rgba(124, 58, 237, 0.1)', color: CONSUMER_DEFAULT_COLOR, border: '1px solid rgba(124, 58, 237, 0.2)', textTransform: 'uppercase' }}>
                   CONSUMER
                 </span>
               </div>
@@ -425,7 +417,7 @@ const DetailPanel = memo(() => {
                 <div className="flex items-center gap-2">
                   <input
                     type="color"
-                    value={consumer.appearance?.color || '#a78bfa'}
+                    value={consumer.appearance?.color || CONSUMER_DEFAULT_COLOR}
                     onChange={(e) => updateConsumer(consumer.id, { appearance: { ...consumer.appearance, color: e.target.value } })}
                     className="w-8 h-8 p-0 border-none rounded cursor-pointer bg-transparent"
                   />
@@ -478,7 +470,7 @@ const DetailPanel = memo(() => {
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 20px', borderBottom: '1px solid var(--border-main)', backgroundColor: 'var(--header-bg)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-            <LinkIcon size={18} style={{ color: '#3b82f6' }} />
+            <LinkIcon size={18} style={{ color: LINEAGE_BASE }} />
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Lineage</span>
@@ -563,7 +555,7 @@ const DetailPanel = memo(() => {
         />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 20px', borderBottom: '1px solid var(--border-main)', backgroundColor: 'var(--header-bg)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-            <Database size={18} style={{ color: '#3b82f6' }} />
+            <Database size={18} style={{ color: LINEAGE_BASE }} />
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Relationship</span>
@@ -663,7 +655,7 @@ const DetailPanel = memo(() => {
         onClick={stopPropagation}
         onMouseDown={stopPropagation}
         onPointerDown={stopPropagation}
-        style={{ ...panelStyle, borderTopColor: domain.color || '#3b82f6' }}
+        style={{ ...panelStyle, borderTopColor: domain.color || LINEAGE_BASE }}
       >
         {/* Resize Handle */}
         <div 
@@ -681,7 +673,7 @@ const DetailPanel = memo(() => {
         {/* Panel Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 20px', borderBottom: '1px solid var(--border-main)', backgroundColor: 'var(--header-bg)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-            <Database size={18} style={{ color: domain.color || '#3b82f6' }} />
+            <Database size={18} style={{ color: domain.color || LINEAGE_BASE }} />
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <input 
@@ -700,7 +692,7 @@ const DetailPanel = memo(() => {
                     width: 'fit-content',
                     minWidth: '200px'
                   }}
-                  onFocus={(e) => (e.target as HTMLInputElement).style.borderBottom = '1px solid #3b82f6'}
+                  onFocus={(e) => (e.target as HTMLInputElement).style.borderBottom = `1px solid ${LINEAGE_BASE}`}
                 />
                 <span style={{ fontSize: '9px', fontWeight: 800, padding: '1px 5px', borderRadius: '3px', backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.2)', textTransform: 'uppercase' }}>
                   DOMAIN
@@ -752,10 +744,10 @@ const DetailPanel = memo(() => {
                   type="color"
                   value={(() => {
                     const c = domain.color;
-                    if (!c) return '#3b82f6';
+                    if (!c) return LINEAGE_BASE;
                     const m = c.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
                     if (m) return '#' + [m[1], m[2], m[3]].map(n => parseInt(n).toString(16).padStart(2, '0')).join('');
-                    return c.startsWith('#') ? c : '#3b82f6';
+                    return c.startsWith('#') ? c : LINEAGE_BASE;
                   })()}
                   onChange={(e) => {
                     const hex = e.target.value;
@@ -1008,7 +1000,7 @@ const DetailPanel = memo(() => {
                 width: '100%',
                 maxWidth: '500px'
               }}
-              onFocus={(e) => (e.target as HTMLInputElement).style.borderBottom = '1px solid #3b82f6'}
+              onFocus={(e) => (e.target as HTMLInputElement).style.borderBottom = `1px solid ${LINEAGE_BASE}`}
             />
           </div>
         </div>
@@ -1100,7 +1092,7 @@ const DetailPanel = memo(() => {
               padding: '12px 0', 
               backgroundColor: 'transparent', 
               border: 'none', 
-              borderBottom: activeTab === tab.id ? '2px solid #3b82f6' : '2px solid transparent', 
+              borderBottom: activeTab === tab.id ? `2px solid ${LINEAGE_BASE}` : '2px solid transparent',
               color: activeTab === tab.id ? (theme === 'dark' ? '#60a5fa' : '#2563eb') : 'var(--text-secondary)',
               fontSize: '13px',
               fontWeight: 500,
