@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import type { Table } from '../types/schema'
 import { TYPE_CONFIG, buildTypeLabel } from '../lib/cytoscapeElements'
+import { LINEAGE_BASE } from '../lib/colors'
 
 interface TableCardProps {
   table: Table
@@ -39,11 +40,11 @@ const TableCard = ({
   const isMinimal = zoom < 0.35   // reduces header size at low zoom
   const hideColumns = isMinimal || isCompact  // hides column list
 
-  const borderColor = isPendingSource ? '#22c55e' : isSelected ? '#3b82f6' : isHovered ? themeColor : isConnectMode ? '#22c55e' : 'var(--border-main)'
+  const borderColor = isPendingSource ? '#22c55e' : isSelected ? LINEAGE_BASE : isHovered ? themeColor : isConnectMode ? '#22c55e' : 'var(--border-main)'
   const boxShadow = isPendingSource
     ? '0 0 0 3px #22c55e, 0 0 20px 6px rgba(34,197,94,0.5)'
     : isSelected
-    ? '0 0 0 3px #3b82f6, 0 0 16px 4px rgba(59, 130, 246, 0.45)'
+    ? `0 0 0 3px ${LINEAGE_BASE}, 0 0 16px 4px rgba(59, 130, 246, 0.45)`
     : isHovered
     ? `0 0 0 2px ${themeColor}, 0 0 20px 6px ${themeColor}80`
     : isHighlighted

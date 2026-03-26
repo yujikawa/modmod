@@ -3,6 +3,7 @@ import { useStore } from '../../store/useStore'
 import { useShallow } from 'zustand/react/shallow'
 import { Search, ArrowUpRight, ChevronDown, ChevronRight, HelpCircle } from 'lucide-react'
 import type { Table } from '../../types/schema'
+import { LINEAGE_BASE } from '../../lib/colors'
 
 const EntitiesTab = memo(() => {
   const { schema, setSelectedTableId, setFocusNodeId, theme } = useStore(useShallow((s) => ({
@@ -108,7 +109,7 @@ const EntitiesTab = memo(() => {
                   {isCollapsed ? <ChevronRight size={12} className="text-slate-500" /> : <ChevronDown size={12} className="text-slate-500" />}
                   <div 
                     className="w-2 h-2 rounded-full shrink-0" 
-                    style={{ backgroundColor: d.color || '#3b82f6' }}
+                    style={{ backgroundColor: d.color || LINEAGE_BASE }}
                   />
                   <h3 className={`text-[10px] font-bold uppercase tracking-wider truncate ${
                     theme === 'dark' ? 'text-slate-300' : 'text-slate-600'

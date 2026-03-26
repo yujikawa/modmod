@@ -10,6 +10,7 @@ import {
   FileChartColumnIncreasing
 } from 'lucide-react'
 import type { Table } from '../../types/schema'
+import { LINEAGE_BASE } from '../../lib/colors'
 
 const TablesTab = memo(() => {
   const {
@@ -128,7 +129,7 @@ const TablesTab = memo(() => {
               >
                 <div className="flex items-center gap-2 overflow-hidden">
                   {isCollapsed ? <ChevronRight size={12} className="text-slate-500" /> : <ChevronDown size={12} className="text-slate-500" />}
-                  <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: d.color || '#3b82f6' }} />
+                  <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: d.color || LINEAGE_BASE }} />
                   <h3 className={`text-[10px] font-bold uppercase tracking-wider truncate ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>{d.name}</h3>
                   <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${theme === 'dark' ? 'text-slate-600 bg-slate-800/50' : 'text-slate-400 bg-slate-100'}`}>{(d as any).tables.length}</span>
                 </div>

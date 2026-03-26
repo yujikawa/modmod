@@ -7,6 +7,7 @@ import Sidebar from './components/Sidebar/Sidebar'
 import RightPanel from './components/RightPanel/RightPanel'
 import CommandPalette from './components/CommandPalette'
 import SelectionToolbar from './components/SelectionToolbar'
+import { LINEAGE_BASE } from './lib/colors'
 
 // ── Flow (Canvas area) ────────────────────────────────────────────────
 function Flow() {
@@ -342,7 +343,7 @@ function Flow() {
 
         {isModelLoading && (
           <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, zIndex: 10, pointerEvents: 'none' }}>
-            <div style={{ width: 36, height: 36, border: `3px solid ${theme === 'dark' ? '#334155' : '#e2e8f0'}`, borderTopColor: theme === 'dark' ? '#60a5fa' : '#3b82f6', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+            <div style={{ width: 36, height: 36, border: `3px solid ${theme === 'dark' ? '#334155' : '#e2e8f0'}`, borderTopColor: theme === 'dark' ? '#60a5fa' : LINEAGE_BASE, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
             <span style={{ fontSize: 13, color: theme === 'dark' ? '#94a3b8' : '#64748b', fontWeight: 500 }}>Loading model…</span>
           </div>
         )}

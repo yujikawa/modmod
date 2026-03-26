@@ -16,6 +16,7 @@ import { useShallow } from 'zustand/react/shallow'
 import TableCard from './TableCard'
 import ConsumerCard from './ConsumerCard'
 import { yamlToElements } from '../lib/cytoscapeElements'
+import { ER_HIGHLIGHT, LINEAGE_BASE, LINEAGE_HIGHLIGHT } from '../lib/colors'
 import type { Schema } from '../types/schema'
 
 // ── Cytoscape imports — use dynamic cast to avoid verbatimModuleSyntax conflict ─
@@ -102,9 +103,9 @@ function buildCytoscapeStyle(theme: 'dark' | 'light', lowZoom = false) {
     {
       selector: 'edge.er-edge.highlighted',
       style: {
-        'line-color': '#84cc16',
+        'line-color': ER_HIGHLIGHT,
         width: 3,
-        'overlay-color': '#84cc16',
+        'overlay-color': ER_HIGHLIGHT,
         'overlay-opacity': 0.15,
         'overlay-padding': 4,
       },
@@ -113,9 +114,9 @@ function buildCytoscapeStyle(theme: 'dark' | 'light', lowZoom = false) {
     {
       selector: 'edge.er-edge:selected',
       style: {
-        'line-color': '#84cc16',
+        'line-color': ER_HIGHLIGHT,
         width: 4,
-        'overlay-color': '#84cc16',
+        'overlay-color': ER_HIGHLIGHT,
         'overlay-opacity': 0.25,
         'overlay-padding': 6,
       },
@@ -123,9 +124,9 @@ function buildCytoscapeStyle(theme: 'dark' | 'light', lowZoom = false) {
     {
       selector: 'edge.er-edge.path-highlighted',
       style: {
-        'line-color': '#84cc16',
+        'line-color': ER_HIGHLIGHT,
         width: 6,
-        'overlay-color': '#84cc16',
+        'overlay-color': ER_HIGHLIGHT,
         'overlay-opacity': 0.15,
         'overlay-padding': 4,
       },
@@ -135,8 +136,8 @@ function buildCytoscapeStyle(theme: 'dark' | 'light', lowZoom = false) {
       style: {
         'curve-style': 'bezier',
         'line-style': 'dashed',
-        'line-color': '#3b82f6',
-        'target-arrow-color': '#3b82f6',
+        'line-color': LINEAGE_BASE,
+        'target-arrow-color': LINEAGE_BASE,
         'target-arrow-shape': 'triangle',
         'arrow-scale': 1.2,
         width: 2,
@@ -156,10 +157,10 @@ function buildCytoscapeStyle(theme: 'dark' | 'light', lowZoom = false) {
     {
       selector: 'edge.lineage-edge.highlighted',
       style: {
-        'line-color': '#f97316',
-        'target-arrow-color': '#f97316',
+        'line-color': LINEAGE_HIGHLIGHT,
+        'target-arrow-color': LINEAGE_HIGHLIGHT,
         width: 3,
-        'overlay-color': '#f97316',
+        'overlay-color': LINEAGE_HIGHLIGHT,
         'overlay-opacity': 0.15,
         'overlay-padding': 4,
       },
@@ -168,17 +169,17 @@ function buildCytoscapeStyle(theme: 'dark' | 'light', lowZoom = false) {
     {
       selector: 'edge.lineage-edge:selected',
       style: {
-        'line-color': '#f97316',
-        'target-arrow-color': '#f97316',
+        'line-color': LINEAGE_HIGHLIGHT,
+        'target-arrow-color': LINEAGE_HIGHLIGHT,
         width: 4,
-        'overlay-color': '#f97316',
+        'overlay-color': LINEAGE_HIGHLIGHT,
         'overlay-opacity': 0.2,
         'overlay-padding': 6,
       },
     },
     {
       selector: 'edge.lineage-edge.path-highlighted',
-      style: { width: 6, 'line-color': '#f97316', 'target-arrow-color': '#f97316' },
+      style: { width: 6, 'line-color': LINEAGE_HIGHLIGHT, 'target-arrow-color': LINEAGE_HIGHLIGHT },
     },
     {
       selector: 'edge.dimmed',
@@ -604,7 +605,7 @@ function renderAnnotations(
       padding: ${8 * zoom}px ${12 * zoom}px;
       background: ${bgColor};
       color: ${textColor};
-      border: ${isSelected ? '2px solid #3b82f6' : '1px solid rgba(0,0,0,0.1)'};
+      border: ${isSelected ? `2px solid ${LINEAGE_BASE}` : '1px solid rgba(0,0,0,0.1)'};
       border-radius: ${8 * zoom}px;
       font-size: ${12 * zoom}px;
       line-height: 1.4;
@@ -1105,7 +1106,7 @@ export default function CytoscapeCanvas({
         if (!lassoEl) {
           lassoEl = document.createElement('div')
           lassoEl.style.cssText =
-            'position:absolute;border:2px dashed #3b82f6;background:rgba(59,130,246,0.1);pointer-events:none;z-index:100;'
+            `position:absolute;border:2px dashed ${LINEAGE_BASE};background:rgba(59,130,246,0.1);pointer-events:none;z-index:100;`
           container.appendChild(lassoEl)
         }
         const x = Math.min(startX, me.clientX) - containerRect.left
@@ -1682,11 +1683,11 @@ export default function CytoscapeCanvas({
       const vy1 = toY(-pan.y / zoom)
       const vx2 = toX((container.offsetWidth - pan.x) / zoom)
       const vy2 = toY((container.offsetHeight - pan.y) / zoom)
-      ctx.strokeStyle = '#3b82f6'
+      ctx.strokeStyle = LINEAGE_BASE
       ctx.lineWidth = 1.5
       ctx.globalAlpha = 0.9
       ctx.strokeRect(vx1, vy1, vx2 - vx1, vy2 - vy1)
-      ctx.fillStyle = '#3b82f6'
+      ctx.fillStyle = LINEAGE_BASE
       ctx.globalAlpha = 0.1
       ctx.fillRect(vx1, vy1, vx2 - vx1, vy2 - vy1)
       ctx.globalAlpha = 1

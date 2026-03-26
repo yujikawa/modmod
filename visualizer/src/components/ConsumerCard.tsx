@@ -1,6 +1,7 @@
 import type { Consumer } from '../types/schema'
+import { CONSUMER_DEFAULT_COLOR } from '../lib/colors'
 
-const DEFAULT_COLOR = '#a78bfa'
+const DEFAULT_COLOR = CONSUMER_DEFAULT_COLOR
 const DEFAULT_ICON = '📊'
 
 interface ConsumerCardProps {
