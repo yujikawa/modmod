@@ -618,21 +618,38 @@ const DetailPanel = memo(() => {
             
             <section>
               <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Source/Target Details</h3>
-              <div className={`flex gap-4 items-center p-3 rounded border ${
-                theme === 'dark' ? 'bg-slate-800/50 border-slate-800' : 'bg-slate-50 border-slate-100'
-              }`}>
-                <div className="flex-1">
-                  <div className="text-[10px] text-slate-500 uppercase">From Table</div>
-                  <div className={`text-sm font-bold ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>{relationship.from.table}</div>
-                  <div className="text-[10px] text-slate-500">Column: {relationship.from.column || '(Table level)'}</div>
-                </div>
-                <div className="text-slate-400 dark:text-slate-600">→</div>
-                <div className="flex-1">
-                  <div className="text-[10px] text-slate-500 uppercase">To Table</div>
-                  <div className={`text-sm font-bold ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>{relationship.to.table}</div>
-                  <div className="text-[10px] text-slate-500">Column: {relationship.to.column || '(Table level)'}</div>
-                </div>
-              </div>
+              {(() => {
+                const cardMap: Record<string, [string, string]> = {
+                  'one-to-many':  ['1', 'N'],
+                  'many-to-one':  ['N', '1'],
+                  'many-to-many': ['N', 'N'],
+                  'one-to-one':   ['1', '1'],
+                };
+                const [fromCard, toCard] = cardMap[relationship.type || 'one-to-many'] ?? ['?', '?'];
+                return (
+                  <div className={`flex gap-4 items-center p-3 rounded border ${
+                    theme === 'dark' ? 'bg-slate-800/50 border-slate-800' : 'bg-slate-50 border-slate-100'
+                  }`}>
+                    <div className="flex-1">
+                      <div className="text-[10px] text-slate-500 uppercase">From Table</div>
+                      <div className="flex items-baseline gap-1.5">
+                        <div className={`text-sm font-bold ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>{relationship.from.table}</div>
+                        <div className={`text-xs font-bold px-1.5 py-0.5 rounded ${theme === 'dark' ? 'bg-slate-700 text-slate-200' : 'bg-slate-200 text-slate-700'}`}>{fromCard}</div>
+                      </div>
+                      <div className="text-[10px] text-slate-500">Column: {relationship.from.column || '(Table level)'}</div>
+                    </div>
+                    <div className="text-slate-400 dark:text-slate-600">—</div>
+                    <div className="flex-1">
+                      <div className="text-[10px] text-slate-500 uppercase">To Table</div>
+                      <div className="flex items-baseline gap-1.5">
+                        <div className={`text-sm font-bold ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>{relationship.to.table}</div>
+                        <div className={`text-xs font-bold px-1.5 py-0.5 rounded ${theme === 'dark' ? 'bg-slate-700 text-slate-200' : 'bg-slate-200 text-slate-700'}`}>{toCard}</div>
+                      </div>
+                      <div className="text-[10px] text-slate-500">Column: {relationship.to.column || '(Table level)'}</div>
+                    </div>
+                  </div>
+                );
+              })()}
             </section>
           </div>
         </div>

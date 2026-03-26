@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - **CLI mutation commands respect `imports:`** — `relationship add`, `lineage add`, and `domain member add` now resolve imported tables before validating table IDs. Previously, a YAML file containing only an `imports:` section (no local `tables:`) would incorrectly report referenced tables as "not found".
+- **ER edge cardinality labels now anchor to their respective endpoints** — Labels are no longer rendered as a single `1..N` string at the edge midpoint (which could appear reversed when an edge was drawn right-to-left). Each end now shows its own label (`1` or `N`) adjacent to the connected table, using `source-label` / `target-label` edge properties.
 
 ### Changed
 - **Single-file build** — `modscape build` now outputs a single self-contained `index.html` with all JavaScript, CSS, and assets fully inlined. The output works in environments without a web server (e.g. Google Apps Script, local file open).

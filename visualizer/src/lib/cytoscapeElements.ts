@@ -48,13 +48,13 @@ export function buildTypeLabel(table: Table): string {
   return typeLabel
 }
 
-function cardinalityLabel(type: string | undefined): string {
+function cardinalityLabels(type: string | undefined): { sourceLabel: string; targetLabel: string } {
   switch (type) {
-    case 'one-to-many': return '1..N'
-    case 'many-to-one': return 'N..1'
-    case 'many-to-many': return 'N..N'
-    case 'one-to-one': return '1..1'
-    default: return ''
+    case 'one-to-many':  return { sourceLabel: '1', targetLabel: 'N' }
+    case 'many-to-one':  return { sourceLabel: 'N', targetLabel: '1' }
+    case 'many-to-many': return { sourceLabel: 'N', targetLabel: 'N' }
+    case 'one-to-one':   return { sourceLabel: '1', targetLabel: '1' }
+    default:             return { sourceLabel: '',  targetLabel: ''  }
   }
 }
 
@@ -160,7 +160,7 @@ export function yamlToElements(schema: Schema): CyElementDefinition[] {
         source: rel.from.table,
         target: rel.to.table,
         kind: 'er',
-        label: cardinalityLabel(rel.type),
+        ...cardinalityLabels(rel.type),
         fromColumn: rel.from.column ?? null,
         toColumn: rel.to.column ?? null,
         relType: rel.type ?? null,
