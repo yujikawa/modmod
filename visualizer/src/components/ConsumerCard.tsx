@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import type { Consumer } from '../types/schema'
 import { CONSUMER_DEFAULT_COLOR } from '../lib/colors'
 
@@ -102,4 +103,4 @@ const ConsumerCard = ({ consumer, isSelected, isDimmed, theme }: ConsumerCardPro
   )
 }
 
-export default ConsumerCard
+export default memo(ConsumerCard)

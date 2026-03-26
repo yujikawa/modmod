@@ -530,12 +530,13 @@ export const useStore = create<AppState>()(persist(
   bulkRemoveTables: (ids) => {
     const { schema } = get();
     if (!schema) return;
-    const newTables = schema.tables.filter(t => !ids.includes(t.id));
+    const idSet = new Set(ids);
+    const newTables = schema.tables.filter(t => !idSet.has(t.id));
     const newLayout = { ...(schema.layout || {}) };
     ids.forEach(id => delete newLayout[id]);
-    const newRelationships = (schema.relationships || []).filter(r => !ids.includes(r.from.table) && !ids.includes(r.to.table));
-    const newLineage = (schema.lineage ?? []).filter(e => !ids.includes(e.from) && !ids.includes(e.to));
-    const newDomains = (schema.domains || []).map(d => ({ ...d, members: d.members.filter(tid => !ids.includes(tid)) }));
+    const newRelationships = (schema.relationships || []).filter(r => !idSet.has(r.from.table) && !idSet.has(r.to.table));
+    const newLineage = (schema.lineage ?? []).filter(e => !idSet.has(e.from) && !idSet.has(e.to));
+    const newDomains = (schema.domains || []).map(d => ({ ...d, members: d.members.filter(tid => !idSet.has(tid)) }));
     set({ schema: { ...schema, tables: newTables, relationships: newRelationships, lineage: newLineage, domains: newDomains, layout: newLayout }, selectedTableIds: [] });
     get().syncToYamlInput();
     get().saveSchema();
