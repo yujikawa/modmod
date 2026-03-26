@@ -139,6 +139,16 @@ function buildCytoscapeStyle(theme: 'dark' | 'light', lowZoom = false) {
         width: 2,
       },
     },
+    // Lineage edge with description: show ⓘ indicator
+    {
+      selector: 'edge.lineage-edge[?description]',
+      style: {
+        label: 'ⓘ',
+        'font-size': 16,
+        'font-weight': 700,
+        color: theme === 'dark' ? '#93c5fd' : '#2563eb',
+      },
+    },
     // Lineage edge: connected to selected node
     {
       selector: 'edge.lineage-edge.highlighted',
@@ -525,6 +535,28 @@ function renderDomainHandles(
 }
 
 
+// Returns '#000000' or '#ffffff' based on the luminance of a CSS color string
+function textColorForBg(cssColor: string): string {
+  let r = 0, g = 0, b = 0
+  const hex6 = cssColor.match(/^#([0-9a-f]{6})$/i)
+  const hex3 = cssColor.match(/^#([0-9a-f]{3})$/i)
+  const rgba = cssColor.match(/rgba?\(\s*(\d+),\s*(\d+),\s*(\d+)/)
+  if (hex6) {
+    r = parseInt(hex6[1].slice(0, 2), 16)
+    g = parseInt(hex6[1].slice(2, 4), 16)
+    b = parseInt(hex6[1].slice(4, 6), 16)
+  } else if (hex3) {
+    r = parseInt(hex3[1][0] + hex3[1][0], 16)
+    g = parseInt(hex3[1][1] + hex3[1][1], 16)
+    b = parseInt(hex3[1][2] + hex3[1][2], 16)
+  } else if (rgba) {
+    r = parseInt(rgba[1]); g = parseInt(rgba[2]); b = parseInt(rgba[3])
+  }
+  // Relative luminance (WCAG)
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+  return luminance > 0.5 ? '#1e293b' : '#f1f5f9'
+}
+
 // ── Annotation overlay renderer ─────────────────────────────────────────
 function renderAnnotations(
   cy: CyInstance,
@@ -558,6 +590,7 @@ function renderAnnotations(
 
     const isSelected = selectedAnnotationId === ann.id
     const bgColor = ann.color ?? (theme === 'dark' ? '#1e293b' : '#fef9c3')
+    const textColor = textColorForBg(bgColor)
     const div = document.createElement('div')
     div.style.cssText = `
       position: absolute;
@@ -567,6 +600,7 @@ function renderAnnotations(
       max-width: ${240 * zoom}px;
       padding: ${8 * zoom}px ${12 * zoom}px;
       background: ${bgColor};
+      color: ${textColor};
       border: ${isSelected ? '2px solid #3b82f6' : '1px solid rgba(0,0,0,0.1)'};
       border-radius: ${8 * zoom}px;
       font-size: ${12 * zoom}px;
@@ -671,7 +705,6 @@ export default function CytoscapeCanvas({
     selectedAnnotationId,
     highlightedNodeIds,
     pathFinderResult,
-    isPresentationMode,
     showER,
     showLineage,
     showAnnotations,
@@ -689,7 +722,6 @@ export default function CytoscapeCanvas({
       selectedAnnotationId: s.selectedAnnotationId,
       highlightedNodeIds: s.highlightedNodeIds,
       pathFinderResult: s.pathFinderResult,
-      isPresentationMode: s.isPresentationMode,
       showER: s.showER,
       showLineage: s.showLineage,
       showAnnotations: s.showAnnotations,
@@ -721,7 +753,6 @@ export default function CytoscapeCanvas({
   const hoveredNodeIdRef = useRef<string | null>(null)
   const connectPendingSourceRef = useRef<string | null>(null)
   const pathFinderResultRef = useRef<{ nodeIds: string[], edgeIds: string[] } | null>(null)
-  const presentationModeRef = useRef<boolean>(false)
   const themeRef = useRef<'dark' | 'light'>(theme)
   const hoveredColumnIdRef = useRef<string | null>(null)
   const isCompactModeRef = useRef<boolean>(isCompactMode)
@@ -790,7 +821,7 @@ export default function CytoscapeCanvas({
           ? new Set(pathFinderResultRef.current.nodeIds)
           : null
         const isAnythingHighlighted =
-          !!pathFinderNodeSet || highlightedIdsRef.current.length > 0 || presentationModeRef.current || !!selectedId
+          !!pathFinderNodeSet || highlightedIdsRef.current.length > 0 || !!selectedId
         const isDimmed = pathFinderNodeSet
           ? !pathFinderNodeSet.has(id)
           : isAnythingHighlighted && !isSelected && !isHighlighted && !isHovered && !connectedToSelected.has(id)
@@ -942,6 +973,9 @@ export default function CytoscapeCanvas({
 
     cyRef.current = cy
     zoomRef.current = cy.zoom()
+
+    // Share cy instance via store for export
+    useStore.getState().setCyInstance(cy)
 
     // Expose cy instance for external access (ActivityBar, etc.)
     ;(window as any).__modscapeCy = cy
@@ -1371,7 +1405,6 @@ export default function CytoscapeCanvas({
     selectedIdRef.current = selectedTableId
     selectedIdsRef.current = selectedTableIds
     highlightedIdsRef.current = highlightedNodeIds
-    presentationModeRef.current = isPresentationMode
     themeRef.current = theme
     hoveredColumnIdRef.current = hoveredColumnId
 
@@ -1427,7 +1460,6 @@ export default function CytoscapeCanvas({
     selectedTableId,
     selectedTableIds,
     highlightedNodeIds,
-    isPresentationMode,
     pathFinderResult,
     theme,
     hoveredColumnId,

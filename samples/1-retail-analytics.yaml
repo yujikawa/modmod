@@ -641,6 +641,7 @@ lineage:
     to: dim_customers
   - from: hub_product
     to: dim_products
+    description: You can write description
   - from: sat_product_details
     to: dim_products
   - from: hub_order
@@ -737,7 +738,7 @@ annotations:
     text: |-
       Imported from conformed-dims.yaml
       Edit the source to update.
-    color: '#6b5ea1'
+    color: '#2a5498'
     targetId: dim_dates
     targetType: table
     offset:

@@ -6,7 +6,6 @@ import DetailPanel from './components/DetailPanel'
 import Sidebar from './components/Sidebar/Sidebar'
 import RightPanel from './components/RightPanel/RightPanel'
 import CommandPalette from './components/CommandPalette'
-import PresentationOverlay from './components/PresentationOverlay'
 import SelectionToolbar from './components/SelectionToolbar'
 
 // ── Flow (Canvas area) ────────────────────────────────────────────────
@@ -31,8 +30,6 @@ function Flow() {
     addConsumer,
     addAnnotation,
     theme,
-    isPresentationMode,
-    setIsPresentationMode,
     refreshModelData,
     fetchAvailableFiles,
     isModelLoading,
@@ -64,8 +61,6 @@ function Flow() {
     addConsumer: s.addConsumer,
     addAnnotation: s.addAnnotation,
     theme: s.theme,
-    isPresentationMode: s.isPresentationMode,
-    setIsPresentationMode: s.setIsPresentationMode,
     refreshModelData: s.refreshModelData,
     fetchAvailableFiles: s.fetchAvailableFiles,
     isModelLoading: s.isModelLoading,
@@ -164,7 +159,6 @@ function Flow() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (isPresentationMode) { setIsPresentationMode(false); return }
         if (useStore.getState().connectMode) { useStore.getState().setConnectMode(null); return }
         useStore.getState().setPathFinderResult(null)
         setSelectedTableId(null)
@@ -252,7 +246,6 @@ function Flow() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [
-    isPresentationMode, setIsPresentationMode,
     setSelectedTableId, setSelectedEdgeId, setSelectedAnnotationId,
     selectedTableId, selectedEdgeId, selectedAnnotationId,
     selectedTableIds, distributeSelectedTables,
@@ -319,8 +312,7 @@ function Flow() {
   return (
     <div className="flex-1 relative h-full flex flex-col overflow-hidden">
       <div className="flex-1 relative overflow-hidden">
-        {!isPresentationMode && <SelectionToolbar />}
-        <PresentationOverlay />
+        <SelectionToolbar />
         <CommandPalette />
 
         {connectMode && (
@@ -374,7 +366,7 @@ function Flow() {
         )}
       </div>
 
-      {!isPresentationMode && <DetailPanel />}
+      <DetailPanel />
     </div>
   )
 }
@@ -388,7 +380,6 @@ function App() {
     setCurrentModel,
     setSchema,
     theme,
-    isPresentationMode,
   } = useStore()
 
   const hasInjectedData = !!(window as any).__MODSCAPE_DATA__
@@ -430,9 +421,9 @@ function App() {
     <div className={`flex h-screen w-screen overflow-hidden font-sans transition-colors duration-300 ${
       theme === 'dark' ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'
     }`}>
-      {!isPresentationMode && <Sidebar />}
+      <Sidebar />
       <Flow />
-      {!isPresentationMode && <RightPanel />}
+      <RightPanel />
     </div>
   )
 }

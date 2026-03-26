@@ -1,4 +1,5 @@
-import { memo } from 'react'
+import { memo, useState, useRef, useEffect, useCallback } from 'react'
+import { toPng, toJpeg } from 'html-to-image'
 import { useStore } from '../../store/useStore'
 import { useShallow } from 'zustand/react/shallow'
 import {
@@ -7,13 +8,15 @@ import {
   ChevronLeft,
   Route,
   MessageSquare,
-  Play,
   Sun,
   Moon,
+  Search,
+  Download,
 } from 'lucide-react'
 import TablesTab from './TablesTab'
 import PathFinderTab from './PathFinderTab'
 import NoteSearchTab from './NoteSearchTab'
+import InformationSearchTab from './InformationSearchTab'
 
 const RightPanel = memo(() => {
   const {
@@ -22,24 +25,65 @@ const RightPanel = memo(() => {
     activeRightPanelTab,
     setActiveRightPanelTab,
     theme,
-    isPresentationMode,
-    setIsPresentationMode,
     toggleTheme,
+    cyInstance,
   } = useStore(useShallow((s) => ({
     isRightPanelOpen: s.isRightPanelOpen,
     setIsRightPanelOpen: s.setIsRightPanelOpen,
     activeRightPanelTab: s.activeRightPanelTab,
     setActiveRightPanelTab: s.setActiveRightPanelTab,
     theme: s.theme,
-    isPresentationMode: s.isPresentationMode,
-    setIsPresentationMode: s.setIsPresentationMode,
     toggleTheme: s.toggleTheme,
+    cyInstance: s.cyInstance,
   })))
+
+  // Export popup state
+  const [isExportOpen, setIsExportOpen] = useState(false)
+  const [exportFormat, setExportFormat] = useState<'png' | 'jpg'>('png')
+  const [exportTransparent, setExportTransparent] = useState(false)
+  const exportPopupRef = useRef<HTMLDivElement>(null)
+
+  // Close popup on outside click
+  useEffect(() => {
+    if (!isExportOpen) return
+    const handleClick = (e: MouseEvent) => {
+      if (exportPopupRef.current && !exportPopupRef.current.contains(e.target as Node)) {
+        setIsExportOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [isExportOpen])
+
+  const handleExport = useCallback(async () => {
+    if (!cyInstance) return
+    const container = cyInstance.container() as HTMLElement | null
+    if (!container) return
+
+    const filename = `modscape-export.${exportFormat}`
+    const themeBg = theme === 'dark' ? '#020617' : '#f8fafc'
+    try {
+      const dataUrl = exportFormat === 'png'
+        ? await toPng(container, {
+            pixelRatio: 2,
+            backgroundColor: exportTransparent ? undefined : themeBg,
+          })
+        : await toJpeg(container, { pixelRatio: 2, quality: 0.95, backgroundColor: themeBg })
+
+      const a = document.createElement('a')
+      a.href = dataUrl
+      a.download = filename
+      a.click()
+    } catch (e) {
+      console.error('Export failed:', e)
+    }
+    setIsExportOpen(false)
+  }, [cyInstance, exportFormat, exportTransparent, theme])
 
   const iconClass = (isActive: boolean) => `
     flex items-center justify-center w-10 h-10 rounded-xl transition-all relative group
-    ${isActive 
-      ? 'bg-blue-600/10 text-blue-500 shadow-inner' 
+    ${isActive
+      ? 'bg-blue-600/10 text-blue-500 shadow-inner'
       : theme === 'dark' ? 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/30' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
     }
   `
@@ -52,7 +96,7 @@ const RightPanel = memo(() => {
   )
 
   return (
-    <div 
+    <div
       className={`relative h-full flex flex-row transition-all duration-300 ease-in-out shadow-2xl z-50 ${
         isRightPanelOpen ? 'w-[456px]' : 'w-14'
       }`}
@@ -61,7 +105,7 @@ const RightPanel = memo(() => {
       <div className={`w-14 h-full flex flex-col items-center py-4 border-l transition-colors z-50 ${
         theme === 'dark' ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'
       }`}>
-        <button 
+        <button
           onClick={() => setIsRightPanelOpen(!isRightPanelOpen)}
           className={`mb-6 p-2 rounded-xl transition-all ${
             theme === 'dark' ? 'hover:bg-slate-800 text-slate-400 hover:text-white' : 'hover:bg-white hover:shadow-md text-slate-500 hover:text-slate-900'
@@ -71,24 +115,32 @@ const RightPanel = memo(() => {
         </button>
 
         <div className="flex flex-col gap-2 mb-6">
-          <button 
-            onClick={() => { setActiveRightPanelTab('tables'); setIsRightPanelOpen(true); }} 
+          <button
+            onClick={() => { setActiveRightPanelTab('information-search'); setIsRightPanelOpen(true); }}
+            className={iconClass(activeRightPanelTab === 'information-search' && isRightPanelOpen)}
+          >
+            <Search size={20} />
+            <Tooltip text="Information Search" />
+          </button>
+
+          <button
+            onClick={() => { setActiveRightPanelTab('tables'); setIsRightPanelOpen(true); }}
             className={iconClass(activeRightPanelTab === 'tables' && isRightPanelOpen)}
           >
             <ListTree size={20} />
             <Tooltip text="Tables & Entities" />
           </button>
-          
-          <button 
-            onClick={() => { setActiveRightPanelTab('path'); setIsRightPanelOpen(true); }} 
+
+          <button
+            onClick={() => { setActiveRightPanelTab('path'); setIsRightPanelOpen(true); }}
             className={iconClass(activeRightPanelTab === 'path' && isRightPanelOpen)}
           >
             <Route size={20} />
             <Tooltip text="Path Finder" />
           </button>
 
-          <button 
-            onClick={() => { setActiveRightPanelTab('notes'); setIsRightPanelOpen(true); }} 
+          <button
+            onClick={() => { setActiveRightPanelTab('notes'); setIsRightPanelOpen(true); }}
             className={iconClass(activeRightPanelTab === 'notes' && isRightPanelOpen)}
           >
             <MessageSquare size={20} />
@@ -97,13 +149,72 @@ const RightPanel = memo(() => {
         </div>
 
         <div className="mt-auto flex flex-col gap-2 pb-2">
-          <button
-            onClick={() => setIsPresentationMode(true)}
-            className={iconClass(isPresentationMode)}
-          >
-            <Play size={20} />
-            <Tooltip text="Presentation Mode" />
-          </button>
+          {/* Export as Image button */}
+          <div className="relative" ref={exportPopupRef}>
+            <button
+              onClick={() => setIsExportOpen((v) => !v)}
+              className={iconClass(isExportOpen)}
+              disabled={!cyInstance}
+            >
+              <Download size={20} />
+              <Tooltip text="Export as Image" />
+            </button>
+
+            {/* Export popup */}
+            {isExportOpen && (
+              <div className={`absolute bottom-12 right-0 w-52 rounded-xl border shadow-2xl p-4 z-[70] ${
+                theme === 'dark'
+                  ? 'bg-slate-900 border-slate-700 text-white'
+                  : 'bg-white border-slate-200 text-slate-900'
+              }`}>
+                <p className={`text-[10px] font-bold uppercase tracking-widest mb-3 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                  Export as Image
+                </p>
+
+                {/* Format */}
+                <p className={`text-[10px] font-semibold mb-1.5 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Format</p>
+                <div className="flex gap-4 mb-3">
+                  <label className="flex items-center gap-1.5">
+                    <input type="radio" className="w-3.5 h-3.5 accent-blue-500 cursor-pointer" name="format" value="png"
+                      checked={exportFormat === 'png'} onChange={() => setExportFormat('png')} />
+                    <span className={`text-xs cursor-pointer select-none ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>PNG</span>
+                  </label>
+                  <label className="flex items-center gap-1.5">
+                    <input type="radio" className="w-3.5 h-3.5 accent-blue-500 cursor-pointer" name="format" value="jpg"
+                      checked={exportFormat === 'jpg'} onChange={() => setExportFormat('jpg')} />
+                    <span className={`text-xs cursor-pointer select-none ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>JPG</span>
+                  </label>
+                </div>
+
+                {/* Transparent toggle (PNG only) */}
+                {exportFormat === 'png' && (
+                  <label className="flex items-center justify-between mb-3 cursor-pointer">
+                    <span className={`text-xs select-none ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>Transparent</span>
+                    <button
+                      type="button"
+                      onClick={() => setExportTransparent((v) => !v)}
+                      className={`relative w-8 h-4 rounded-full transition-colors p-0 flex-shrink-0 ${
+                        exportTransparent ? 'bg-blue-600' : theme === 'dark' ? 'bg-slate-600' : 'bg-slate-300'
+                      }`}
+                    >
+                      <span
+                        className="absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform"
+                        style={{ left: exportTransparent ? '18px' : '2px' }}
+                      />
+                    </button>
+                  </label>
+                )}
+
+                <button
+                  onClick={handleExport}
+                  className="w-full py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-colors"
+                >
+                  Export
+                </button>
+              </div>
+            )}
+          </div>
+
           <button onClick={toggleTheme} className={iconClass(false)}>
             {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
             <Tooltip text={theme === 'dark' ? 'Light Mode' : 'Dark Mode'} />
@@ -112,7 +223,7 @@ const RightPanel = memo(() => {
       </div>
 
       {/* 2. Content Panel (Left side of the Right Panel) */}
-      <div 
+      <div
         className={`flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-300 sidebar-content ${
           theme === 'dark' ? 'bg-slate-900' : 'bg-white'
         } ${
@@ -125,6 +236,7 @@ const RightPanel = memo(() => {
           theme === 'dark' ? 'border-slate-800' : 'border-slate-100'
         }`}>
           <h2 className={`text-sm font-bold tracking-tight uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+            {activeRightPanelTab === 'information-search' && 'Information Search'}
             {activeRightPanelTab === 'tables' && 'Tables'}
             {activeRightPanelTab === 'path' && 'Path Finder'}
             {activeRightPanelTab === 'notes' && 'Note Search'}
@@ -132,6 +244,7 @@ const RightPanel = memo(() => {
         </div>
 
         {/* Tab Content */}
+        {activeRightPanelTab === 'information-search' && <InformationSearchTab />}
         {activeRightPanelTab === 'tables' && <TablesTab />}
         {activeRightPanelTab === 'path' && <PathFinderTab />}
         {activeRightPanelTab === 'notes' && <NoteSearchTab />}

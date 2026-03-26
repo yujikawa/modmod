@@ -40,9 +40,8 @@ interface AppState {
   isRightPanelOpen: boolean;
   isQuickConnectBarOpen: boolean;
   isCommandPaletteOpen: boolean;
-  isPresentationMode: boolean;
   activeTab: 'editor' | 'entities' | 'connect';
-  activeRightPanelTab: 'tables' | 'path' | 'notes';
+  activeRightPanelTab: 'tables' | 'path' | 'notes' | 'information-search';
   focusNodeId: string | null;
   pathFinderResult: { nodeIds: string[], edgeIds: string[] } | null;
   showER: boolean;
@@ -70,7 +69,6 @@ interface AppState {
   setShowAnnotations: (show: boolean) => void;
   setIsCompactMode: (v: boolean) => void;
   setConnectMode: (mode: 'lineage' | 'er' | null) => void;
-  setIsPresentationMode: (enabled: boolean) => void;
   setIsAutoSaveEnabled: (enabled: boolean) => void;
   setLastUpdateSource: (source: 'user' | 'visual' | 'undo') => void;
   parseAndSetSchema: (yaml: string) => void;
@@ -87,6 +85,7 @@ interface AppState {
   addRelationship: (source: string, target: string, sourceHandle?: string | null, targetHandle?: string | null) => void;
   bulkAddRelationship: (source: { table: string, column?: string }, targetPattern: string, type: Relationship['type'] | 'lineage') => void;
   addLineage: (source: string, target: string) => void;
+  updateLineageDescription: (from: string, to: string, description: string) => void;
   updateRelationship: (index: number, updates: Partial<Relationship>) => void;
   removeEdge: (sourceId: string, targetId: string, kind?: 'er' | 'lineage') => void;
   removeNode: (id: string) => void;
@@ -117,11 +116,15 @@ interface AppState {
   setIsQuickConnectBarOpen: (isOpen: boolean) => void;
   setIsCommandPaletteOpen: (isOpen: boolean) => void;
   setActiveTab: (tab: 'editor' | 'entities' | 'connect') => void;
-  setActiveRightPanelTab: (tab: 'tables' | 'path' | 'notes') => void;
+  setActiveRightPanelTab: (tab: 'tables' | 'path' | 'notes' | 'information-search') => void;
   setPathFinderResult: (result: { nodeIds: string[], edgeIds: string[] } | null) => void;
   setFocusNodeId: (id: string | null) => void;
   toggleTheme: () => void;
   
+  // Cytoscape instance (for export)
+  cyInstance: any | null;
+  setCyInstance: (cy: any | null) => void;
+
   // Computed (helpers)
   getSelectedTable: () => Table | null;
   getSelectedDomain: () => Domain | null;
@@ -173,7 +176,6 @@ export const useStore = create<AppState>()(persist(
   isRightPanelOpen: false,
   isQuickConnectBarOpen: false,
   isCommandPaletteOpen: false,
-  isPresentationMode: false,
   activeTab: 'editor',
   activeRightPanelTab: 'tables',
   focusNodeId: null,
@@ -186,6 +188,7 @@ export const useStore = create<AppState>()(persist(
   theme: 'dark',
   isDetailPanelSuppressed: false,
   isDetailPanelMinimized: true,
+  cyInstance: null,
 
   setSchema: (schema) => {
     const normalized = normalizeSchema(schema);
@@ -240,8 +243,8 @@ export const useStore = create<AppState>()(persist(
   setIsCommandPaletteOpen: (isOpen) => set({ isCommandPaletteOpen: isOpen }),
   setActiveTab: (tab) => set({ activeTab: tab, isSidebarOpen: true }),
   setActiveRightPanelTab: (tab) => set({ activeRightPanelTab: tab, isRightPanelOpen: true }),
-  setIsPresentationMode: (enabled) => set({ isPresentationMode: enabled }),
   setIsAutoSaveEnabled: (enabled) => set({ isAutoSaveEnabled: enabled }),
+  setCyInstance: (cy) => set({ cyInstance: cy }),
   setLastUpdateSource: (source) => set({ lastUpdateSource: source }),
   setPathFinderResult: (result) => set({ pathFinderResult: result }),
   setFocusNodeId: (id) => set({ focusNodeId: id }),
@@ -451,6 +454,17 @@ export const useStore = create<AppState>()(persist(
     const existing = schema.lineage ?? [];
     if (existing.some(e => e.from === source && e.to === target)) return; // already exists
     set({ schema: { ...schema, lineage: [...existing, { from: source, to: target }] } });
+    get().syncToYamlInput();
+    get().saveSchema();
+  },
+
+  updateLineageDescription: (from, to, description) => {
+    const { schema } = get();
+    if (!schema) return;
+    const newLineage = (schema.lineage ?? []).map(e =>
+      e.from === from && e.to === to ? { ...e, description: description || undefined } : e
+    );
+    set({ schema: { ...schema, lineage: newLineage } });
     get().syncToYamlInput();
     get().saveSchema();
   },

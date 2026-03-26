@@ -145,6 +145,7 @@ export function yamlToElements(schema: Schema): CyElementDefinition[] {
         source: edge.from,
         target: edge.to,
         kind: 'lineage',
+        description: edge.description ?? null,
       },
       classes: 'lineage-edge',
     })

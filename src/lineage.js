@@ -18,7 +18,10 @@ export function lineageCommand() {
         if (entries.length === 0) {
           console.log('  (no lineage)');
         } else {
-          entries.forEach(e => console.log(`  ${e.from} --> ${e.to}`));
+          entries.forEach(e => {
+            const desc = e.description ? `  # ${e.description}` : '';
+            console.log(`  ${e.from} --> ${e.to}${desc}`);
+          });
         }
       }
     });
@@ -29,6 +32,7 @@ export function lineageCommand() {
     .description('Add a lineage entry (data flow from → to)')
     .requiredOption('--from <tableId>', 'upstream table ID')
     .requiredOption('--to <tableId>', 'downstream table ID')
+    .option('--description <text>', 'description of the transformation or filter')
     .option('--json', 'output as JSON')
     .action((file, opts) => {
       const data = readYaml(file);
@@ -42,9 +46,39 @@ export function lineageCommand() {
       if (entries.some(e => e.from === opts.from && e.to === opts.to)) {
         return outputWarn(opts.json, `Lineage ${opts.from} → ${opts.to} already exists, skipped`);
       }
-      data.lineage = [...entries, { from: opts.from, to: opts.to }];
+      const entry = { from: opts.from, to: opts.to };
+      if (opts.description) entry.description = opts.description;
+      data.lineage = [...entries, entry];
       writeYaml(file, data);
       outputOk(opts.json, 'add', 'lineage', `${opts.from} → ${opts.to}`);
+    });
+
+  // update
+  cmd
+    .command('update <file>')
+    .description('Update a lineage entry (e.g. set description)')
+    .requiredOption('--from <tableId>', 'upstream table ID')
+    .requiredOption('--to <tableId>', 'downstream table ID')
+    .option('--description <text>', 'description of the transformation or filter')
+    .option('--json', 'output as JSON')
+    .action((file, opts) => {
+      const data = readYaml(file);
+      const entries = data.lineage || [];
+      const idx = entries.findIndex(e => e.from === opts.from && e.to === opts.to);
+      if (idx === -1) {
+        return outputError(opts.json, `Lineage ${opts.from} → ${opts.to} not found`);
+      }
+      const updated = { ...entries[idx] };
+      if (opts.description !== undefined) {
+        if (opts.description === '') {
+          delete updated.description;
+        } else {
+          updated.description = opts.description;
+        }
+      }
+      data.lineage = [...entries.slice(0, idx), updated, ...entries.slice(idx + 1)];
+      writeYaml(file, data);
+      outputOk(opts.json, 'update', 'lineage', `${opts.from} → ${opts.to}`);
     });
 
   // remove
