@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.2.2] - 2026-03-26
+## [2.2.2] - 2026-03-27
 
 ### Fixed
 - **CLI `domain add` wrote `tables` instead of `members`** — `domain add` was initializing the member list as `tables: []` and `domain member add/remove` was reading/writing `domain.tables` instead of `domain.members`. All domain mutation commands now use the correct `members` field.
