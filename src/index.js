@@ -64,8 +64,9 @@ program
   .description('Build a static site from YAML models')
   .argument('<paths...>', 'paths to YAML model files or directories')
   .option('-o, --output <dir>', 'output directory', 'dist')
+  .option('--standalone', 'generate a single self-contained HTML file')
   .action((paths, options) => {
-    build(paths, VISUALIZER_PATH, options.output);
+    build(paths, VISUALIZER_PATH, options.output, { standalone: options.standalone });
   });
 
 program
