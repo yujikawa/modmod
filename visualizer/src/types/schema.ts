@@ -1,6 +1,7 @@
 export interface LineageEdge {
   from: string; // source table id
   to: string;   // target table or consumer id
+  description?: string; // optional description of the transformation/filter
 }
 
 export interface Consumer {

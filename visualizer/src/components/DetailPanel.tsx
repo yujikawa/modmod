@@ -26,6 +26,7 @@ const DetailPanel = memo(() => {
     updateDomain,
     updateConsumer,
     updateRelationship,
+    updateLineageDescription,
     updateAnnotation,
     assignTableToDomain,
     theme,
@@ -43,6 +44,7 @@ const DetailPanel = memo(() => {
     updateDomain: s.updateDomain,
     updateConsumer: s.updateConsumer,
     updateRelationship: s.updateRelationship,
+    updateLineageDescription: s.updateLineageDescription,
     updateAnnotation: s.updateAnnotation,
     assignTableToDomain: s.assignTableToDomain,
     theme: s.theme,
@@ -463,7 +465,9 @@ const DetailPanel = memo(() => {
 
   // --- Relationship Editor Rendering ---
   if (relationshipData && relationshipData.kind === 'lineage') {
-    const { relationship } = relationshipData;
+    const { relationship, index } = relationshipData;
+    const lineageEdge = schema?.lineage?.[index];
+    const currentDescription = lineageEdge?.description ?? '';
     return (
       <div
         className="shadow-2xl z-50 flex flex-col sidebar-content"
@@ -491,14 +495,44 @@ const DetailPanel = memo(() => {
             <ChevronDown size={18} />
           </button>
         </div>
-        <div style={{ flex: 1, padding: '20px', color: 'var(--text-secondary)', fontSize: '13px' }}>
-          <p>This edge represents a <strong>lineage dependency</strong>.</p>
-          <p style={{ marginTop: '8px' }}>
-            <strong>{relationship.to.table}</strong> depends on <strong>{relationship.from.table}</strong> as an upstream source.
-          </p>
-          <p style={{ marginTop: '8px', fontSize: '11px', opacity: 0.6 }}>
-            To edit lineage, update the <code>lineage.upstream</code> field in the table definition.
-          </p>
+        <div style={{ flex: 1, padding: '20px', fontSize: '13px', overflowY: 'auto' }}>
+          <div style={{ marginBottom: '16px' }}>
+            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
+              <strong style={{ color: 'var(--text-main)' }}>{relationship.to.table}</strong>
+              <span> depends on </span>
+              <strong style={{ color: 'var(--text-main)' }}>{relationship.from.table}</strong>
+              <span> as an upstream source.</span>
+            </p>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+              Description
+            </label>
+            <textarea
+              defaultValue={currentDescription}
+              key={`${relationship.from.table}-${relationship.to.table}`}
+              placeholder="Describe the transformation or filter applied along this lineage..."
+              onBlur={(e) => {
+                const val = e.target.value.trim();
+                updateLineageDescription(relationship.from.table, relationship.to.table, val);
+              }}
+              rows={4}
+              style={{
+                width: '100%',
+                padding: '8px 10px',
+                fontSize: '12px',
+                borderRadius: '6px',
+                border: '1px solid var(--border-main)',
+                backgroundColor: 'var(--input-bg)',
+                color: 'var(--text-main)',
+                resize: 'vertical',
+                outline: 'none',
+                boxSizing: 'border-box',
+                fontFamily: 'inherit',
+                lineHeight: 1.5,
+              }}
+            />
+          </div>
         </div>
       </div>
     )

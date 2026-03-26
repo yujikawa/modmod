@@ -139,6 +139,16 @@ function buildCytoscapeStyle(theme: 'dark' | 'light', lowZoom = false) {
         width: 2,
       },
     },
+    // Lineage edge with description: show ⓘ indicator
+    {
+      selector: 'edge.lineage-edge[?description]',
+      style: {
+        label: 'ⓘ',
+        'font-size': 16,
+        'font-weight': 700,
+        color: theme === 'dark' ? '#93c5fd' : '#2563eb',
+      },
+    },
     // Lineage edge: connected to selected node
     {
       selector: 'edge.lineage-edge.highlighted',
@@ -671,7 +681,6 @@ export default function CytoscapeCanvas({
     selectedAnnotationId,
     highlightedNodeIds,
     pathFinderResult,
-    isPresentationMode,
     showER,
     showLineage,
     showAnnotations,
@@ -689,7 +698,6 @@ export default function CytoscapeCanvas({
       selectedAnnotationId: s.selectedAnnotationId,
       highlightedNodeIds: s.highlightedNodeIds,
       pathFinderResult: s.pathFinderResult,
-      isPresentationMode: s.isPresentationMode,
       showER: s.showER,
       showLineage: s.showLineage,
       showAnnotations: s.showAnnotations,
@@ -721,7 +729,6 @@ export default function CytoscapeCanvas({
   const hoveredNodeIdRef = useRef<string | null>(null)
   const connectPendingSourceRef = useRef<string | null>(null)
   const pathFinderResultRef = useRef<{ nodeIds: string[], edgeIds: string[] } | null>(null)
-  const presentationModeRef = useRef<boolean>(false)
   const themeRef = useRef<'dark' | 'light'>(theme)
   const hoveredColumnIdRef = useRef<string | null>(null)
   const isCompactModeRef = useRef<boolean>(isCompactMode)
@@ -790,7 +797,7 @@ export default function CytoscapeCanvas({
           ? new Set(pathFinderResultRef.current.nodeIds)
           : null
         const isAnythingHighlighted =
-          !!pathFinderNodeSet || highlightedIdsRef.current.length > 0 || presentationModeRef.current || !!selectedId
+          !!pathFinderNodeSet || highlightedIdsRef.current.length > 0 || !!selectedId
         const isDimmed = pathFinderNodeSet
           ? !pathFinderNodeSet.has(id)
           : isAnythingHighlighted && !isSelected && !isHighlighted && !isHovered && !connectedToSelected.has(id)
@@ -942,6 +949,9 @@ export default function CytoscapeCanvas({
 
     cyRef.current = cy
     zoomRef.current = cy.zoom()
+
+    // Share cy instance via store for export
+    useStore.getState().setCyInstance(cy)
 
     // Expose cy instance for external access (ActivityBar, etc.)
     ;(window as any).__modscapeCy = cy
@@ -1371,7 +1381,6 @@ export default function CytoscapeCanvas({
     selectedIdRef.current = selectedTableId
     selectedIdsRef.current = selectedTableIds
     highlightedIdsRef.current = highlightedNodeIds
-    presentationModeRef.current = isPresentationMode
     themeRef.current = theme
     hoveredColumnIdRef.current = hoveredColumnId
 
@@ -1427,7 +1436,6 @@ export default function CytoscapeCanvas({
     selectedTableId,
     selectedTableIds,
     highlightedNodeIds,
-    isPresentationMode,
     pathFinderResult,
     theme,
     hoveredColumnId,
