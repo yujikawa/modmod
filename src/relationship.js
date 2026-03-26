@@ -1,5 +1,6 @@
+import path from 'path';
 import { Command } from 'commander';
-import { readYaml, writeYaml, findTableById, outputError, outputWarn, outputOk } from './model-utils.js';
+import { readYaml, writeYaml, findTableById, resolveImports, outputError, outputWarn, outputOk } from './model-utils.js';
 
 // Parse "table.column" or "table" into { tableId, columnId }
 function parseRef(ref) {
@@ -47,12 +48,13 @@ export function relationshipCommand() {
     .option('--json', 'output as JSON')
     .action((file, opts) => {
       const data = readYaml(file);
+      const { schema: resolved } = resolveImports(data, path.dirname(path.resolve(file)));
       const from = parseRef(opts.from);
       const to = parseRef(opts.to);
-      if (!findTableById(data, from.tableId)) {
+      if (!findTableById(resolved, from.tableId)) {
         return outputError(opts.json, `Table "${from.tableId}" not found`);
       }
-      if (!findTableById(data, to.tableId)) {
+      if (!findTableById(resolved, to.tableId)) {
         return outputError(opts.json, `Table "${to.tableId}" not found`);
       }
       const rels = data.relationships || [];

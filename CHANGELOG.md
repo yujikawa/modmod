@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [2.2.1] - 2026-03-26
 
+### Fixed
+- **CLI mutation commands respect `imports:`** — `relationship add`, `lineage add`, and `domain member add` now resolve imported tables before validating table IDs. Previously, a YAML file containing only an `imports:` section (no local `tables:`) would incorrectly report referenced tables as "not found".
+
 ### Changed
 - **Single-file build** — `modscape build` now outputs a single self-contained `index.html` with all JavaScript, CSS, and assets fully inlined. The output works in environments without a web server (e.g. Google Apps Script, local file open).
 
