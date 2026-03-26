@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 ## [2.2.1] - 2026-03-26
 
 ### Fixed
+- **Information Search groups results by table** — Results are now grouped per table instead of one card per column. A `table` badge appears when the table name/description matched; matched columns are listed inline with a `col` badge. Searching by table name no longer floods the panel with one card per column.
+- **ER edge cardinality shown in Detail Panel** — Selecting a relationship edge now shows `1` / `N` badges next to each table name in the Source/Target Details section. The separator was changed from `→` to `—` to reflect that ER relationships are not directional.
 - **CLI mutation commands respect `imports:`** — `relationship add`, `lineage add`, and `domain member add` now resolve imported tables before validating table IDs. Previously, a YAML file containing only an `imports:` section (no local `tables:`) would incorrectly report referenced tables as "not found".
 - **ER edge cardinality labels now anchor to their respective endpoints** — Labels are no longer rendered as a single `1..N` string at the edge midpoint (which could appear reversed when an edge was drawn right-to-left). Each end now shows its own label (`1` or `N`) adjacent to the connected table, using `source-label` / `target-label` edge properties.
 

@@ -3,11 +3,12 @@ import { useStore } from '../../store/useStore'
 import { Search, ArrowUpRight, Database } from 'lucide-react'
 import type { Table, Column } from '../../types/schema'
 
-const MAX_RESULTS = 50
+const MAX_RESULTS = 30
 
-interface SearchResult {
+interface TableResult {
   table: Table
-  column: Column
+  tableMatched: boolean
+  matchedColumns: Column[]
 }
 
 function matchesKeyword(value: string | undefined, keyword: string): boolean {
@@ -15,36 +16,31 @@ function matchesKeyword(value: string | undefined, keyword: string): boolean {
   return value.toLowerCase().includes(keyword)
 }
 
-function searchModel(tables: Table[], keyword: string): SearchResult[] {
+function searchModel(tables: Table[], keyword: string): TableResult[] {
   const kw = keyword.toLowerCase().trim()
   if (!kw) return []
 
-  const results: SearchResult[] = []
+  const results: TableResult[] = []
 
   for (const table of tables) {
     if (results.length >= MAX_RESULTS) break
 
-    const tableMatches =
+    const tableMatched =
       matchesKeyword(table.name, kw) ||
       matchesKeyword(table.logical_name, kw) ||
       matchesKeyword(table.physical_name, kw) ||
       matchesKeyword(table.conceptual?.description, kw)
 
-    for (const column of table.columns ?? []) {
-      if (results.length >= MAX_RESULTS) break
+    const matchedColumns = (table.columns ?? []).filter(column =>
+      matchesKeyword(column.id, kw) ||
+      matchesKeyword(column.logical?.name, kw) ||
+      matchesKeyword(column.logical?.description, kw) ||
+      matchesKeyword(column.physical?.name, kw) ||
+      (column.logical as any)?.tags?.some((tag: string) => tag.toLowerCase().includes(kw))
+    )
 
-      const columnMatches =
-        matchesKeyword(column.id, kw) ||
-        matchesKeyword(column.logical?.name, kw) ||
-        matchesKeyword(column.logical?.description, kw) ||
-        matchesKeyword(column.physical?.name, kw) ||
-        (column.logical as any)?.tags?.some((tag: string) =>
-          tag.toLowerCase().includes(kw)
-        )
-
-      if (tableMatches || columnMatches) {
-        results.push({ table, column })
-      }
+    if (tableMatched || matchedColumns.length > 0) {
+      results.push({ table, tableMatched, matchedColumns })
     }
   }
 
@@ -107,47 +103,64 @@ const InformationSearchTab = () => {
           </div>
         )}
 
-        {/* Result list */}
-        {results.map(({ table, column }, idx) => (
+        {/* Result list — grouped by table */}
+        {results.map(({ table, tableMatched, matchedColumns }) => (
           <button
-            key={`${table.id}-${column.id}-${idx}`}
+            key={table.id}
             onClick={() => handleSelect(table.id)}
             className={`w-full p-3 text-left rounded-lg border transition-all group relative ${cardClass}`}
           >
             {/* Table name hierarchy */}
-            <div className="mb-1.5">
-              {/* Conceptual name — largest */}
-              <p className={`text-sm font-semibold leading-tight truncate ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                {table.name}
-              </p>
-              {/* Logical name — medium */}
-              {table.logical_name && (
-                <p className={`text-xs leading-tight truncate ${textBody}`}>
-                  {table.logical_name}
+            <div className="mb-1.5 flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <p className={`text-sm font-semibold leading-tight truncate ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                  {table.name}
                 </p>
-              )}
-              {/* Physical name — smallest */}
-              {table.physical_name && (
-                <p className={`text-[10px] leading-tight truncate font-mono ${textMuted}`}>
-                  {table.physical_name}
-                </p>
+                {table.logical_name && (
+                  <p className={`text-xs leading-tight truncate ${textBody}`}>
+                    {table.logical_name}
+                  </p>
+                )}
+                {table.physical_name && (
+                  <p className={`text-[10px] leading-tight truncate font-mono ${textMuted}`}>
+                    {table.physical_name}
+                  </p>
+                )}
+              </div>
+              {tableMatched && (
+                <span className={`shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide ${
+                  theme === 'dark' ? 'bg-blue-900/50 text-blue-300 border border-blue-700/50' : 'bg-blue-50 text-blue-600 border border-blue-200'
+                }`}>
+                  table
+                </span>
               )}
             </div>
 
-            {/* Column info */}
-            <div className={`flex items-baseline gap-1.5 text-xs ${textBody}`}>
-              <span className="font-medium truncate max-w-[120px]">
-                {column.logical?.name ?? column.id}
-              </span>
-              {column.logical?.description && (
-                <>
-                  <span className={textMuted}>—</span>
-                  <span className={`truncate flex-1 ${textMuted}`}>
-                    {column.logical.description}
-                  </span>
-                </>
-              )}
-            </div>
+            {/* Matched columns */}
+            {matchedColumns.length > 0 && (
+              <div className={`mt-2 pt-2 border-t space-y-1 ${theme === 'dark' ? 'border-slate-700' : 'border-slate-100'}`}>
+                {matchedColumns.map(column => (
+                  <div key={column.id} className="flex items-baseline gap-1.5 text-xs">
+                    <span className={`shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide ${
+                      theme === 'dark' ? 'bg-slate-700 text-slate-400' : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      col
+                    </span>
+                    <span className={`font-medium truncate max-w-[120px] ${textBody}`}>
+                      {column.logical?.name ?? column.id}
+                    </span>
+                    {column.logical?.description && (
+                      <>
+                        <span className={textMuted}>—</span>
+                        <span className={`truncate flex-1 ${textMuted}`}>
+                          {column.logical.description}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
 
             <ArrowUpRight
               size={12}
