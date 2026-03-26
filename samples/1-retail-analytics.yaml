@@ -738,7 +738,7 @@ annotations:
     text: |-
       Imported from conformed-dims.yaml
       Edit the source to update.
-    color: '#d55353'
+    color: '#2a5498'
     targetId: dim_dates
     targetType: table
     offset:
