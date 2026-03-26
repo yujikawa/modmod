@@ -4,6 +4,9 @@ import yaml from 'js-yaml'
 import type { Schema, Table, Relationship, Domain, Annotation, Consumer } from '../types/schema'
 import { parseYAML, normalizeSchema } from '../lib/parser'
 
+// Debounce timer for syncToYamlInput — avoids yaml.dump on every frame during drag
+let syncTimer: ReturnType<typeof setTimeout> | null = null
+
 export interface ModelFile {
   slug: string;
   name: string;
@@ -161,11 +164,15 @@ export const useStore = create<AppState>()(persist(
     get().saveSchema();
   },
   syncToYamlInput: () => {
-    const { schema } = get();
-    if (schema) {
-      const yamlString = yaml.dump(schema, { indent: 2, lineWidth: -1, noRefs: true });
-      set({ yamlInput: yamlString, lastUpdateSource: 'visual' });
-    }
+    if (syncTimer) clearTimeout(syncTimer);
+    syncTimer = setTimeout(() => {
+      const { schema } = get();
+      if (schema) {
+        const yamlString = yaml.dump(schema, { indent: 2, lineWidth: -1, noRefs: true });
+        set({ yamlInput: yamlString, lastUpdateSource: 'visual' });
+      }
+      syncTimer = null;
+    }, 300);
   },
 
   // Multi-file Defaults
