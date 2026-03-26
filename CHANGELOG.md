@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.1] - 2026-03-26
+
+### Changed
+- **Single-file build** — `modscape build` now outputs a single self-contained `index.html` with all JavaScript, CSS, and assets fully inlined. The output works in environments without a web server (e.g. Google Apps Script, local file open).
+
+---
+
 ## [2.2.0] - 2026-03-26
 
 ### Added
