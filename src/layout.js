@@ -96,8 +96,8 @@ export function applyLayout(inputPath, options = {}) {
   const newLayout = {};
   const PAD = 48;
   const TABLE_W = 280;
-  const TABLE_H = 160;
-  const GAP = 40;
+  const TABLE_H = 240;
+  const GAP = 80;
 
   // Process Domains (Grid packing)
   if (domains.length > 0) {
@@ -144,12 +144,54 @@ export function applyLayout(inputPath, options = {}) {
 
   // Standalone Tables
   const domainMemberIds = new Set(domains.flatMap(d => d.members));
+
+  // Identify nodes that have at least one edge (connected) vs isolated
+  const connectedIds = new Set();
+  (schema.lineage || []).forEach(e => { connectedIds.add(e.from); connectedIds.add(e.to); });
+  (schema.relationships || []).forEach(r => { connectedIds.add(r.from.table); connectedIds.add(r.to.table); });
+
+  const standaloneConnected = [];
+  const standaloneIsolated = [];
   schema.tables.forEach(t => {
     if (!domainMemberIds.has(t.id)) {
-      const pos = g.node(t.id);
-      newLayout[t.id] = { x: Math.round(pos.x), y: Math.round(pos.y) };
+      if (connectedIds.has(t.id)) standaloneConnected.push(t);
+      else standaloneIsolated.push(t);
     }
   });
+
+  // Place connected standalone tables at dagre positions
+  standaloneConnected.forEach(t => {
+    const pos = g.node(t.id);
+    newLayout[t.id] = { x: Math.round(pos.x), y: Math.round(pos.y) };
+  });
+
+  // Compute bounding box of all already-placed nodes to anchor isolated grid below
+  const allPlaced = Object.values(newLayout);
+  let maxY = 0;
+  let minX = Infinity;
+  let maxX = -Infinity;
+  if (allPlaced.length > 0) {
+    allPlaced.forEach(pos => {
+      if (pos.y > maxY) maxY = pos.y;
+      if (pos.x < minX) minX = pos.x;
+      if (pos.x > maxX) maxX = pos.x;
+    });
+  }
+
+  // Place isolated standalone tables in a grid below connected nodes
+  if (standaloneIsolated.length > 0) {
+    const ISOLATED_COLS = Math.min(4, Math.ceil(Math.sqrt(standaloneIsolated.length)));
+    const gridStartX = allPlaced.length > 0 ? Math.round(minX) : 0;
+    const gridStartY = allPlaced.length > 0 ? Math.round(maxY + TABLE_H + GAP * 3) : 0;
+    standaloneIsolated.forEach((t, idx) => {
+      const col = idx % ISOLATED_COLS;
+      const row = Math.floor(idx / ISOLATED_COLS);
+      newLayout[t.id] = {
+        x: Math.round(gridStartX + col * (TABLE_W + GAP) + TABLE_W / 2),
+        y: Math.round(gridStartY + row * (TABLE_H + GAP) + TABLE_H / 2),
+      };
+    });
+  }
 
   // Standalone Usecases
   consumers.forEach(uc => {

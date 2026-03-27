@@ -626,7 +626,7 @@ export const useStore = create<AppState>()(persist(
   applyLayout: (newLayout) => {
     const { schema } = get();
     if (!schema) return;
-    set({ schema: { ...schema, layout: newLayout } });
+    set({ schema: { ...schema, layout: newLayout }, lastUpdateSource: 'visual' });
     get().syncToYamlInput();
     get().saveSchema();
   },
