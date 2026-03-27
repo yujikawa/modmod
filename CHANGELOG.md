@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.3] - 2026-03-27
+
+### Changed
+- **PathFinder node selector is now a combobox** — The node selector in the PathFinder tab (both Single Node and Path A→B modes) has been replaced with a free-text combobox. Type to filter nodes by name or ID (case-insensitive substring match); results are still grouped by domain. Click a candidate to select, or use the ✕ button to clear.
+
+### Performance
+- **`syncToYamlInput` debounced (300ms)** — Dragging a table on the canvas no longer triggers a full `yaml.dump` on every animation frame. The YAML editor now updates at most once per 300ms burst, reducing CPU usage during drag operations.
+
+### Fixed
+- **`modscape export` crashed on models with domains** — `export.js` was reading `domain.tables` instead of `domain.members`, causing a `Cannot read properties of undefined (reading 'forEach')` error whenever a domain existed.
+- **`modscape dbt import` generated invalid YAML** — Imported domains were written with `tables:` instead of `members:`, producing YAML that violated the schema and caused domain members to be invisible in the visualizer.
+
+---
+
 ## [2.2.2] - 2026-03-27
 
 ### Fixed

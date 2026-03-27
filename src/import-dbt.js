@@ -85,9 +85,9 @@ export async function importDbt(projectDir, options) {
       const domainName = getFolderKey(node);
       if (domainName && domainName !== 'default') {
         if (!domainsMap.has(domainName)) {
-          domainsMap.set(domainName, { id: domainName, name: domainName, tables: [] });
+          domainsMap.set(domainName, { id: domainName, name: domainName, members: [] });
         }
-        domainsMap.get(domainName).tables.push(tableId);
+        domainsMap.get(domainName).members.push(tableId);
       }
     }
 
@@ -137,10 +137,10 @@ export async function importDbt(projectDir, options) {
         const { rate, external } = selfContainedRate.get(key);
 
         const splitDomains = Array.from(domainsMap.values())
-          .filter(d => d.tables.some(tid => splitTables.some(t => t.id === tid)))
+          .filter(d => d.members.some(tid => splitTables.some(t => t.id === tid)))
           .map(d => ({
             ...d,
-            tables: d.tables.filter(tid => splitTables.some(t => t.id === tid))
+            members: d.members.filter(tid => splitTables.some(t => t.id === tid))
           }));
 
         const splitTableIds = new Set(splitTables.map(t => t.id));

@@ -17,7 +17,7 @@ LINEAGE        Use top-level `lineage` section (not relationships, not table.lin
                lineage.to can reference either a table ID or a consumer ID.
 parentId       Declare a table's domain membership inside layout, not inside domains.
 IDs            Every object (table, domain, annotation, consumer) needs a unique `id`.
-sampleData     First row = column IDs. At least 3 realistic data rows.
+sampleData     Plain data rows only (no header row). At least 3 realistic data rows.
 Grid           All x/y values must be multiples of 40.
 ```
 
