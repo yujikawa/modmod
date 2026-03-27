@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useStore } from '../../store/useStore'
 import {
   Search,
@@ -102,10 +102,6 @@ const PathFinderTab = () => {
     setPathFinderResult(null)
   }
 
-  const selectClass = `w-full p-2 rounded-md text-sm border shadow-sm focus:ring-1 focus:ring-blue-500/50 outline-none ${
-    theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'
-  }`
-
   const toggleBase = `flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all`
   const toggleActive = `bg-blue-600 text-white shadow`
   const toggleInactive = theme === 'dark'
@@ -117,21 +113,100 @@ const PathFinderTab = () => {
       ? <FileChartColumnIncreasing size={12} className="text-violet-400 shrink-0" />
       : <Database size={12} className="text-emerald-500 shrink-0" />
 
-  const NodeSelect = ({ label, value, onChange }: { label: string, value: string, onChange: (v: string) => void }) => (
-    <div>
-      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1.5">{label}</label>
-      <select value={value} onChange={e => onChange(e.target.value)} className={selectClass}>
-        <option value="">Select node...</option>
-        {groupedNodes.map(group => (
-          <optgroup key={group.label} label={group.label}>
-            {group.nodes.map(n => (
-              <option key={n.id} value={n.id}>{n.name}  [{n.id}]</option>
-            ))}
-          </optgroup>
-        ))}
-      </select>
-    </div>
-  )
+  // Combobox: free-text filter + dropdown selector
+  const NodeCombobox = ({ label, value, onChange }: { label: string, value: string, onChange: (v: string) => void }) => {
+    const [query, setQuery] = useState('')
+    const [isOpen, setIsOpen] = useState(false)
+    const containerRef = useRef<HTMLDivElement>(null)
+
+    // Close dropdown on outside click
+    useEffect(() => {
+      const handler = (e: MouseEvent) => {
+        if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+          setIsOpen(false)
+        }
+      }
+      document.addEventListener('mousedown', handler)
+      return () => document.removeEventListener('mousedown', handler)
+    }, [])
+
+    // Filter groups by name or id (case-insensitive substring match)
+    const filteredGroups = useMemo(() => {
+      if (!query) return groupedNodes
+      const q = query.toLowerCase()
+      return groupedNodes
+        .map(g => ({ ...g, nodes: g.nodes.filter(n => n.name.toLowerCase().includes(q) || n.id.toLowerCase().includes(q)) }))
+        .filter(g => g.nodes.length > 0)
+    }, [query])
+
+    const selectedNode = value ? allNodes.find(n => n.id === value) : null
+    const displayValue = selectedNode ? selectedNode.name : query
+
+    const inputClass = `w-full pl-2 pr-7 py-2 rounded-md text-sm border shadow-sm focus:ring-1 focus:ring-blue-500/50 outline-none ${
+      theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'
+    }`
+    const dropdownClass = `absolute z-50 w-full mt-1 rounded-md border shadow-lg max-h-56 overflow-y-auto ${
+      theme === 'dark' ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'
+    }`
+
+    return (
+      <div ref={containerRef} className="relative">
+        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1.5">{label}</label>
+        <div className="relative">
+          <input
+            type="text"
+            value={displayValue}
+            placeholder="Search node..."
+            className={inputClass}
+            onFocus={() => setIsOpen(true)}
+            onChange={e => {
+              if (value) onChange('') // reset selection when user starts typing
+              setQuery(e.target.value)
+              setIsOpen(true)
+            }}
+          />
+          {value && (
+            <button
+              onMouseDown={e => { e.preventDefault(); onChange(''); setQuery(''); setIsOpen(true) }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            >
+              <X size={12} />
+            </button>
+          )}
+        </div>
+        {isOpen && (
+          <div className={dropdownClass}>
+            {filteredGroups.length === 0 ? (
+              <div className={`px-3 py-2 text-xs italic ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>No results</div>
+            ) : (
+              filteredGroups.map(group => (
+                <div key={group.label}>
+                  <div className={`px-2 py-1 text-[10px] font-bold uppercase tracking-widest ${
+                    theme === 'dark' ? 'text-slate-500 bg-slate-800/60' : 'text-slate-400 bg-slate-50'
+                  }`}>{group.label}</div>
+                  {group.nodes.map(n => (
+                    <button
+                      key={n.id}
+                      onMouseDown={e => { e.preventDefault(); onChange(n.id); setQuery(''); setIsOpen(false) }}
+                      className={`w-full text-left flex items-center gap-2 px-3 py-1.5 text-xs transition-colors ${
+                        n.id === value
+                          ? theme === 'dark' ? 'bg-blue-600/30 text-blue-300' : 'bg-blue-50 text-blue-700'
+                          : theme === 'dark' ? 'text-slate-200 hover:bg-slate-800' : 'text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      <NodeIcon kind={n.kind} />
+                      <span className="truncate">{n.name}</span>
+                      <span className={`ml-auto shrink-0 text-[10px] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>{n.id}</span>
+                    </button>
+                  ))}
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden p-4 gap-4">
@@ -174,7 +249,7 @@ const PathFinderTab = () => {
       {/* Single node mode */}
       {mode === 'single' && (
         <div className="space-y-3">
-          <NodeSelect label="Node" value={singleNodeId} onChange={setSingleNodeId} />
+          <NodeCombobox label="Node" value={singleNodeId} onChange={setSingleNodeId} />
           <div>
             <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Range</div>
             <div className={`flex gap-1 p-1 rounded-lg ${theme === 'dark' ? 'bg-slate-800/50' : 'bg-slate-100'}`}>
@@ -208,8 +283,8 @@ const PathFinderTab = () => {
       {/* Path mode */}
       {mode === 'path' && (
         <div className="space-y-3">
-          <NodeSelect label="From" value={fromId} onChange={setFromId} />
-          <NodeSelect label="To" value={toId} onChange={setToId} />
+          <NodeCombobox label="From" value={fromId} onChange={setFromId} />
+          <NodeCombobox label="To" value={toId} onChange={setToId} />
           <div className="flex gap-2 pt-1">
             <button
               onClick={handleFindPath}

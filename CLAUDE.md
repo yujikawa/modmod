@@ -222,9 +222,9 @@ tables:
           name: order_id
           type: "BIGINT"
           constraints: [NOT NULL]
-    sampleData:                # 2D array; first row = column IDs
-      - [order_id, amount]
+    sampleData:                # 2D array of plain data rows (no header)
       - [1001, 150.00]
+      - [1002, 89.50]
 
 # ── Lineage ───────────────────────────────────────────────
 lineage:
