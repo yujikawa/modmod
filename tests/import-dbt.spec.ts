@@ -53,7 +53,7 @@ test.describe('CLI: dbt import', () => {
     expect(model.domains).toBeDefined();
     const stagingDomain = model.domains.find(d => d.id === 'staging');
     expect(stagingDomain).toBeDefined();
-    expect(stagingDomain.tables).toContain('model.my_project.stg_orders');
+    expect(stagingDomain.members).toContain('model.my_project.stg_orders');
   });
 
   test('should show error message when manifest is missing', async () => {
