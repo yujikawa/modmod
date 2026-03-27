@@ -170,6 +170,7 @@ export const useStore = create<AppState>()(persist(
       if (schema) {
         const yamlString = yaml.dump(schema, { indent: 2, lineWidth: -1, noRefs: true });
         set({ yamlInput: yamlString, lastUpdateSource: 'visual' });
+        get().saveSchema();
       }
       syncTimer = null;
     }, 300);
@@ -529,7 +530,7 @@ export const useStore = create<AppState>()(persist(
       });
     }
 
-    set({ schema: { ...schema, tables: newTables, consumers: newUsecases, domains: newDomains, relationships: newRelationships, lineage: newLineage, layout: newLayout }, selectedTableId: null });
+    set({ schema: { ...schema, tables: newTables, consumers: newUsecases, domains: newDomains, relationships: newRelationships, lineage: newLineage, layout: newLayout }, selectedTableId: null, lastUpdateSource: 'visual' });
     get().syncToYamlInput();
     get().saveSchema();
   },

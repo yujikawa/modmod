@@ -7,6 +7,16 @@ All notable changes to this project will be documented in this file.
 ### Added
 - **Model Stats tab in right panel** — A new statistics dashboard tab (BarChart2 icon) provides an at-a-glance overview of the data model. Includes: total counts for tables, lineage edges, relationships, and domains; a Lineage Hotspots ranking showing tables by total connection count (upstream + downstream) with a CSS bar chart; and an Isolated Tables section that highlights tables with no lineage connections. Clicking any entry focuses the corresponding node on the canvas.
 
+### Improved
+- **Auto-layout: isolated nodes now grouped below connected nodes** — Tables with no lineage or relationship edges are placed in a grid below the main connected graph instead of flying off to distant coordinates. Applies to both `modscape layout` CLI and the UI auto-layout button.
+- **Auto-layout: domain grid spacing increased** — Gap between tables inside domains increased (40px → 80px) and default table height assumption raised (160px → 240px) to prevent overlapping for tables with many columns.
+
+### Fixed
+- **Auto-layout button did not save YAML** — Pressing the auto-layout button updated the canvas but did not write changes to the YAML file. Root cause: `applyLayout` was not setting `lastUpdateSource` to `'visual'` before calling `saveSchema`.
+- **Consumer nodes disappeared from layout section after auto-layout** — Consumer node positions were not collected from dagre and were therefore dropped from `newLayout`, removing their layout entries on every auto-layout run.
+- **Deleting a consumer node did not update YAML** — `removeNode` was not setting `lastUpdateSource` to `'visual'`, causing `saveSchema` to skip the file write.
+- **Visual operations after YAML editor interaction were not saved** — Any visual mutation (add/remove/update) performed after editing the in-app YAML editor was silently not saved to disk because `lastUpdateSource` remained `'user'`. Fixed by calling `saveSchema` inside `syncToYamlInput` after resetting `lastUpdateSource` to `'visual'`, ensuring all visual mutations eventually persist.
+
 ---
 
 ## [2.2.3] - 2026-03-27
