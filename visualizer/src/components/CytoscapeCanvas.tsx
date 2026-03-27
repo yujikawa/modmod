@@ -1534,11 +1534,15 @@ export default function CytoscapeCanvas({
       cyLayout.on('layoutstop', () => {
         cy.nodes().forEach((n: CyInstance) => n.removeStyle('height'))
 
-        // Read dagre-computed positions
+        // Read dagre-computed positions (tables and consumers)
+        const allNodeIds = new Set<string>([
+          ...schema.tables.map(t => t.id),
+          ...(schema.consumers ?? []).map(c => c.id),
+        ])
         const dagrePos = new Map<string, { x: number; y: number }>()
         cy.nodes().forEach((n: CyInstance) => {
           const id = n.id() as string
-          if (schema.tables.some(t => t.id === id)) dagrePos.set(id, { ...n.position() })
+          if (allNodeIds.has(id)) dagrePos.set(id, { ...n.position() })
         })
 
         const newLayout: Record<string, any> = {}
@@ -1601,10 +1605,56 @@ export default function CytoscapeCanvas({
 
         // Standalone tables (not in any domain)
         const domainTableIds = new Set(schema.domains?.flatMap(d => d.members) ?? [])
+
+        // Identify connected vs isolated standalone tables
+        const connectedIds = new Set<string>()
+        ;(schema.lineage ?? []).forEach(e => { connectedIds.add(e.from); connectedIds.add(e.to) })
+        ;(schema.relationships ?? []).forEach(r => { connectedIds.add(r.from.table); connectedIds.add(r.to.table) })
+
+        const standaloneConnected: typeof schema.tables = []
+        const standaloneIsolated: typeof schema.tables = []
         schema.tables.forEach(t => {
           if (!domainTableIds.has(t.id) && dagrePos.has(t.id)) {
-            const pos = dagrePos.get(t.id)!
-            newLayout[t.id] = { x: Math.round(pos.x), y: Math.round(pos.y) }
+            if (connectedIds.has(t.id)) standaloneConnected.push(t)
+            else standaloneIsolated.push(t)
+          }
+        })
+
+        // Place connected standalone tables at dagre positions
+        standaloneConnected.forEach(t => {
+          const pos = dagrePos.get(t.id)!
+          newLayout[t.id] = { x: Math.round(pos.x), y: Math.round(pos.y) }
+        })
+
+        // Compute bounding box of all placed nodes to anchor isolated grid below
+        const placedValues = Object.values(newLayout) as Array<{ x: number; y: number }>
+        let maxY = 0, minX = Infinity
+        placedValues.forEach(pos => {
+          if (pos.y > maxY) maxY = pos.y
+          if (pos.x < minX) minX = pos.x
+        })
+
+        // Place isolated tables in a grid below connected nodes
+        if (standaloneIsolated.length > 0) {
+          const TABLE_W = 280, TABLE_H = 160, GAP = 40
+          const ISOLATED_COLS = Math.min(4, Math.ceil(Math.sqrt(standaloneIsolated.length)))
+          const gridStartX = placedValues.length > 0 ? Math.round(minX) : 0
+          const gridStartY = placedValues.length > 0 ? Math.round(maxY + TABLE_H + GAP * 3) : 0
+          standaloneIsolated.forEach((t, idx) => {
+            const col = idx % ISOLATED_COLS
+            const row = Math.floor(idx / ISOLATED_COLS)
+            newLayout[t.id] = {
+              x: Math.round(gridStartX + col * (TABLE_W + GAP) + TABLE_W / 2),
+              y: Math.round(gridStartY + row * (TABLE_H + GAP) + TABLE_H / 2),
+            }
+          })
+        }
+
+        // Standalone consumers (not in any domain)
+        ;(schema.consumers ?? []).forEach(c => {
+          if (!domainTableIds.has(c.id) && dagrePos.has(c.id)) {
+            const pos = dagrePos.get(c.id)!
+            newLayout[c.id] = { x: Math.round(pos.x), y: Math.round(pos.y) }
           }
         })
 

@@ -44,7 +44,7 @@ interface AppState {
   isQuickConnectBarOpen: boolean;
   isCommandPaletteOpen: boolean;
   activeTab: 'editor' | 'entities' | 'connect';
-  activeRightPanelTab: 'tables' | 'path' | 'notes' | 'information-search';
+  activeRightPanelTab: 'tables' | 'path' | 'notes' | 'information-search' | 'stats';
   focusNodeId: string | null;
   pathFinderResult: { nodeIds: string[], edgeIds: string[] } | null;
   showER: boolean;
@@ -120,7 +120,7 @@ interface AppState {
   setIsQuickConnectBarOpen: (isOpen: boolean) => void;
   setIsCommandPaletteOpen: (isOpen: boolean) => void;
   setActiveTab: (tab: 'editor' | 'entities' | 'connect') => void;
-  setActiveRightPanelTab: (tab: 'tables' | 'path' | 'notes' | 'information-search') => void;
+  setActiveRightPanelTab: (tab: 'tables' | 'path' | 'notes' | 'information-search' | 'stats') => void;
   setPathFinderResult: (result: { nodeIds: string[], edgeIds: string[] } | null) => void;
   setFocusNodeId: (id: string | null) => void;
   toggleTheme: () => void;
@@ -170,6 +170,7 @@ export const useStore = create<AppState>()(persist(
       if (schema) {
         const yamlString = yaml.dump(schema, { indent: 2, lineWidth: -1, noRefs: true });
         set({ yamlInput: yamlString, lastUpdateSource: 'visual' });
+        get().saveSchema();
       }
       syncTimer = null;
     }, 300);
@@ -529,7 +530,7 @@ export const useStore = create<AppState>()(persist(
       });
     }
 
-    set({ schema: { ...schema, tables: newTables, consumers: newUsecases, domains: newDomains, relationships: newRelationships, lineage: newLineage, layout: newLayout }, selectedTableId: null });
+    set({ schema: { ...schema, tables: newTables, consumers: newUsecases, domains: newDomains, relationships: newRelationships, lineage: newLineage, layout: newLayout }, selectedTableId: null, lastUpdateSource: 'visual' });
     get().syncToYamlInput();
     get().saveSchema();
   },
@@ -626,7 +627,7 @@ export const useStore = create<AppState>()(persist(
   applyLayout: (newLayout) => {
     const { schema } = get();
     if (!schema) return;
-    set({ schema: { ...schema, layout: newLayout } });
+    set({ schema: { ...schema, layout: newLayout }, lastUpdateSource: 'visual' });
     get().syncToYamlInput();
     get().saveSchema();
   },
