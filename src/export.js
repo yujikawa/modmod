@@ -165,7 +165,7 @@ export function generateMarkdown(schema, modelName) {
       md += `### ${domain.name}\n`;
       if (domain.description) md += `${domain.description}\n\n`;
       md += 'Associated Tables:\n';
-      domain.tables.forEach(tableId => {
+      (domain.members || []).forEach(tableId => {
         const table = schema.tables.find(t => t.id === tableId);
         md += `- ${table?.name || tableId}\n`;
       });
