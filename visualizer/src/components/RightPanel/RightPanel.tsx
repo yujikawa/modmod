@@ -12,11 +12,13 @@ import {
   Moon,
   Search,
   Download,
+  BarChart2,
 } from 'lucide-react'
 import TablesTab from './TablesTab'
 import PathFinderTab from './PathFinderTab'
 import NoteSearchTab from './NoteSearchTab'
 import InformationSearchTab from './InformationSearchTab'
+import ModelStatsTab from './ModelStatsTab'
 
 const RightPanel = memo(() => {
   const {
@@ -146,6 +148,14 @@ const RightPanel = memo(() => {
             <MessageSquare size={20} />
             <Tooltip text="Note Search" />
           </button>
+
+          <button
+            onClick={() => { setActiveRightPanelTab('stats'); setIsRightPanelOpen(true); }}
+            className={iconClass(activeRightPanelTab === 'stats' && isRightPanelOpen)}
+          >
+            <BarChart2 size={20} />
+            <Tooltip text="Model Stats" />
+          </button>
         </div>
 
         <div className="mt-auto flex flex-col gap-2 pb-2">
@@ -240,6 +250,7 @@ const RightPanel = memo(() => {
             {activeRightPanelTab === 'tables' && 'Tables'}
             {activeRightPanelTab === 'path' && 'Path Finder'}
             {activeRightPanelTab === 'notes' && 'Note Search'}
+            {activeRightPanelTab === 'stats' && 'Model Stats'}
           </h2>
         </div>
 
@@ -248,6 +259,7 @@ const RightPanel = memo(() => {
         {activeRightPanelTab === 'tables' && <TablesTab />}
         {activeRightPanelTab === 'path' && <PathFinderTab />}
         {activeRightPanelTab === 'notes' && <NoteSearchTab />}
+        {activeRightPanelTab === 'stats' && <ModelStatsTab />}
       </div>
     </div>
   )

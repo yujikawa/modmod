@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.0] - 2026-03-27
+
+### Added
+- **Model Stats tab in right panel** — A new statistics dashboard tab (BarChart2 icon) provides an at-a-glance overview of the data model. Includes: total counts for tables, lineage edges, relationships, and domains; a Lineage Hotspots ranking showing tables by total connection count (upstream + downstream) with a CSS bar chart; and an Isolated Tables section that highlights tables with no lineage connections. Clicking any entry focuses the corresponding node on the canvas.
+
+---
+
 ## [2.2.3] - 2026-03-27
 
 ### Changed
