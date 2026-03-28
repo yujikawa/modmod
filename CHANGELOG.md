@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.1] - 2026-03-29
+
+### Fixed
+- **Edges disappeared after relationship deletion** — When a relationship was deleted, edges whose source or target node ID shifted were not re-rendered. Fixed by explicitly re-adding affected edges in `CytoscapeCanvas` after deletion.
+
+---
+
 ## [2.3.0] - 2026-03-27
 
 ### Added
