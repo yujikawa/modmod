@@ -1260,10 +1260,20 @@ export default function CytoscapeCanvas({
       const id = elDef.data.id as string
       if (existingIds.has(id)) {
         const el = cy.getElementById(id)
-        el.data(elDef.data)
-        // Update position if schema layout changed (e.g., after auto-layout)
-        if (elDef.position) {
-          el.position(elDef.position)
+        // Edges: source/target cannot be changed via .data() after creation.
+        // If they changed (e.g. due to index shift after deletion), remove+re-add.
+        if (el.isEdge() && (
+          el.data('source') !== elDef.data.source ||
+          el.data('target') !== elDef.data.target
+        )) {
+          el.remove()
+          cy.add(elDef)
+        } else {
+          el.data(elDef.data)
+          // Update position if schema layout changed (e.g., after auto-layout)
+          if (elDef.position) {
+            el.position(elDef.position)
+          }
         }
       } else {
         // For table nodes, create DOM container BEFORE cy.add() so that
