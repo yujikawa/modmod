@@ -43,8 +43,8 @@ test.describe.serial('Modscape Main E2E Suite', () => {
     await page.getByRole('button', { name: 'Connect' }).click();
     await expect(page.locator('input[placeholder="table.column"]')).toBeVisible();
     
-    // Switch back to Editor
-    await page.getByRole('button', { name: 'Editor' }).click();
+    // Switch back to YAML tab
+    await page.getByRole('button', { name: 'YAML' }).click();
     await expect(page.locator('.cm-editor')).toBeVisible();
   });
 

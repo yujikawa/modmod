@@ -73,7 +73,7 @@ const Sidebar = memo(() => {
               }`}
             >
               <FileText size={14} />
-              Editor
+              YAML
             </button>
             <button
               onClick={() => setActiveTab('connect')}

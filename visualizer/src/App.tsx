@@ -180,6 +180,17 @@ function Flow() {
         activeEl?.closest('.sidebar-content')
       if (isTyping || e.repeat) return
 
+      // Undo / Redo (Ctrl+Z / Cmd+Z, Ctrl+Shift+Z / Cmd+Shift+Z)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault()
+        if (e.shiftKey) {
+          useStore.getState().redo()
+        } else {
+          useStore.getState().undo()
+        }
+        return
+      }
+
       const key = e.key.toLowerCase()
 
       if (key === '/' ) {
