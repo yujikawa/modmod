@@ -1,8 +1,21 @@
 # yaml-viewer Specification
 
 ## Purpose
-TBD - created by archiving change yaml-viewer-and-undo-redo. Update Purpose after archive.
+The YAML Viewer provides a read-only view of the current data model in YAML format, allowing users to see the underlying code structure of their visual model. It also manages the overall layout of the left panel tabs.
+
 ## Requirements
+
+### Requirement: 左パネルのタブ構成
+左パネルのタブは「YAML」「Stats」の2タブ構成にしなければならない（SHALL）。Connect タブは削除しなければならない（SHALL）。Stats タブは Model Stats（ホットスポット・孤立テーブル・集計数）を表示しなければならない（SHALL）。
+
+#### Scenario: 左パネルに YAML と Stats の2タブが存在する
+- **WHEN** ユーザーが左パネルを開く
+- **THEN** YAML タブと Stats タブの2つのタブのみが表示される
+
+#### Scenario: Stats タブでモデル統計が閲覧できる
+- **WHEN** ユーザーが Stats タブを選択する
+- **THEN** テーブル数・リレーション数・Lineage数・ドメイン数の集計と、Lineageホットスポット一覧、孤立テーブル一覧が表示される
+
 ### Requirement: YAMLビューワーの表示
 サイドバーのYAMLタブは現在のスキーマ状態をYAML形式で読み取り専用表示しなければならない（SHALL）。ユーザーはビジュアライザー内でYAMLを直接編集できてはならない（MUST NOT）。
 

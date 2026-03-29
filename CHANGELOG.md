@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - **Graph-level Undo/Redo (Ctrl+Z / Ctrl+Shift+Z)** — Visual operations on the canvas (add/delete table, domain, relationship, lineage, annotation; drag move; layout apply; domain assignment) can now be undone and redone with keyboard shortcuts. History is scoped per file (resets on file switch) and capped at 50 steps. Text field edits are handled by the browser natively.
+- **UI Navigation Redesign**:
+  - Moved View/Auto-layout toggles to a floating canvas toolbar for better workspace accessibility.
+  - Simplified Sidebar to a 2-tab layout: "YAML" for schema viewing and "Stats" for model statistics.
+  - Unified Search Tab in the Right Panel, combining hierarchical domain tree and full-text search.
+  - Integrated Relationship Creation (Connect mode) into the Command Palette (Ctrl+K), deprecating the dedicated Connect tab.
+  - Updated Command Palette with dedicated modes for Pipeline, Connect ER, and Connect Flow with improved candidate grouping.
 
 ### Changed
 - **YAML tab is now read-only** — The in-app YAML editor has been replaced with a read-only viewer. YAML editing is intended to be done in an external editor (VS Code, etc.) or via AI agents. The sidebar tab label has been renamed from "Editor" to "YAML".

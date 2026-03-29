@@ -7,6 +7,7 @@ import Sidebar from './components/Sidebar/Sidebar'
 import RightPanel from './components/RightPanel/RightPanel'
 import CommandPalette from './components/CommandPalette'
 import SelectionToolbar from './components/SelectionToolbar'
+import CanvasViewToolbar from './components/CanvasViewToolbar'
 import { LINEAGE_BASE } from './lib/colors'
 
 // ── Flow (Canvas area) ────────────────────────────────────────────────
@@ -196,7 +197,7 @@ function Flow() {
       if (key === '/' ) {
         e.preventDefault()
         useStore.getState().setIsRightPanelOpen(true)
-        useStore.getState().setActiveRightPanelTab('tables')
+        useStore.getState().setActiveRightPanelTab('search')
         return
       }
 
@@ -206,13 +207,6 @@ function Flow() {
         return
       }
 
-      if (key === 'l') {
-        e.preventDefault()
-        const currentTab = useStore.getState().activeTab
-        useStore.getState().setActiveTab(currentTab === 'connect' ? 'editor' : 'connect')
-        useStore.getState().setIsSidebarOpen(true)
-        return
-      }
 
       if ((key === 'v' || key === 'h') && selectedTableIds.length > 1) {
         e.preventDefault()
@@ -328,6 +322,7 @@ function Flow() {
       <div className="flex-1 relative overflow-hidden">
         <SelectionToolbar />
         <CommandPalette />
+        <CanvasViewToolbar />
 
         {connectMode && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none">

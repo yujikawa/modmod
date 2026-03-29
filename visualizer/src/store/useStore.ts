@@ -45,8 +45,8 @@ interface AppState {
   isRightPanelOpen: boolean;
   isQuickConnectBarOpen: boolean;
   isCommandPaletteOpen: boolean;
-  activeTab: 'editor' | 'entities' | 'connect';
-  activeRightPanelTab: 'tables' | 'path' | 'notes' | 'information-search' | 'stats';
+  activeTab: 'yaml' | 'stats';
+  activeRightPanelTab: 'search' | 'path' | 'notes';
   focusNodeId: string | null;
   pathFinderResult: { nodeIds: string[], edgeIds: string[] } | null;
   showER: boolean;
@@ -123,8 +123,8 @@ interface AppState {
   setIsRightPanelOpen: (isOpen: boolean) => void;
   setIsQuickConnectBarOpen: (isOpen: boolean) => void;
   setIsCommandPaletteOpen: (isOpen: boolean) => void;
-  setActiveTab: (tab: 'editor' | 'entities' | 'connect') => void;
-  setActiveRightPanelTab: (tab: 'tables' | 'path' | 'notes' | 'information-search' | 'stats') => void;
+  setActiveTab: (tab: 'yaml' | 'stats') => void;
+  setActiveRightPanelTab: (tab: 'search' | 'path' | 'notes') => void;
   setPathFinderResult: (result: { nodeIds: string[], edgeIds: string[] } | null) => void;
   setFocusNodeId: (id: string | null) => void;
   toggleTheme: () => void;
@@ -203,8 +203,8 @@ export const useStore = create<AppState>()(persist(
   isRightPanelOpen: false,
   isQuickConnectBarOpen: false,
   isCommandPaletteOpen: false,
-  activeTab: 'editor',
-  activeRightPanelTab: 'tables',
+  activeTab: 'yaml',
+  activeRightPanelTab: 'search',
   focusNodeId: null,
   pathFinderResult: null,
   showER: true,
